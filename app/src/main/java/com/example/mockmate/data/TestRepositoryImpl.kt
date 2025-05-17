@@ -4,14 +4,12 @@ import android.content.Context
 import com.example.mockmate.data.database.AppDatabase
 import com.example.mockmate.data.database.entities.QuestionEntity
 import com.example.mockmate.data.database.entities.TestAttemptEntity
-import com.example.mockmate.data.database.entities.TestEntity
 import com.example.mockmate.data.database.entities.TestQuestionCrossRef
 import com.example.mockmate.data.database.entities.UserAnswerEntity
 import com.example.mockmate.data.database.entities.UserStatsEntity
 import com.example.mockmate.model.MockTest
 import com.example.mockmate.model.Question
 import com.example.mockmate.model.QuestionDifficulty
-import com.example.mockmate.model.QuestionStatus
 import com.example.mockmate.model.QuestionType
 import com.example.mockmate.model.SubjectPerformance
 import com.example.mockmate.model.TestAttempt
@@ -22,12 +20,18 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import java.util.Calendar
 import java.util.Date
 import java.util.UUID
 import kotlin.random.Random
+import android.util.Log
+import com.example.mockmate.data.database.entities.TestEntity
+import kotlinx.coroutines.flow.firstOrNull
 
 /**
  * Implementation of TestRepository that uses Room database for persistence
@@ -43,6 +47,9 @@ class TestRepositoryImpl(
     private val userStatsDao by lazy { database.userStatsDao() }
     private val gson = Gson()
     
+    private val _testAttempts = MutableStateFlow<MutableList<TestAttempt>>(mutableListOf())
+    private val testAttempts: StateFlow<List<TestAttempt>> = _testAttempts.asStateFlow()
+    
     override val mockTests: Flow<List<MockTest>> = testDao.getAllTests()
         .map { testEntities ->
             testEntities.map { testEntity ->
@@ -57,13 +64,7 @@ class TestRepositoryImpl(
         }
     
     override fun getTestsByDifficulty(difficulty: TestDifficulty): Flow<List<MockTest>> {
-        return testDao.getTestsByDifficulty(difficulty.name)
-            .map { testEntities ->
-                testEntities.map { testEntity ->
-                    val questions = testDao.getQuestionsForTest(testEntity.id)
-                    testEntityToModel(testEntity, questions)
-                }
-            }
+        return mockTests.map { tests -> tests.filter { it.difficulty == difficulty } }
     }
     
     override suspend fun getTestById(id: String): MockTest? {
@@ -72,6 +73,19 @@ class TestRepositoryImpl(
             val questions = testDao.getQuestionsForTest(id)
             testEntityToModel(testEntity, questions)
         }
+    }
+
+    // Removed override keyword since this method doesn't exist in the interface
+    suspend fun getTestsById(id: String): MockTest? {
+        return mockTests.map { tests -> tests.find { it.id == id } }.firstOrNull()
+    }
+    
+    override suspend fun getTestAttemptById(id: String): TestAttempt? {
+        return _testAttempts.value.find { it.id == id }
+    }
+
+    override fun getAllTestAttempts(): Flow<List<TestAttempt>> {
+        return testAttempts
     }
     
     override suspend fun saveTest(test: MockTest) {
@@ -116,9 +130,15 @@ class TestRepositoryImpl(
             
             testAttemptDao.insertTestAttemptWithAnswers(testAttemptEntity, userAnswerEntities)
             
+            // Update the in-memory list
+            _testAttempts.value.add(attempt)
+            
             // Update stats if the attempt is completed
             if (attempt.isCompleted) {
+                Log.d("TestRepositoryImpl", "Updating stats for attempt: ${attempt.id}")
                 updateStats(attempt)
+            } else {
+                Log.d("TestRepositoryImpl", "Attempt not completed, not updating stats: ${attempt.id}")
             }
         }
     }
@@ -136,42 +156,92 @@ class TestRepositoryImpl(
                     saveTest(test)
                 }
                 
-                // Initialize user stats
-                userStatsDao.insertUserStats(UserStatsEntity())
+            // Initialize user stats using the correct DAO method
+            userStatsDao.insertUserStats(UserStatsEntity())
             }
         }
     }
     
     private suspend fun updateStats(attempt: TestAttempt) {
         // Get the test and questions
-        val test = testDao.getTestById(attempt.testId) ?: return
+        val test = testDao.getTestById(attempt.testId)
+        Log.d("TestRepositoryImpl", "Loaded test: ${test?.name}")
         val questions = testDao.getQuestionsForTest(attempt.testId)
+        Log.d("TestRepositoryImpl", "Loaded ${questions.size} questions")
+
+        if (test == null) {
+            Log.e("TestRepositoryImpl", "Test not found for attempt: ${attempt.id}")
+            return
+        }
+
+        if (questions.isEmpty()) {
+            Log.e("TestRepositoryImpl", "Questions not found for test: ${attempt.testId}")
+            return
+        }
         
         // Map of question IDs to their correct answers
         val correctAnswers = questions.associate { it.id to it.correctOptionIndex }
         
-        // Count correct answers
+        // Count correct answers in current attempt
         var correctCount = 0
+        var answeredCount = 0
         attempt.userAnswers.forEach { (questionId, answer) ->
-            val correct = answer.selectedOptionIndex?.let { selectedIndex ->
-                correctAnswers[questionId]?.let { correctIndex ->
-                    selectedIndex == correctIndex
-                }
-            } ?: false
-            
-            if (correct) correctCount++
+            if (answer.selectedOptionIndex != null) {
+                answeredCount++
+                val correct = correctAnswers[questionId]?.let { correctIndex ->
+                    answer.selectedOptionIndex == correctIndex
+                } ?: false
+                if (correct) correctCount++
+            }
         }
         
-        // Update user stats
-        val answeredCount = attempt.userAnswers.count { it.value.selectedOptionIndex != null }
-        userStatsDao.incrementQuestionsAnswered(answeredCount)
-        userStatsDao.incrementCorrectAnswers(correctCount)
+        Log.d("TestRepositoryImpl", "Current attempt correct answers: $correctCount")
+        Log.d("TestRepositoryImpl", "Current attempt answered questions: $answeredCount")
+
+        // Get previous attempts for this test
+        val previousAttempts = testAttemptDao.getTestAttemptsByTestId(attempt.testId).firstOrNull()?.filter { it.id != attempt.id } ?: emptyList()
+
+        // Calculate total previous correct and answered
+        var totalPrevAnswered = 0
+        var totalPrevCorrect = 0
+
+        previousAttempts.forEach { prevAttempt ->
+            if (prevAttempt.isCompleted) {
+                // Get user answers for the previous attempt
+                val userAnswers = testAttemptDao.getUserAnswersForAttempt(prevAttempt.id)
+
+                // Count previous answered and correct
+                val prevAnswered = userAnswers.count { answer ->
+                    answer.selectedOptionIndex != null
+                }
+
+                val prevCorrect = userAnswers.count { answer -> // Changed to 'answer' as it's UserAnswerEntity
+                    if (answer.selectedOptionIndex != null) {
+                        val correctIndex = questions.find { q -> q.id == answer.questionId }?.correctOptionIndex // Use answer.questionId
+                        answer.selectedOptionIndex == correctIndex
+                    } else {
+                        false
+                    }
+                }
+
+                totalPrevAnswered = totalPrevAnswered + prevAnswered
+                totalPrevCorrect = totalPrevCorrect + prevCorrect
+            }
+        }
+        
+        // Calculate net change for user stats
+        val netAnswered = answeredCount - totalPrevAnswered
+        val netCorrect = correctCount - totalPrevCorrect
+        
+        // Update user stats with net change
+        Log.d("TestRepositoryImpl", "Updating user stats: netAnswered=$netAnswered, netCorrect=$netCorrect")
+        userStatsDao.incrementQuestionsAnswered(netAnswered)
+        userStatsDao.incrementCorrectAnswers(netCorrect)
         
         // Update streak
         val today = Date()
         val statsEntity = userStatsDao.getUserStats().map { it ?: UserStatsEntity() }
         
-        // Check if last practice was today to maintain streak
         statsEntity.collect { stats ->
             // Only increment streak if it's a new day
             val lastPracticeTimestamp = stats.lastPracticeDate?.time
@@ -211,8 +281,8 @@ class TestRepositoryImpl(
             explanation = entity.explanation,
             difficulty = QuestionDifficulty.valueOf(entity.difficulty),
             type = QuestionType.valueOf(entity.type),
-            subject = entity.subject,
-            topic = entity.topic,
+            subject = entity.subject,  // Use subject from entity
+            topic = entity.topic,     // Use topic from entity
             timeRecommended = entity.timeRecommended
         )
     }
@@ -334,6 +404,30 @@ class TestRepositoryImpl(
                 "Who gave the slogan 'Do or Die' during the freedom struggle?" to 
                     listOf("Mahatma Gandhi", "Subhas Chandra Bose", "Jawaharlal Nehru", "Bhagat Singh")
             )
+            "Geography" -> listOf(
+                "Which Indian state has the longest coastline?" to 
+                    listOf("Gujarat", "Maharashtra", "Tamil Nadu", "Andhra Pradesh"),
+                "Which river is known as the 'Ganges of the South'?" to 
+                    listOf("Godavari", "Krishna", "Kaveri", "Narmada"),
+                "Which mountain range divides India into Northern and Southern parts?" to 
+                    listOf("Vindhya", "Himalayas", "Aravallis", "Western Ghats"),
+                "Which is the largest desert in India?" to 
+                    listOf("Thar", "Kutch", "Gobi", "Deccan"),
+                "Which Indian city is known as the 'City of Lakes'?" to 
+                    listOf("Udaipur", "Bhopal", "Nainital", "Srinagar")
+            )
+            "Science" -> listOf(
+                "Which element has the highest melting point?" to 
+                    listOf("Tungsten", "Carbon", "Iron", "Diamond"),
+                "What is the unit of electric current?" to 
+                    listOf("Ampere", "Volt", "Watt", "Ohm"),
+                "Which gas is most abundant in Earth's atmosphere?" to 
+                    listOf("Nitrogen", "Oxygen", "Carbon Dioxide", "Argon"),
+                "What is the chemical formula for water?" to 
+                    listOf("H₂O", "CO₂", "O₂", "H₂O₂"),
+                "Which planet is known as the Red Planet?" to 
+                    listOf("Mars", "Venus", "Jupiter", "Saturn")
+            )
             else -> listOf(
                 "Sample question about $subject $topic?" to 
                     listOf("Option A", "Option B", "Option C", "Option D")
@@ -353,9 +447,9 @@ class TestRepositoryImpl(
                     options = options,
                     correctOptionIndex = 0, // First option is always correct for simplicity
                     explanation = "This is the explanation for this question about $subject.",
-                    difficulty = when {
-                        i % 3 == 0 -> QuestionDifficulty.EASY
-                        i % 3 == 1 -> QuestionDifficulty.MEDIUM
+                    difficulty = when (i % 3) {
+                        0 -> QuestionDifficulty.EASY
+                        1 -> QuestionDifficulty.MEDIUM
                         else -> QuestionDifficulty.HARD
                     },
                     type = QuestionType.MULTIPLE_CHOICE,

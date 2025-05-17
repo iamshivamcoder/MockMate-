@@ -131,6 +131,7 @@ fun PracticeModeCard(
                 PracticeMode.FOCUSED_PRACTICE -> MaterialTheme.colorScheme.primary
                 PracticeMode.CUSTOM_PRACTICE -> MaterialTheme.colorScheme.secondary
                 PracticeMode.MOCK_TEST -> Color(0xFFE91E63)
+                PracticeMode.PARAGRAPH_ANALYSIS -> Color(0xFF9C27B0)
             }
             
             Box(
@@ -147,6 +148,7 @@ fun PracticeModeCard(
                         PracticeMode.FOCUSED_PRACTICE -> "FP"
                         PracticeMode.CUSTOM_PRACTICE -> "CP"
                         PracticeMode.MOCK_TEST -> "MT"
+                        PracticeMode.PARAGRAPH_ANALYSIS -> "PA"
                     },
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold,

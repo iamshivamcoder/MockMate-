@@ -7,7 +7,7 @@ import java.util.UUID
 enum class QuestionDifficulty { EASY, MEDIUM, HARD }
 enum class QuestionType { MULTIPLE_CHOICE, TRUE_FALSE, FILL_BLANK }
 enum class TestDifficulty { EASY, MEDIUM, HARD }
-enum class PracticeMode { DAILY_CHALLENGE, FOCUSED_PRACTICE, CUSTOM_PRACTICE, MOCK_TEST }
+enum class PracticeMode { DAILY_CHALLENGE, FOCUSED_PRACTICE, CUSTOM_PRACTICE, MOCK_TEST, PARAGRAPH_ANALYSIS }
 enum class QuestionStatus { UNATTEMPTED, ANSWERED, MARKED_FOR_REVIEW, BOOKMARKED }
 
 // Question model
@@ -23,6 +23,36 @@ data class Question(
     val topic: String,
     val timeRecommended: Int = 60 // in seconds
 )
+
+// Paragraph analysis models
+data class ParagraphQuestion(
+    val id: String = UUID.randomUUID().toString(),
+    val questionText: String,
+    val options: List<String>,
+    val correctOptionIndex: Int,
+    var selectedOptionIndex: Int? = null,
+    var isSubmitted: Boolean = false
+) {
+    fun selectAnswer(optionIndex: Int) {
+        selectedOptionIndex = optionIndex
+        isSubmitted = true
+    }
+
+    fun getSelectedAnswer(): String? {
+        return selectedOptionIndex?.let { options[it] }
+    }
+
+    fun displaySelectedAnswer() {
+        if (isSubmitted) {
+            val selectedAnswer = getSelectedAnswer()
+            if (selectedAnswer == options[correctOptionIndex]) {
+                println("Correct answer!")
+            } else {
+                println("Incorrect answer. The correct answer is ${options[correctOptionIndex]}")
+            }
+        }
+    }
+}
 
 // Test models
 data class MockTest(
@@ -82,5 +112,7 @@ data class AppSettings(
     val notificationsEnabled: Boolean = true,
     val reminderTime: String = "08:00",
     val defaultTestDifficulty: TestDifficulty = TestDifficulty.MEDIUM,
-    val showExplanations: Boolean = true
+    val showExplanations: Boolean = true,
+    val currentAffairsUpdates: Boolean = false,
+    val optionalSubject: String = "Not Selected"
 )

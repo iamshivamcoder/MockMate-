@@ -16,12 +16,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.mockmate.model.PracticeMode
 import com.example.mockmate.ui.components.MockMateTopBar
+import com.example.mockmate.ui.components.MotivationalQuoteCard
 import com.example.mockmate.ui.components.PracticeModeCard
 
 @Composable
 fun PracticeModeSelectionScreen(
     onNavigateBack: () -> Unit,
     onMockTestClick: () -> Unit,
+    onParagraphAnalysisClick: () -> Unit = {},
     onSettingsClick: () -> Unit
 ) {
     Column(
@@ -42,6 +44,10 @@ fun PracticeModeSelectionScreen(
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            MotivationalQuoteCard()
+            
+            Spacer(modifier = Modifier.height(24.dp))
+            
             Text(
                 text = "Choose a Practice Mode",
                 style = MaterialTheme.typography.headlineSmall,
@@ -52,31 +58,17 @@ fun PracticeModeSelectionScreen(
             Spacer(modifier = Modifier.height(24.dp))
             
             PracticeModeCard(
-                mode = PracticeMode.DAILY_CHALLENGE,
-                title = "Daily Challenge",
-                description = "Complete today's set of UPSC questions to maintain your streak",
-                onClick = { /* Daily challenge implementation */ }
-            )
-            
-            PracticeModeCard(
-                mode = PracticeMode.FOCUSED_PRACTICE,
-                title = "Subject Focus",
-                description = "Practice specific UPSC subjects or optional topics that need improvement",
-                onClick = { /* Focused practice implementation */ }
-            )
-            
-            PracticeModeCard(
-                mode = PracticeMode.CUSTOM_PRACTICE,
-                title = "Custom Practice",
-                description = "Create your own UPSC practice session with custom parameters",
-                onClick = { /* Custom practice implementation */ }
-            )
-            
-            PracticeModeCard(
                 mode = PracticeMode.MOCK_TEST,
                 title = "Mock Prelims",
                 description = "Take a full-length mock test to simulate the UPSC Preliminary exam",
                 onClick = onMockTestClick
+            )
+            
+            PracticeModeCard(
+                mode = PracticeMode.PARAGRAPH_ANALYSIS,
+                title = "Paragraph Analysis",
+                description = "Paste a paragraph you've read to test your understanding and knowledge",
+                onClick = onParagraphAnalysisClick
             )
         }
     }

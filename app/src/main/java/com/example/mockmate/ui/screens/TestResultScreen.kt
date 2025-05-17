@@ -18,7 +18,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ShowChart
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.Button
@@ -85,28 +84,10 @@ fun TestResultScreen(
             test = repository.getTestById(testId)
             android.util.Log.d("TestResultScreen", "Test loaded: ${test != null}")
 
-            // In a real app, we would fetch the test attempt from a database
-            if (test != null) {
-                val userAnswers = mutableMapOf<String, UserAnswer>()
-                test?.questions?.forEachIndexed { index, question ->
-                    // Simulate that user got 70% correct
-                    val correct = index % 10 < 7
-                    userAnswers[question.id] = UserAnswer(
-                        questionId = question.id,
-                        selectedOptionIndex = if (correct) question.correctOptionIndex else (question.correctOptionIndex + 1) % 4,
-                        timeSpent = 30 + (index % 30), // Random time between 30-60 seconds
-                        status = com.example.mockmate.model.QuestionStatus.ANSWERED
-                    )
-                }
-                attempt = TestAttempt(
-                    id = attemptId,
-                    testId = testId,
-                    startTime = java.util.Date(System.currentTimeMillis() - 3600000), // 1 hour ago
-                    endTime = java.util.Date(),
-                    userAnswers = userAnswers,
-                    isCompleted = true
-                )
-            }
+            // Fetch the test attempt from the database
+            attempt = repository.getTestAttemptById(attemptId)
+            android.util.Log.d("TestResultScreen", "Attempt loaded: ${attempt != null}")
+
             isLoading = false
         } catch (e: Exception) {
             loadError = e.message

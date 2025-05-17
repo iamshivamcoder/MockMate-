@@ -29,6 +29,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -53,28 +54,49 @@ fun TestHistoryScreen(
     onViewTestResult: (String, String) -> Unit,
     repository: TestRepository
 ) {
+    val testAttemptsFlow = repository.getAllTestAttempts()
+    val testAttemptsList by testAttemptsFlow.collectAsState(initial = emptyList())
+
     var isLoading by remember { mutableStateOf(true) }
-    var testAttempts by remember { mutableStateOf<List<AttemptWithTest>>(emptyList()) }
-    
-    // Fetch test history
-    LaunchedEffect(Unit) {
-        // In a real app, this would fetch from Room database
-        // Here we'll simulate some test attempts
-        val simulatedHistory = createSimulatedHistory()
-        
-        // Add a slight delay to simulate loading
-        kotlinx.coroutines.delay(500)
-        
-        testAttempts = simulatedHistory
+    var attemptsWithTest by remember { mutableStateOf<List<AttemptWithTest>>(emptyList()) }
+
+    LaunchedEffect(testAttemptsList) {
+        isLoading = true
+        val processedAttempts = testAttemptsList.mapNotNull { attempt ->
+            val test = repository.getTestById(attempt.testId)
+            if (test != null) {
+                val attemptedQuestions = attempt.userAnswers.size
+                var correctAnswers = 0
+                attempt.userAnswers.forEach { (questionId, userAnswer) ->
+                    val question = test.questions.find { it.id == questionId }
+                    if (question != null && userAnswer.selectedOptionIndex == question.correctOptionIndex) {
+                        correctAnswers++
+                    }
+                }
+                AttemptWithTest(
+                    attemptId = attempt.id,
+                    testId = attempt.testId,
+                    testName = test.name,
+                    date = attempt.startTime,
+                    attemptedQuestions = attemptedQuestions,
+                    correctAnswers = correctAnswers,
+                    totalQuestions = test.questions.size,
+                    score = correctAnswers // Assuming score is correct answers for now
+                )
+            } else {
+                null // Skip attempts for tests that are not found
+            }
+        }
+        attemptsWithTest = processedAttempts
         isLoading = false
     }
-    
+
     Column(modifier = Modifier.fillMaxSize()) {
         MockMateTopBar(
             title = "Test History & Analytics",
             onBackClick = onNavigateBack
         )
-        
+
         if (isLoading) {
             Box(
                 modifier = Modifier.fillMaxSize(),
@@ -84,8 +106,8 @@ fun TestHistoryScreen(
             }
         } else {
             TestHistoryContent(
-                testAttempts = testAttempts,
-                onViewResult = { attemptId, testId -> 
+                testAttempts = attemptsWithTest,
+                onViewResult = { attemptId, testId ->
                     onViewTestResult(attemptId, testId)
                 }
             )
@@ -105,12 +127,14 @@ private fun TestHistoryContent(
     ) {
         // Summary statistics
         SectionHeader(text = "Your Progress")
-        
-        val accuracy = if (testAttempts.isNotEmpty()) {
-            testAttempts.sumOf { it.correctAnswers }.toFloat() / 
-                testAttempts.sumOf { it.attemptedQuestions }.toFloat()
+
+        val totalAttemptedQuestions = testAttempts.sumOf { it.attemptedQuestions }
+        val totalCorrectAnswers = testAttempts.sumOf { it.correctAnswers }
+
+        val accuracy = if (totalAttemptedQuestions > 0) {
+            totalCorrectAnswers.toFloat() / totalAttemptedQuestions.toFloat()
         } else 0f
-        
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
@@ -120,19 +144,19 @@ private fun TestHistoryContent(
                 value = testAttempts.size.toString(),
                 modifier = Modifier.weight(1f)
             )
-            
+
             ProgressStat(
                 title = "Avg. Score",
                 value = "${(accuracy * 100).toInt()}%",
                 modifier = Modifier.weight(1f)
             )
         }
-        
+
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         // Test history list
         SectionHeader(text = "Test History")
-        
+
         if (testAttempts.isEmpty()) {
             Box(
                 modifier = Modifier
@@ -155,7 +179,7 @@ private fun TestHistoryContent(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                 }
-                
+
                 item {
                     // Add some bottom spacing
                     Spacer(modifier = Modifier.height(16.dp))
@@ -181,7 +205,7 @@ private fun ProgressStat(
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary
         )
-        
+
         Text(
             text = title,
             style = MaterialTheme.typography.bodyMedium,
@@ -196,7 +220,7 @@ private fun TestHistoryItem(
     onViewResult: () -> Unit
 ) {
     var showMenu by remember { mutableStateOf(false) }
-    
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -220,7 +244,7 @@ private fun TestHistoryItem(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f)
                 )
-                
+
                 Box {
                     IconButton(onClick = { showMenu = true }) {
                         Icon(
@@ -228,7 +252,7 @@ private fun TestHistoryItem(
                             contentDescription = "More options"
                         )
                     }
-                    
+
                     DropdownMenu(
                         expanded = showMenu,
                         onDismissRequest = { showMenu = false }
@@ -246,9 +270,9 @@ private fun TestHistoryItem(
                     }
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             // Date and score
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -260,35 +284,35 @@ private fun TestHistoryItem(
                     tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     modifier = Modifier.padding(end = 4.dp)
                 )
-                
+
                 Text(
                     text = formatDate(attempt.date),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                 )
-                
+
                 Spacer(modifier = Modifier.weight(1f))
-                
+
                 Text(
                     text = "${attempt.score}/${attempt.totalQuestions}",
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
-                
+
                 Spacer(modifier = Modifier.width(4.dp))
-                
+
                 Text(
                     text = "(${(attempt.score.toFloat() / attempt.totalQuestions * 100).toInt()}%)",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             // Progress indicator
-            val progress = attempt.score.toFloat() / attempt.totalQuestions
+            val progress = if (attempt.totalQuestions > 0) attempt.score.toFloat() / attempt.totalQuestions else 0f
             LinearProgressIndicator(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -315,53 +339,4 @@ data class AttemptWithTest(
 private fun formatDate(date: Date): String {
     val formatter = SimpleDateFormat("MMM d, yyyy 'at' h:mm a", Locale.getDefault())
     return formatter.format(date)
-}
-
-// Helper function to create simulated test history for demonstration
-private fun createSimulatedHistory(): List<AttemptWithTest> {
-    val currentTime = System.currentTimeMillis()
-    val day = 24 * 60 * 60 * 1000L
-    
-    return listOf(
-        AttemptWithTest(
-            attemptId = "attempt1",
-            testId = "test1",
-            testName = "Basic Indian Polity",
-            date = Date(currentTime - day),
-            attemptedQuestions = 10,
-            correctAnswers = 8,
-            totalQuestions = 10,
-            score = 8
-        ),
-        AttemptWithTest(
-            attemptId = "attempt2",
-            testId = "test2",
-            testName = "Indian Economy & Current Affairs",
-            date = Date(currentTime - 2 * day),
-            attemptedQuestions = 18,
-            correctAnswers = 15,
-            totalQuestions = 20,
-            score = 15
-        ),
-        AttemptWithTest(
-            attemptId = "attempt3",
-            testId = "test3",
-            testName = "Modern Indian History & Geography",
-            date = Date(currentTime - 5 * day),
-            attemptedQuestions = 25,
-            correctAnswers = 17,
-            totalQuestions = 30,
-            score = 17
-        ),
-        AttemptWithTest(
-            attemptId = "attempt4",
-            testId = "test1",
-            testName = "Basic Indian Polity (Retry)",
-            date = Date(currentTime - 6 * day),
-            attemptedQuestions = 10,
-            correctAnswers = 6,
-            totalQuestions = 10,
-            score = 6
-        )
-    )
 }

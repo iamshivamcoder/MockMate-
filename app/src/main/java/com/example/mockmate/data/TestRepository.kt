@@ -28,6 +28,12 @@ interface TestRepository {
     // Get a test by ID
     suspend fun getTestById(id: String): MockTest?
     
+    // Get a test attempt by ID
+    suspend fun getTestAttemptById(id: String): TestAttempt?
+
+    // Get all test attempts
+    fun getAllTestAttempts(): Flow<List<TestAttempt>>
+    
     // Save a test
     suspend fun saveTest(test: MockTest)
     
@@ -80,6 +86,10 @@ class InMemoryTestRepository : TestRepository {
     
     override val userStats: Flow<UserStats> = _userStats.asStateFlow()
     
+    // Test attempts
+    private val _testAttempts = MutableStateFlow<MutableList<TestAttempt>>(mutableListOf())
+    private val testAttempts: StateFlow<List<TestAttempt>> = _testAttempts.asStateFlow()
+    
     // Get mock test by difficulty
     override fun getTestsByDifficulty(difficulty: TestDifficulty): Flow<List<MockTest>> {
         return mockTests.map { tests -> tests.filter { it.difficulty == difficulty } }
@@ -88,6 +98,16 @@ class InMemoryTestRepository : TestRepository {
     // Get a test by ID
     override suspend fun getTestById(id: String): MockTest? {
         return _mockTests.value.find { it.id == id }
+    }
+    
+    // Get a test attempt by ID
+    override suspend fun getTestAttemptById(id: String): TestAttempt? {
+        return _testAttempts.value.find { it.id == id }
+    }
+
+    // Get all test attempts
+    override fun getAllTestAttempts(): Flow<List<TestAttempt>> {
+        return testAttempts
     }
     
     // Save test
@@ -101,8 +121,7 @@ class InMemoryTestRepository : TestRepository {
     
     // Save test attempt
     override suspend fun saveTestAttempt(attempt: TestAttempt) {
-        // In memory implementation doesn't persist attempts
-        // Would be implemented in a Room-based repository
+        _testAttempts.value.add(attempt)
     }
     
     // Initialize if empty - already initialized in constructor

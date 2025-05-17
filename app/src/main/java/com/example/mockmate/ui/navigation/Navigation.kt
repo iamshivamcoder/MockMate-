@@ -8,6 +8,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.mockmate.ui.screens.DashboardScreen
 import com.example.mockmate.ui.screens.MockTestSelectionScreen
+import com.example.mockmate.ui.screens.ParagraphAnalysisScreen
 import com.example.mockmate.ui.screens.PracticeModeSelectionScreen
 import com.example.mockmate.ui.screens.SettingsScreen
 import com.example.mockmate.ui.screens.TestHistoryScreen
@@ -29,6 +30,7 @@ object Routes {
     const val SETTINGS = "settings"
     const val TEST_HISTORY = "test_history"
     const val TEST_IMPORT = "test_import"
+    const val PARAGRAPH_ANALYSIS = "paragraph_analysis"
     
     // Helper functions to navigate with parameters
     fun testTakingRoute(testId: String) = "test_taking/$testId"
@@ -68,6 +70,7 @@ fun AppNavHost(navController: NavHostController, startDestination: String = Rout
             PracticeModeSelectionScreen(
                 onNavigateBack = { navController.navigateUp() },
                 onMockTestClick = { navController.navigate(Routes.MOCK_TEST_SELECTION) },
+                onParagraphAnalysisClick = { navController.navigate(Routes.PARAGRAPH_ANALYSIS) },
                 onSettingsClick = { navController.navigate(Routes.SETTINGS) }
             )
         }
@@ -131,6 +134,12 @@ fun AppNavHost(navController: NavHostController, startDestination: String = Rout
         
         composable(Routes.SETTINGS) {
             SettingsScreen(
+                onNavigateBack = { navController.navigateUp() }
+            )
+        }
+        
+        composable(Routes.PARAGRAPH_ANALYSIS) {
+            ParagraphAnalysisScreen(
                 onNavigateBack = { navController.navigateUp() }
             )
         }

@@ -29,6 +29,8 @@ import com.example.mockmate.ui.navigation.AppNavHost
 import com.example.mockmate.ui.theme.MockMateTheme
 import com.example.mockmate.data.TestRepository
 import com.example.mockmate.MockMateApplication
+import androidx.compose.runtime.collectAsState
+import com.example.mockmate.data.SettingsRepository
 
 class MainActivity : ComponentActivity() {
     // Permission launcher
@@ -54,6 +56,7 @@ class MainActivity : ComponentActivity() {
         
         // Initialize repositories with stable reference
         val testRepository = MockMateApplication.getTestRepository()
+        val settingsRepository = MockMateApplication.getSettingsRepository()
         
         // Use enableEdgeToEdge before setContent for better stability
         enableEdgeToEdge()
@@ -68,8 +71,10 @@ class MainActivity : ComponentActivity() {
                 // Create stable navigation controller
                 val navController = rememberNavController()
                 
+                val settings by settingsRepository.settings.collectAsState(initial = com.example.mockmate.model.AppSettings())
+
                 // Apply theme
-                MockMateTheme {
+                MockMateTheme(darkTheme = settings.darkMode) {
                     // Root composable
                     Box(modifier = Modifier.fillMaxSize()) {
                         if (!hasError) {

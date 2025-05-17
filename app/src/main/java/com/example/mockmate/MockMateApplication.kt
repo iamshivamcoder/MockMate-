@@ -4,6 +4,7 @@ import android.app.Application
 import com.example.mockmate.data.InMemoryTestRepository
 import com.example.mockmate.data.SettingsRepository
 import com.example.mockmate.data.TestRepository
+import com.example.mockmate.service.AIQuestionGenerator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -12,11 +13,20 @@ class MockMateApplication : Application() {
     
     // Repositories
     private val testRepository: TestRepository = InMemoryTestRepository()
-    private val settingsRepository: SettingsRepository = SettingsRepository()
+    private lateinit var settingsRepository: SettingsRepository
+    private lateinit var apiConfig: ApiConfig
+    private lateinit var aiQuestionGenerator: AIQuestionGenerator
     
     override fun onCreate() {
         super.onCreate()
         INSTANCE = this
+        
+        // Initialize repositories
+        settingsRepository = SettingsRepository(applicationContext)
+        apiConfig = ApiConfig(applicationContext)
+        
+        // Initialize services
+        aiQuestionGenerator = AIQuestionGenerator(apiConfig)
         
         // Initialize with error handling
         try {
@@ -56,6 +66,16 @@ class MockMateApplication : Application() {
             // Add null-check for safer access
             val instance = INSTANCE ?: throw IllegalStateException("Application instance not initialized")
             return instance.settingsRepository
+        }
+        
+        fun getApiConfig(): ApiConfig {
+            val instance = INSTANCE ?: throw IllegalStateException("Application instance not initialized")
+            return instance.apiConfig
+        }
+        
+        fun getAIQuestionGenerator(): AIQuestionGenerator {
+            val instance = INSTANCE ?: throw IllegalStateException("Application instance not initialized")
+            return instance.aiQuestionGenerator
         }
     }
 }
