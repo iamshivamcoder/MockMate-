@@ -101,41 +101,40 @@ fun TestResultScreen(
             onBackClick = onNavigateBack
         )
 
-        when {
-            loadError != null -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            "Error loading results: $loadError",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = onNavigateBack) {
-                            Text("Go Back")
-                        }
-                    }
-                }
+        if (isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                androidx.compose.material3.CircularProgressIndicator()
             }
-            isLoading || test == null || attempt == null -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("Loading results...")
-                }
-            }
-            else -> {
-                ResultContent(
-                    test = test!!,
-                    attempt = attempt!!,
-                    onDashboardClick = onDashboardClick
-                )
-            }
+            return
         }
+
+        if (loadError != null) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(text = loadError ?: "Unknown error", color = MaterialTheme.colorScheme.error)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(onClick = onNavigateBack) { Text("Back") }
+                }
+            }
+            return
+        }
+
+        if (test == null || attempt == null) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(text = "Test or attempt not found.", color = MaterialTheme.colorScheme.error)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(onClick = onNavigateBack) { Text("Back") }
+                }
+            }
+            return
+        }
+
+        ResultContent(
+            test = test!!,
+            attempt = attempt!!,
+            onDashboardClick = onDashboardClick
+        )
     }
 }
 

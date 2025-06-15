@@ -121,7 +121,30 @@ class InMemoryTestRepository : TestRepository {
     
     // Save test attempt
     override suspend fun saveTestAttempt(attempt: TestAttempt) {
-        _testAttempts.value.add(attempt)
+        try {
+            val currentAttempts = _testAttempts.value.toMutableList()
+            // Remove any existing attempt with the same ID
+            currentAttempts.removeIf { it.id == attempt.id }
+            currentAttempts.add(attempt)
+            _testAttempts.value = currentAttempts
+
+            // Update user stats
+            val currentStats = _userStats.value
+            val correctAnswers = attempt.userAnswers.count { (questionId, answer) ->
+                val question = _mockTests.value
+                    .flatMap { it.questions }
+                    .find { it.id == questionId }
+                question?.correctOptionIndex == answer.selectedOptionIndex
+            }
+
+            _userStats.value = currentStats.copy(
+                questionsAnswered = currentStats.questionsAnswered + attempt.userAnswers.size,
+                correctAnswers = currentStats.correctAnswers + correctAnswers
+            )
+        } catch (e: Exception) {
+            android.util.Log.e("TestRepository", "Error saving test attempt: ${e.message}", e)
+            throw e
+        }
     }
     
     // Initialize if empty - already initialized in constructor

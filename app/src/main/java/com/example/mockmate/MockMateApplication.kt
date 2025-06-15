@@ -1,7 +1,7 @@
 package com.example.mockmate
 
 import android.app.Application
-import com.example.mockmate.data.InMemoryTestRepository
+import com.example.mockmate.api.GeminiApiService
 import com.example.mockmate.data.SettingsRepository
 import com.example.mockmate.data.TestRepository
 import com.example.mockmate.service.AIQuestionGenerator
@@ -12,7 +12,7 @@ import kotlinx.coroutines.launch
 class MockMateApplication : Application() {
     
     // Repositories
-    private val testRepository: TestRepository = InMemoryTestRepository()
+    private lateinit var testRepository: TestRepository
     private lateinit var settingsRepository: SettingsRepository
     private lateinit var apiConfig: ApiConfig
     private lateinit var aiQuestionGenerator: AIQuestionGenerator
@@ -22,11 +22,12 @@ class MockMateApplication : Application() {
         INSTANCE = this
         
         // Initialize repositories
+        testRepository = com.example.mockmate.data.TestRepositoryImpl(applicationContext)
         settingsRepository = SettingsRepository(applicationContext)
         apiConfig = ApiConfig(applicationContext)
-        
+
         // Initialize services
-        aiQuestionGenerator = AIQuestionGenerator(apiConfig)
+        aiQuestionGenerator = AIQuestionGenerator(apiConfig.geminiApiService)
         
         // Initialize with error handling
         try {
@@ -49,7 +50,7 @@ class MockMateApplication : Application() {
         private var INSTANCE: MockMateApplication? = null
         
         fun getInstance(): MockMateApplication {
-            return INSTANCE!!
+            return INSTANCE ?: throw IllegalStateException("Application instance not initialized")
         }
         
         fun setInstance(application: MockMateApplication) {
@@ -57,13 +58,11 @@ class MockMateApplication : Application() {
         }
         
         fun getTestRepository(): TestRepository {
-            // Add null-check for safer access
             val instance = INSTANCE ?: throw IllegalStateException("Application instance not initialized")
             return instance.testRepository
         }
         
         fun getSettingsRepository(): SettingsRepository {
-            // Add null-check for safer access
             val instance = INSTANCE ?: throw IllegalStateException("Application instance not initialized")
             return instance.settingsRepository
         }
@@ -76,6 +75,11 @@ class MockMateApplication : Application() {
         fun getAIQuestionGenerator(): AIQuestionGenerator {
             val instance = INSTANCE ?: throw IllegalStateException("Application instance not initialized")
             return instance.aiQuestionGenerator
+        }
+
+        fun getGeminiApiService(): GeminiApiService {
+            val instance = INSTANCE ?: throw IllegalStateException("Application instance not initialized")
+            return instance.apiConfig.geminiApiService
         }
     }
 }

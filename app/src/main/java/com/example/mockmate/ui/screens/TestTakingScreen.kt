@@ -20,14 +20,14 @@ import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -36,6 +36,7 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -50,9 +51,13 @@ import com.example.mockmate.model.UserAnswer
 import com.example.mockmate.ui.components.MockMateTopBar
 import com.example.mockmate.ui.components.OptionItem
 import com.example.mockmate.ui.components.QuestionDifficultyBadge
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import androidx.compose.runtime.snapshotFlow
 import java.util.Date
 import java.util.UUID
@@ -63,21 +68,47 @@ fun TestTakingScreen(
     testId: String,
     onNavigateBack: () -> Unit,
     onFinish: (attemptId: String) -> Unit,
-    repository: TestRepository = InMemoryTestRepository()
+    repository: TestRepository
 ) {
     var mockTest by remember { mutableStateOf<MockTest?>(null) }
-    
+    var currentQuestionIndex by remember { mutableIntStateOf(0) }
+    var timeRemaining by remember { mutableLongStateOf(0L) }
+    var selectedOptions by remember { mutableStateOf<List<Int>>(emptyList()) }
+    var questionStatus by remember { mutableStateOf<List<QuestionStatus>>(emptyList()) }
+    var showFinishDialog by remember { mutableStateOf(false) }
+    var isSaving by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    // Track time spent on each question
+    var questionTimeSpent by remember { mutableStateOf(mutableMapOf<Int, Int>()) }
+    var questionStartTimes by remember { mutableStateOf(mutableMapOf<Int, Long>()) }
+    var previousQuestionIndex by remember { mutableStateOf(0) }
+
     // Fetch the test
     LaunchedEffect(testId) {
-        mockTest = repository.getTestById(testId)
+        try {
+            mockTest = repository.getTestById(testId)
+            mockTest?.let { test ->
+                timeRemaining = test.timeLimit.toLong() * 60
+                selectedOptions = List(test.questions.size) { -1 }
+                questionStatus = List(test.questions.size) { QuestionStatus.UNATTEMPTED }
+                questionStartTimes[0] = System.currentTimeMillis()
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("TestTakingScreen", "Error loading test: ${e.message}", e)
+            errorMessage = "Failed to load test: ${e.message}"
+        }
     }
-    
+
     if (mockTest == null) {
-        // Test not found
+        // Test not found or loading
         Column(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp, alignment = Alignment.CenterVertically)
+            verticalArrangement = Arrangement.spacedBy(
+                16.dp,
+                alignment = Alignment.CenterVertically
+            )
         ) {
             Text("Test not found")
             Button(onClick = onNavigateBack) {
@@ -86,42 +117,48 @@ fun TestTakingScreen(
         }
         return
     }
-    
-    var currentQuestionIndex by remember { mutableIntStateOf(0) }
-    var timeRemaining by remember { mutableLongStateOf(mockTest!!.timeLimit.toLong() * 60) } // in seconds
-    var selectedOptions by remember { mutableStateOf(List(mockTest!!.questions.size) { -1 }) }
-    var questionStatus by remember { mutableStateOf(List(mockTest!!.questions.size) { QuestionStatus.UNATTEMPTED }) }
-    var showFinishDialog by remember { mutableStateOf(false) }
-    var attemptId by remember { mutableStateOf("") }
-    var finishTest by remember { mutableStateOf(false) }
-    var testAttempt by remember { mutableStateOf<TestAttempt?>(null) }
-    
-    // Timer effect
-    LaunchedEffect(key1 = Unit) {
-        while (timeRemaining > 0) {
-            delay(1.seconds)
-            timeRemaining--
+
+    // Track time when switching questions
+    LaunchedEffect(currentQuestionIndex) {
+        if (currentQuestionIndex != previousQuestionIndex) {
+            questionStartTimes[previousQuestionIndex]?.let { startTime ->
+                val timeSpent = ((System.currentTimeMillis() - startTime) / 1000).toInt()
+                questionTimeSpent[previousQuestionIndex] = (questionTimeSpent[previousQuestionIndex] ?: 0) + timeSpent
+            }
+            questionStartTimes[currentQuestionIndex] = System.currentTimeMillis()
+            previousQuestionIndex = currentQuestionIndex
         }
-        
-        // Time's up, auto-submit
-        showFinishDialog = true
     }
-    
+
+    // Timer effect
+    LaunchedEffect(key1 = mockTest) {
+        if (mockTest != null) {
+            val startTime = System.currentTimeMillis()
+            while (timeRemaining > 0) {
+                delay(1.seconds)
+                timeRemaining--
+            }
+
+            // Time's up, auto-submit
+            showFinishDialog = true
+        }
+    }
+
     val currentQuestion = mockTest!!.questions[currentQuestionIndex]
-    
+
     Column(modifier = Modifier.fillMaxSize()) {
         MockMateTopBar(
             title = mockTest!!.name,
             onBackClick = { showFinishDialog = true }
         )
-        
+
         // Timer and progress
         TestProgressHeader(
             currentQuestion = currentQuestionIndex + 1,
             totalQuestions = mockTest!!.questions.size,
             timeRemaining = timeRemaining
         )
-        
+
         // Question content
         QuestionContent(
             modifier = Modifier.weight(1f),
@@ -131,7 +168,7 @@ fun TestTakingScreen(
                 selectedOptions = selectedOptions.toMutableList().also {
                     it[currentQuestionIndex] = optionIndex
                 }
-                
+
                 // Update question status
                 if (optionIndex != -1 && questionStatus[currentQuestionIndex] == QuestionStatus.UNATTEMPTED) {
                     questionStatus = questionStatus.toMutableList().also {
@@ -140,7 +177,7 @@ fun TestTakingScreen(
                 }
             }
         )
-        
+
         // Navigation buttons
         TestNavigationFooter(
             currentQuestionIndex = currentQuestionIndex,
@@ -168,76 +205,89 @@ fun TestTakingScreen(
             isMarkedForReview = questionStatus[currentQuestionIndex] == QuestionStatus.MARKED_FOR_REVIEW
         )
     }
-    
+
+    // Handle test completion
     if (showFinishDialog) {
-        FinishTestDialog(
-            onDismiss = { showFinishDialog = false },
-            onConfirm = {
-                // Create a test attempt with the user's answers
-                attemptId = UUID.randomUUID().toString()
-                val userAnswers = mutableMapOf<String, UserAnswer>()
-                
-                // Create user answers from selected options
-                mockTest!!.questions.forEachIndexed { index, question ->
-                    if (selectedOptions[index] != -1) {
-                        userAnswers[question.id] = UserAnswer(
-                            questionId = question.id,
-                            selectedOptionIndex = selectedOptions[index],
-                            timeSpent = 60, // Mock time spent
-                            status = questionStatus[index]
-                        )
+        // Update time spent on current question before finishing
+        val currentQuestionTimeSpent = calculateTimeSpentOnQuestion(
+            currentQuestionIndex,
+            System.currentTimeMillis()
+        )
+
+        questionTimeSpent = questionTimeSpent.toMutableMap().apply {
+            this[currentQuestionIndex] = currentQuestionTimeSpent
+        }
+
+        val attemptedCount = selectedOptions.count { it != -1 }
+
+        if (!isSaving) {
+            FinishTestDialog(
+                onDismiss = {
+                    showFinishDialog = false
+                },
+                onConfirm = {
+                    val testAttempt = createTestAttempt(
+                        testId = testId,
+                        selectedOptions = selectedOptions,
+                        questionStatus = questionStatus,
+                        questionTimeSpent = questionTimeSpent,
+                        timeRemaining = timeRemaining,
+                        mockTest = mockTest!!
+                    )
+
+                    // Launch save operation
+                    isSaving = true
+
+                    // Save attempt in a coroutine
+                    CoroutineScope(Dispatchers.IO).launch {
+                        try {
+                            repository.saveTestAttempt(testAttempt)
+                            withContext(Dispatchers.Main) {
+                                isSaving = false
+                                onFinish(testAttempt.id)
+                            }
+                        } catch (e: Exception) {
+                            withContext(Dispatchers.Main) {
+                                isSaving = false
+                                errorMessage = e.message
+                            }
+                        }
                     }
+                },
+                attemptedQuestions = attemptedCount,
+                totalQuestions = mockTest!!.questions.size
+            )
+        }
+    }
+
+    // Show loading dialog while saving
+    if (isSaving) {
+        AlertDialog(
+            onDismissRequest = { },
+            title = { Text("Saving test attempt...") },
+            text = {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    androidx.compose.material3.CircularProgressIndicator()
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("Please wait while we save your test attempt...")
                 }
-                
-                // Create the test attempt
-                testAttempt = TestAttempt(
-                    id = attemptId,
-                    testId = testId,
-                    startTime = Date(System.currentTimeMillis() - (mockTest!!.timeLimit * 60 * 1000)),
-                    endTime = Date(),
-                    userAnswers = userAnswers,
-                    isCompleted = true
-                )
-                
-                // Set flag to save and navigate
-                finishTest = true
             },
-            attemptedQuestions = selectedOptions.count { it != -1 },
-            totalQuestions = mockTest!!.questions.size
+            confirmButton = { }
         )
     }
-    
-    // Handle test completion with a stable LaunchedEffect
-    LaunchedEffect(Unit) {
-        // Use snapshotFlow to properly observe state changes
-        snapshotFlow { finishTest to testAttempt }
-            .distinctUntilChanged()
-            .collect { (shouldFinish, currentAttempt) ->
-                if (shouldFinish && currentAttempt != null) {
-                    try {
-                        // Log for debugging
-                        android.util.Log.d("TestTakingScreen", "Saving test attempt: ${currentAttempt.id}")
-                        
-                        // Save the attempt
-                        repository.saveTestAttempt(currentAttempt)
-                        
-                        // Log successful save
-                        android.util.Log.d("TestTakingScreen", "Successfully saved test attempt")
-                        
-                        // Navigate to results - force main thread
-                        android.os.Handler(android.os.Looper.getMainLooper()).post {
-                            android.util.Log.d("TestTakingScreen", "Navigating to results with attempt ID: ${currentAttempt.id}")
-                            onFinish(currentAttempt.id)
-                        }
-                        
-                        // Reset flag
-                        finishTest = false
-                    } catch (e: Exception) {
-                        // Log error
-                        android.util.Log.e("TestTakingScreen", "Error saving test attempt: ${e.message}", e)
-                    }
+
+    // Show error dialog if there's an error
+    errorMessage?.let { message ->
+        AlertDialog(
+            onDismissRequest = { errorMessage = null },
+            title = { Text("Error") },
+            text = { Text(message) },
+            confirmButton = {
+                Button(onClick = { errorMessage = null }) {
+                    Text("OK")
                 }
             }
+        )
     }
 }
 
@@ -259,9 +309,9 @@ fun TestProgressHeader(
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Medium
             )
-            
+
             Spacer(modifier = Modifier.weight(1f))
-            
+
             Text(
                 text = formatTime(timeRemaining),
                 style = MaterialTheme.typography.bodyLarge,
@@ -269,7 +319,7 @@ fun TestProgressHeader(
                 color = if (timeRemaining < 60) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
             )
         }
-        
+
         LinearProgressIndicator(
             modifier = Modifier.fillMaxWidth(),
             progress = { currentQuestion.toFloat() / totalQuestions },
@@ -303,9 +353,9 @@ fun QuestionContent(
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
         }
-        
+
         Spacer(modifier = Modifier.height(16.dp))
-        
+
         // Question text
         Card(
             colors = CardDefaults.cardColors(
@@ -320,9 +370,9 @@ fun QuestionContent(
                 modifier = Modifier.padding(16.dp)
             )
         }
-        
+
         Spacer(modifier = Modifier.height(24.dp))
-        
+
         // Options
         Text(
             text = "Select an answer:",
@@ -330,7 +380,7 @@ fun QuestionContent(
             fontWeight = FontWeight.Medium,
             modifier = Modifier.padding(vertical = 8.dp)
         )
-        
+
         question.options.forEachIndexed { index, option ->
             OptionItem(
                 optionText = option,
@@ -370,7 +420,7 @@ fun TestNavigationFooter(
                     tint = if (isBookmarked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
             }
-            
+
             IconButton(onClick = onMarkForReviewClick) {
                 Icon(
                     imageVector = Icons.Default.Flag,
@@ -379,9 +429,9 @@ fun TestNavigationFooter(
                 )
             }
         }
-        
+
         Spacer(modifier = Modifier.weight(1f))
-        
+
         // Navigation buttons
         Row(
             verticalAlignment = Alignment.CenterVertically
@@ -399,7 +449,7 @@ fun TestNavigationFooter(
                     Text("Previous")
                 }
             }
-            
+
             if (currentQuestionIndex < totalQuestions - 1) {
                 Button(
                     onClick = onNextClick,
@@ -440,7 +490,7 @@ fun FinishTestDialog(
         text = {
             Column {
                 Text("You have answered $attemptedQuestions out of $totalQuestions questions.")
-                
+
                 if (attemptedQuestions < totalQuestions) {
                     Text(
                         text = "There are ${totalQuestions - attemptedQuestions} unanswered questions.",
@@ -448,7 +498,7 @@ fun FinishTestDialog(
                         modifier = Modifier.padding(top = 8.dp)
                     )
                 }
-                
+
                 Text(
                     text = "Are you sure you want to finish this test?",
                     modifier = Modifier.padding(top = 16.dp)
@@ -477,4 +527,45 @@ fun formatTime(seconds: Long): String {
     val minutes = seconds / 60
     val remainingSeconds = seconds % 60
     return "${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}"
+}
+
+fun createTestAttempt(
+    testId: String,
+    selectedOptions: List<Int>,
+    questionStatus: List<QuestionStatus>,
+    questionTimeSpent: Map<Int, Int>,
+    timeRemaining: Long,
+    mockTest: MockTest
+): TestAttempt {
+    val attemptId = UUID.randomUUID().toString()
+    val userAnswers = mutableMapOf<String, UserAnswer>()
+
+    // Create user answers from selected options
+    mockTest.questions.forEachIndexed { index, question ->
+        // Include all questions in the attempt, with proper null handling
+        val selectedOption = if (selectedOptions[index] == -1) null else selectedOptions[index]
+        userAnswers[question.id] = UserAnswer(
+            questionId = question.id,
+            selectedOptionIndex = selectedOption,
+            timeSpent = questionTimeSpent[index] ?: 0,
+            status = questionStatus[index]
+        )
+    }
+
+    val testDuration = (mockTest.timeLimit * 60) - timeRemaining.toInt()
+
+    // Create the test attempt with proper null handling
+    return TestAttempt(
+        id = attemptId,
+        testId = testId,
+        startTime = Date(System.currentTimeMillis() - (testDuration * 1000L)),
+        endTime = Date(),
+        userAnswers = userAnswers,
+        isCompleted = true
+    )
+}
+
+fun calculateTimeSpentOnQuestion(questionIndex: Int, endTimeMillis: Long): Int {
+    // Calculate the time spent on a specific question
+    return ((endTimeMillis - (questionIndex * 60 * 1000L)) / 1000).toInt()
 }

@@ -12,8 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Divider
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -49,15 +47,10 @@ fun SettingsScreen(
     val settings by settingsRepository.settings.collectAsState(initial = com.example.mockmate.model.AppSettings())
     var showTimePickerDialog by remember { mutableStateOf(false) }
     var showDifficultyDialog by remember { mutableStateOf(false) }
-    var showOptionalSubjectDialog by remember { mutableStateOf(false) }
-    
+
     // State to store the time temporarily
     var reminderTimeInput by remember { mutableStateOf(settings.reminderTime) }
-    // Current optional subject
-    var optionalSubject by remember { mutableStateOf(settingsRepository.getOptionalSubject()) }
-    // Current affairs state
-    var currentAffairsEnabled by remember { mutableStateOf(settingsRepository.getCurrentAffairsUpdates()) }
-    
+
     val context = LocalContext.current
 
     Column(
@@ -119,27 +112,6 @@ fun SettingsScreen(
                 onCheckedChange = { settingsRepository.updateShowExplanations(it) }
             )
             
-            Divider(modifier = Modifier.padding(vertical = 8.dp))
-            
-            SectionHeader(text = "UPSC Specific")
-            
-            SettingsSwitch(
-                title = "Current Affairs Updates",
-                description = "Receive daily current affairs updates",
-                checked = currentAffairsEnabled,
-                onCheckedChange = { 
-                    currentAffairsEnabled = it
-                    settingsRepository.updateCurrentAffairsUpdates(it)
-                    Toast.makeText(context, "Current affairs updates ${if(it) "enabled" else "disabled"}", Toast.LENGTH_SHORT).show() 
-                }
-            )
-            
-            SettingsItem(
-                title = "Select Optional Subject",
-                value = optionalSubject,
-                onItemClick = { showOptionalSubjectDialog = true }
-            )
-            
             Spacer(modifier = Modifier.height(32.dp))
             
             Text(
@@ -175,20 +147,6 @@ fun SettingsScreen(
                     settingsRepository.updateDefaultTestDifficulty(difficulty)
                     showDifficultyDialog = false
                     Toast.makeText(context, "Default difficulty set to ${difficulty.name}", Toast.LENGTH_SHORT).show()
-                }
-            )
-        }
-        
-        // Optional Subject Dialog
-        if (showOptionalSubjectDialog) {
-            OptionalSubjectDialog(
-                currentSubject = optionalSubject,
-                onDismiss = { showOptionalSubjectDialog = false },
-                onSubjectSelected = { subject ->
-                    optionalSubject = subject
-                    settingsRepository.updateOptionalSubject(subject)
-                    showOptionalSubjectDialog = false
-                    Toast.makeText(context, "Optional subject set to $subject", Toast.LENGTH_SHORT).show()
                 }
             )
         }
@@ -311,91 +269,3 @@ fun DifficultySelectionDialog(
     }
 }
 
-@Composable
-fun OptionalSubjectDialog(
-    currentSubject: String,
-    onDismiss: () -> Unit,
-    onSubjectSelected: (String) -> Unit
-) {
-    val optionalSubjects = listOf(
-        "Not Selected",
-        "Agriculture",
-        "Animal Husbandry & Veterinary Science",
-        "Anthropology",
-        "Botany",
-        "Chemistry",
-        "Civil Engineering",
-        "Commerce & Accountancy",
-        "Economics",
-        "Electrical Engineering",
-        "Geography",
-        "Geology",
-        "History",
-        "Law",
-        "Management",
-        "Mathematics",
-        "Mechanical Engineering",
-        "Medical Science",
-        "Philosophy",
-        "Physics",
-        "Political Science & International Relations",
-        "Psychology",
-        "Public Administration",
-        "Sociology",
-        "Statistics",
-        "Zoology"
-    )
-    
-    Dialog(
-        onDismissRequest = onDismiss
-    ) {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            shape = MaterialTheme.shapes.medium,
-            color = MaterialTheme.colorScheme.surface
-        ) {
-            Column(
-                modifier = Modifier
-                    .padding(16.dp)
-                    .verticalScroll(rememberScrollState())
-            ) {
-                Text(
-                    text = "Select Optional Subject",
-                    style = MaterialTheme.typography.titleLarge
-                )
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                optionalSubjects.forEach { subject ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onSubjectSelected(subject) }
-                            .padding(vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = subject,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = if (subject == currentSubject) 
-                                MaterialTheme.colorScheme.primary 
-                            else 
-                                MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                }
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                TextButton(
-                    onClick = onDismiss,
-                    modifier = Modifier.align(Alignment.End)
-                ) {
-                    Text("Cancel")
-                }
-            }
-        }
-    }
-}

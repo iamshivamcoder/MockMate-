@@ -1,11 +1,14 @@
 package com.example.mockmate.ui.navigation
 
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
+import androidx.navigation.NavOptions
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import androidx.navigation.navOptions
 import com.example.mockmate.ui.screens.DashboardScreen
 import com.example.mockmate.ui.screens.MockTestSelectionScreen
 import com.example.mockmate.ui.screens.ParagraphAnalysisScreen
@@ -19,6 +22,8 @@ import com.example.mockmate.data.TestRepository
 import com.example.mockmate.MockMateApplication
 import com.example.mockmate.ui.util.ComposeStabilityUtils
 import android.util.Log
+import androidx.compose.runtime.LaunchedEffect
+import androidx.navigation.NavOptionsBuilder
 import androidx.compose.runtime.remember
 
 object Routes {
@@ -31,7 +36,7 @@ object Routes {
     const val TEST_HISTORY = "test_history"
     const val TEST_IMPORT = "test_import"
     const val PARAGRAPH_ANALYSIS = "paragraph_analysis"
-    
+
     // Helper functions to navigate with parameters
     fun testTakingRoute(testId: String) = "test_taking/$testId"
     fun testResultRoute(attemptId: String, testId: String) = "test_result/$attemptId/$testId"
@@ -39,6 +44,26 @@ object Routes {
     // Log navigation routes for debugging
     fun logRoute(route: String) {
         android.util.Log.d("Navigation", "Navigating to route: $route")
+    }
+}
+
+private fun NavHostController.safeNavigate(
+    route: String,
+    builder: NavOptionsBuilder.() -> Unit = {}
+) {
+    try {
+        Log.d("Navigation", "Attempting to navigate to: $route")
+        navigate(route, builder)
+        Log.d("Navigation", "Successfully navigated to: $route")
+    } catch (e: Exception) {
+        Log.e("Navigation", "Navigation failed to $route: ${e.message}", e)
+        // Fallback navigation to ensure user isn't stuck
+        try {
+            popBackStack()
+            navigate(Routes.DASHBOARD)
+        } catch (e: Exception) {
+            Log.e("Navigation", "Even fallback navigation failed: ${e.message}", e)
+        }
     }
 }
 
@@ -58,6 +83,7 @@ fun AppNavHost(navController: NavHostController, startDestination: String = Rout
         startDestination = startDestination
     ) {
         composable(Routes.DASHBOARD) {
+            val context = LocalContext.current
             DashboardScreen(
                 onPracticeClick = { navController.navigate(Routes.PRACTICE_MODE_SELECTION) },
                 onHistoryClick = { navController.navigate(Routes.TEST_HISTORY) },
@@ -89,45 +115,74 @@ fun AppNavHost(navController: NavHostController, startDestination: String = Rout
             arguments = listOf(navArgument("testId") { type = NavType.StringType })
         ) { backStackEntry ->
             val testId = backStackEntry.arguments?.getString("testId") ?: ""
+            if (testId.isEmpty()) {
+                Log.e("Navigation", "Missing required testId argument for TestTakingScreen")
+                LaunchedEffect(Unit) {
+                    navController.safeNavigate(Routes.DASHBOARD) {
+                        popUpTo(Routes.DASHBOARD) { inclusive = true }
+                    }
+                }
+                return@composable
+            }
+
             TestTakingScreen(
                 testId = testId,
-                onNavigateBack = { navController.navigateUp() },
-                onFinish = { attemptId -> 
-                    val route = Routes.testResultRoute(attemptId, testId)
-                    Routes.logRoute(route)
-                    
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onFinish = { attemptId ->
                     try {
-                        // Use popUpTo to ensure we don't have multiple test result screens in the stack
-                        navController.navigate(route) {
-                            // Clear back stack up to the test taking screen
-                            popUpTo(Routes.TEST_TAKING.replace("{testId}", testId)) {
-                                inclusive = true
-                            }
+                        val route = Routes.testResultRoute(attemptId, testId)
+                        Routes.logRoute(route)
+
+                        navController.safeNavigate(route) {
+                            popUpTo(Routes.TEST_TAKING) { inclusive = true }
+                            launchSingleTop = true
                         }
                     } catch (e: Exception) {
-                        android.util.Log.e("Navigation", "Error navigating to results: ${e.message}", e)
+                        Log.e("Navigation", "Failed to navigate to test result: ${e.message}", e)
+                        navController.safeNavigate(Routes.TEST_HISTORY)
                     }
                 },
                 repository = stableRepository
             )
         }
-        
+
         composable(
             route = Routes.TEST_RESULT,
             arguments = listOf(
-                navArgument("attemptId") { type = NavType.StringType },
-                navArgument("testId") { type = NavType.StringType }
+                navArgument("attemptId") {
+                    type = NavType.StringType
+                    nullable = false
+                },
+                navArgument("testId") {
+                    type = NavType.StringType
+                    nullable = false
+                }
             )
         ) { backStackEntry ->
-            val attemptId = backStackEntry.arguments?.getString("attemptId") ?: ""
-            val testId = backStackEntry.arguments?.getString("testId") ?: ""
+            val attemptId = backStackEntry.arguments?.getString("attemptId")
+            val testId = backStackEntry.arguments?.getString("testId")
+
+            if (attemptId == null || testId == null) {
+                Log.e("Navigation", "Missing required arguments for TestResultScreen")
+                LaunchedEffect(Unit) {
+                    navController.navigate(Routes.DASHBOARD) {
+                        popUpTo(Routes.DASHBOARD) { inclusive = true }
+                    }
+                }
+                return@composable
+            }
+
             TestResultScreen(
                 attemptId = attemptId,
                 testId = testId,
                 onNavigateBack = { navController.navigateUp() },
-                onDashboardClick = { navController.navigate(Routes.DASHBOARD) {
-                    popUpTo(Routes.DASHBOARD) { inclusive = true }
-                }},
+                onDashboardClick = {
+                    navController.safeNavigate(Routes.DASHBOARD) {
+                        popUpTo(Routes.DASHBOARD) { inclusive = true }
+                    }
+                },
                 repository = stableRepository
             )
         }
@@ -152,7 +207,7 @@ fun AppNavHost(navController: NavHostController, startDestination: String = Rout
                     // Navigate to test result screen
                     val route = Routes.testResultRoute(attemptId, testId)
                     Routes.logRoute(route)
-                    navController.navigate(route)
+                    navController.safeNavigate(route)
                 },
                 repository = stableRepository
             )

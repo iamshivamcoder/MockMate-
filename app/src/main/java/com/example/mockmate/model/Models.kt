@@ -116,3 +116,14 @@ data class AppSettings(
     val currentAffairsUpdates: Boolean = false,
     val optionalSubject: String = "Not Selected"
 )
+
+enum class AIQuestionDifficulty { EASY, MEDIUM, HARD }
+
+val subjects = listOf(
+    "Polity",
+    "Economics",
+    "History",
+    "Geography",
+    "Science and Technology",
+    "Environment"
+)

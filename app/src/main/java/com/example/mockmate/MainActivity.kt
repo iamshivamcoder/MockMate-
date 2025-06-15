@@ -31,6 +31,7 @@ import com.example.mockmate.data.TestRepository
 import com.example.mockmate.MockMateApplication
 import androidx.compose.runtime.collectAsState
 import com.example.mockmate.data.SettingsRepository
+import androidx.activity.OnBackPressedCallback
 
 class MainActivity : ComponentActivity() {
     // Permission launcher
@@ -45,21 +46,63 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    // Add back handler
+    private val backPressedTime = mutableStateOf(0L)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
-        // Check and request necessary permissions
-        checkAndRequestPermissions()
-        
+        enableEdgeToEdge()
+
+        // Configure back handler
+        onBackPressedDispatcher.addCallback(
+            this,
+            object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    val currentTime = System.currentTimeMillis()
+                    if (currentTime - backPressedTime.value < 2000) {
+                        finish()
+                    } else {
+                        backPressedTime.value = currentTime
+                        Toast.makeText(this@MainActivity, "Press back again to exit", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        )
+
+        // Request all necessary permissions at startup
+        val permissions = arrayOf(
+            Manifest.permission.READ_EXTERNAL_STORAGE,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            Manifest.permission.READ_MEDIA_IMAGES,
+            Manifest.permission.WRITE_SETTINGS
+        )
+
+        // Check if any permission needs to be requested
+        val permissionsToRequest = permissions.filter {
+            ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
+        }.toTypedArray()
+
+        if (permissionsToRequest.isNotEmpty()) {
+            requestPermissionLauncher.launch(permissionsToRequest)
+        }
+
+        // Handle MIUI-specific settings
+        try {
+            // Disable MIUI optimization if causing issues
+            if (isMIUI()) {
+                android.provider.Settings.System.putInt(contentResolver, "force_fsg_nav_bar", 0)
+            }
+        } catch (e: Exception) {
+            // Log but don't crash if MIUI settings are inaccessible
+            android.util.Log.e("MainActivity", "Could not modify MIUI settings: ${e.message}")
+        }
+
         // Initialize application instance
         MockMateApplication.setInstance(application as MockMateApplication)
         
         // Initialize repositories with stable reference
         val testRepository = MockMateApplication.getTestRepository()
         val settingsRepository = MockMateApplication.getSettingsRepository()
-        
-        // Use enableEdgeToEdge before setContent for better stability
-        enableEdgeToEdge()
         
         // Set content with error handling
         try {
@@ -133,6 +176,15 @@ class MainActivity : ComponentActivity() {
         // Request permissions if needed
         if (permissionsToRequest.isNotEmpty()) {
             requestPermissionLauncher.launch(permissionsToRequest.toTypedArray())
+        }
+    }
+
+    private fun isMIUI(): Boolean {
+        return try {
+            val prop = android.os.Build::class.java.getMethod("getPropertyByName", String::class.java)
+            prop.invoke(null, "ro.miui.ui.version.name") != null
+        } catch (e: Exception) {
+            false
         }
     }
 }

@@ -1,6 +1,7 @@
 package com.example.mockmate.data
 
 import android.content.Context
+import androidx.room.withTransaction
 import com.example.mockmate.data.database.AppDatabase
 import com.example.mockmate.data.database.entities.QuestionEntity
 import com.example.mockmate.data.database.entities.TestAttemptEntity
@@ -10,6 +11,7 @@ import com.example.mockmate.data.database.entities.UserStatsEntity
 import com.example.mockmate.model.MockTest
 import com.example.mockmate.model.Question
 import com.example.mockmate.model.QuestionDifficulty
+import com.example.mockmate.model.QuestionStatus
 import com.example.mockmate.model.QuestionType
 import com.example.mockmate.model.SubjectPerformance
 import com.example.mockmate.model.TestAttempt
@@ -18,12 +20,15 @@ import com.example.mockmate.model.UserAnswer
 import com.example.mockmate.model.UserStats
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Calendar
 import java.util.Date
@@ -81,11 +86,130 @@ class TestRepositoryImpl(
     }
     
     override suspend fun getTestAttemptById(id: String): TestAttempt? {
-        return _testAttempts.value.find { it.id == id }
+        return withContext(Dispatchers.IO) {
+            try {
+                // First check in-memory cache
+                val cachedAttempt = _testAttempts.value.find { it.id == id }
+                if (cachedAttempt != null) {
+                    return@withContext cachedAttempt
+                }
+
+                // Query from database
+                val attemptEntity = testAttemptDao.getTestAttemptById(id) ?: return@withContext null
+                val userAnswerEntities = testAttemptDao.getUserAnswersForAttempt(id)
+
+                // Calculate score
+                val test = getTestById(attemptEntity.testId) ?: return@withContext null
+                val questions = testDao.getQuestionsForTest(attemptEntity.testId)
+                val correctAnswers = questions.associate { it.id to it.correctOptionIndex }
+
+                var score = 0f
+                userAnswerEntities.forEach { answerEntity ->
+                    val userAnswer = UserAnswer(
+                        questionId = answerEntity.questionId,
+                        selectedOptionIndex = answerEntity.selectedOptionIndex,
+                        timeSpent = answerEntity.timeSpent,
+                        status = QuestionStatus.valueOf(answerEntity.status)
+                    )
+
+                    val correctIndex = correctAnswers[answerEntity.questionId]
+                    if (correctIndex != null && userAnswer.selectedOptionIndex == correctIndex) {
+                        score++
+                    }
+                }
+
+                // Update the attempt entity with the calculated score
+                val updatedAttemptEntity = TestAttemptEntity(
+                    id = attemptEntity.id,
+                    testId = attemptEntity.testId,
+                    startTime = attemptEntity.startTime,
+                    endTime = attemptEntity.endTime,
+                    isCompleted = attemptEntity.isCompleted,
+                    score = score // Add the calculated score
+                )
+
+                // Save the updated entity with score
+                testAttemptDao.updateTestAttempt(updatedAttemptEntity)
+
+                // Convert entities to domain model
+                val userAnswers = userAnswerEntities.associate { entity ->
+                    entity.questionId to UserAnswer(
+                        questionId = entity.questionId,
+                        selectedOptionIndex = entity.selectedOptionIndex,
+                        timeSpent = entity.timeSpent,
+                        status = QuestionStatus.valueOf(entity.status)
+                    )
+                }
+
+                val testAttempt = TestAttempt(
+                    id = updatedAttemptEntity.id,
+                    testId = updatedAttemptEntity.testId,
+                    startTime = updatedAttemptEntity.startTime,
+                    endTime = updatedAttemptEntity.endTime,
+                    userAnswers = userAnswers,
+                    isCompleted = updatedAttemptEntity.isCompleted
+                )
+
+                // Add to in-memory cache
+                val currentList = _testAttempts.value.toMutableList()
+                currentList.removeIf { it.id == id } // Remove if exists
+                currentList.add(testAttempt)
+                _testAttempts.value = currentList
+
+                testAttempt
+            } catch (e: Exception) {
+                Log.e("TestRepositoryImpl", "Error retrieving test attempt $id: ${e.message}", e)
+                null
+            }
+        }
     }
 
     override fun getAllTestAttempts(): Flow<List<TestAttempt>> {
         return testAttempts
+    }
+
+    private suspend fun loadTestAttemptsFromDatabase() {
+        try {
+            val attemptEntities = testAttemptDao.getAllTestAttempts().firstOrNull() ?: emptyList()
+            val testAttempts = attemptEntities.mapNotNull { entity ->
+                try {
+                    val userAnswerEntities = testAttemptDao.getUserAnswersForAttempt(entity.id)
+                    val userAnswers = userAnswerEntities.associate { answerEntity ->
+                        answerEntity.questionId to UserAnswer(
+                            questionId = answerEntity.questionId,
+                            selectedOptionIndex = answerEntity.selectedOptionIndex,
+                            timeSpent = answerEntity.timeSpent,
+                            status = QuestionStatus.valueOf(answerEntity.status)
+                        )
+                    }
+
+                    TestAttempt(
+                        id = entity.id,
+                        testId = entity.testId,
+                        startTime = entity.startTime,
+                        endTime = entity.endTime,
+                        userAnswers = userAnswers,
+                        isCompleted = entity.isCompleted
+                    )
+                } catch (e: Exception) {
+                    Log.e(
+                        "TestRepositoryImpl",
+                        "Error loading test attempt ${entity.id}: ${e.message}",
+                        e
+                    )
+                    null
+                }
+            }
+
+            _testAttempts.value = testAttempts.toMutableList()
+            Log.d("TestRepositoryImpl", "Loaded ${testAttempts.size} test attempts from database")
+        } catch (e: Exception) {
+            Log.e(
+                "TestRepositoryImpl",
+                "Error loading test attempts from database: ${e.message}",
+                e
+            )
+        }
     }
     
     override suspend fun saveTest(test: MockTest) {
@@ -110,35 +234,78 @@ class TestRepositoryImpl(
     
     override suspend fun saveTestAttempt(attempt: TestAttempt) {
         withContext(Dispatchers.IO) {
-            val testAttemptEntity = TestAttemptEntity(
-                id = attempt.id,
-                testId = attempt.testId,
-                startTime = attempt.startTime,
-                endTime = attempt.endTime,
-                isCompleted = attempt.isCompleted
-            )
-            
-            val userAnswerEntities = attempt.userAnswers.map { (questionId, answer) ->
-                UserAnswerEntity(
-                    testAttemptId = attempt.id,
-                    questionId = questionId,
-                    selectedOptionIndex = answer.selectedOptionIndex,
-                    timeSpent = answer.timeSpent,
-                    status = answer.status.name
+            try {
+                Log.d("TestRepositoryImpl", "Starting to save test attempt: ${attempt.id}")
+
+                // Calculate score
+                val test = getTestById(attempt.testId)
+                    ?: throw IllegalStateException("Test not found for attempt: ${attempt.id}")
+                val questions = testDao.getQuestionsForTest(attempt.testId)
+                val correctAnswers = questions.associate { it.id to it.correctOptionIndex }
+
+                var score = 0f
+                attempt.userAnswers.values.forEach { userAnswer ->
+                    val correctIndex = correctAnswers[userAnswer.questionId]
+                    if (correctIndex != null && userAnswer.selectedOptionIndex == correctIndex) {
+                        score++
+                    }
+                }
+
+                // Create entities outside transaction
+                val testAttemptEntity = TestAttemptEntity(
+                    id = attempt.id,
+                    testId = attempt.testId,
+                    startTime = attempt.startTime,
+                    endTime = attempt.endTime,
+                    isCompleted = attempt.isCompleted,
+                    score = score // Add the calculated score
                 )
-            }
-            
-            testAttemptDao.insertTestAttemptWithAnswers(testAttemptEntity, userAnswerEntities)
-            
-            // Update the in-memory list
-            _testAttempts.value.add(attempt)
-            
-            // Update stats if the attempt is completed
-            if (attempt.isCompleted) {
-                Log.d("TestRepositoryImpl", "Updating stats for attempt: ${attempt.id}")
-                updateStats(attempt)
-            } else {
-                Log.d("TestRepositoryImpl", "Attempt not completed, not updating stats: ${attempt.id}")
+
+                val userAnswerEntities = attempt.userAnswers.map { (questionId, answer) ->
+                    UserAnswerEntity(
+                        testAttemptId = attempt.id,
+                        questionId = questionId,
+                        selectedOptionIndex = answer.selectedOptionIndex,
+                        timeSpent = answer.timeSpent,
+                        status = answer.status.name
+                    )
+                }
+
+                Log.d(
+                    "TestRepositoryImpl",
+                    "Inserting test attempt with ${userAnswerEntities.size} user answers"
+                )
+
+                // Execute database operations in transaction
+                database.withTransaction {
+                    // Save attempt and answers
+                    testAttemptDao.insertTestAttemptWithAnswers(testAttemptEntity, userAnswerEntities)
+
+                    // Verify the save was successful
+                    val savedAttempt = testAttemptDao.getTestAttemptById(attempt.id)
+                    if (savedAttempt == null) {
+                        throw IllegalStateException("Failed to save test attempt")
+                    }
+
+                    Log.d("TestRepositoryImpl", "Test attempt saved successfully")
+                }
+
+                // Update in-memory list after successful transaction
+                val currentList = _testAttempts.value.toMutableList()
+                currentList.add(attempt)
+                _testAttempts.value = currentList
+
+                // Update stats if the attempt is completed
+                if (attempt.isCompleted) {
+                    Log.d(
+                        "TestRepositoryImpl",
+                        "Updating stats for completed attempt: ${attempt.id}"
+                    )
+                    updateStats(attempt)
+                }
+            } catch (e: Exception) {
+                Log.e("TestRepositoryImpl", "Error saving test attempt: ${e.message}", e)
+                throw e
             }
         }
     }
@@ -159,6 +326,9 @@ class TestRepositoryImpl(
             // Initialize user stats using the correct DAO method
             userStatsDao.insertUserStats(UserStatsEntity())
             }
+
+            // Always load existing test attempts from database
+            loadTestAttemptsFromDatabase()
         }
     }
     
@@ -178,15 +348,32 @@ class TestRepositoryImpl(
             Log.e("TestRepositoryImpl", "Questions not found for test: ${attempt.testId}")
             return
         }
-        
+
+        // Get previous attempts for this test
+        val previousAttempts = testAttemptDao.getTestAttemptsByTestId(attempt.testId)
+            .firstOrNull()
+            ?.filter { it.id != attempt.id && it.isCompleted }
+            ?: emptyList()
+
+        // Track which questions were previously answered
+        val previouslyAnsweredQuestions = mutableSetOf<String>()
+        previousAttempts.forEach { prevAttempt ->
+            val prevAnswers = testAttemptDao.getUserAnswersForAttempt(prevAttempt.id)
+            prevAnswers.forEach { answer ->
+                if (answer.selectedOptionIndex != null) {
+                    previouslyAnsweredQuestions.add(answer.questionId)
+                }
+            }
+        }
+
         // Map of question IDs to their correct answers
         val correctAnswers = questions.associate { it.id to it.correctOptionIndex }
         
-        // Count correct answers in current attempt
+        // Count only new answered and correct questions in current attempt
         var correctCount = 0
         var answeredCount = 0
         attempt.userAnswers.forEach { (questionId, answer) ->
-            if (answer.selectedOptionIndex != null) {
+            if (answer.selectedOptionIndex != null && !previouslyAnsweredQuestions.contains(questionId)) {
                 answeredCount++
                 val correct = correctAnswers[questionId]?.let { correctIndex ->
                     answer.selectedOptionIndex == correctIndex
@@ -195,49 +382,15 @@ class TestRepositoryImpl(
             }
         }
         
-        Log.d("TestRepositoryImpl", "Current attempt correct answers: $correctCount")
-        Log.d("TestRepositoryImpl", "Current attempt answered questions: $answeredCount")
+        Log.d("TestRepositoryImpl", "New unique answered questions: $answeredCount")
+        Log.d("TestRepositoryImpl", "New unique correct answers: $correctCount")
 
-        // Get previous attempts for this test
-        val previousAttempts = testAttemptDao.getTestAttemptsByTestId(attempt.testId).firstOrNull()?.filter { it.id != attempt.id } ?: emptyList()
-
-        // Calculate total previous correct and answered
-        var totalPrevAnswered = 0
-        var totalPrevCorrect = 0
-
-        previousAttempts.forEach { prevAttempt ->
-            if (prevAttempt.isCompleted) {
-                // Get user answers for the previous attempt
-                val userAnswers = testAttemptDao.getUserAnswersForAttempt(prevAttempt.id)
-
-                // Count previous answered and correct
-                val prevAnswered = userAnswers.count { answer ->
-                    answer.selectedOptionIndex != null
-                }
-
-                val prevCorrect = userAnswers.count { answer -> // Changed to 'answer' as it's UserAnswerEntity
-                    if (answer.selectedOptionIndex != null) {
-                        val correctIndex = questions.find { q -> q.id == answer.questionId }?.correctOptionIndex // Use answer.questionId
-                        answer.selectedOptionIndex == correctIndex
-                    } else {
-                        false
-                    }
-                }
-
-                totalPrevAnswered = totalPrevAnswered + prevAnswered
-                totalPrevCorrect = totalPrevCorrect + prevCorrect
-            }
+        // Update user stats only for new unique questions
+        if (answeredCount > 0) {
+            userStatsDao.incrementQuestionsAnswered(answeredCount)
+            userStatsDao.incrementCorrectAnswers(correctCount)
         }
-        
-        // Calculate net change for user stats
-        val netAnswered = answeredCount - totalPrevAnswered
-        val netCorrect = correctCount - totalPrevCorrect
-        
-        // Update user stats with net change
-        Log.d("TestRepositoryImpl", "Updating user stats: netAnswered=$netAnswered, netCorrect=$netCorrect")
-        userStatsDao.incrementQuestionsAnswered(netAnswered)
-        userStatsDao.incrementCorrectAnswers(netCorrect)
-        
+
         // Update streak
         val today = Date()
         val statsEntity = userStatsDao.getUserStats().map { it ?: UserStatsEntity() }
@@ -261,8 +414,8 @@ class TestRepositoryImpl(
             explanation = question.explanation,
             difficulty = question.difficulty.name,
             type = question.type.name,
-            subject = question.subject,
-            topic = question.topic,
+            subject = question.subject,  // Use subject from entity
+            topic = question.topic,     // Use topic from entity
             timeRecommended = question.timeRecommended
         )
     }

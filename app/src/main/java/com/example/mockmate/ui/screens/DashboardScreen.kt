@@ -74,8 +74,8 @@ fun DashboardScreen(
                 .padding(horizontal = 16.dp, vertical = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            WelcomeCard(userName = "Aspirant")
-            
+            WelcomeCard(userName = "") // Remove 'Aspirant' to avoid showing it in greeting
+
             Spacer(modifier = Modifier.height(32.dp))
             
             UserStatsSection(userStats)
@@ -139,12 +139,12 @@ private fun UserStatsSection(userStats: UserStats) {
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             StatColumn(
-                title = "Questions",
+                title = "Questions Attempted",
                 value = userStats.questionsAnswered.toString(),
                 modifier = Modifier.weight(1f)
             )
             StatColumn(
-                title = "Daily Streak",
+                title = "Current Streak",
                 value = "${userStats.streak} days",
                 modifier = Modifier.weight(1f)
             )
@@ -164,7 +164,7 @@ private fun UserStatsSection(userStats: UserStats) {
             horizontalAlignment = Alignment.Start
         ) {
             Text(
-                text = "Accuracy: ${(accuracy * 100).toInt()}%",
+                text = "Overall Accuracy: ${(accuracy * 100).toInt()}%",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Medium
             )
@@ -172,7 +172,15 @@ private fun UserStatsSection(userStats: UserStats) {
             Spacer(modifier = Modifier.height(8.dp))
             
             ProgressBar(progress = accuracy)
-            
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Correct Answers: ${userStats.correctAnswers} out of ${userStats.questionsAnswered}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+            )
+
             Spacer(modifier = Modifier.height(16.dp))
             
             Text(
@@ -203,7 +211,7 @@ private fun WelcomeCard(userName: String) {
             horizontalAlignment = Alignment.Start
         ) {
             Text(
-                text = "$greeting, $userName!",
+                text = if (userName.isNotEmpty()) "$greeting $userName!" else "$greeting!",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -310,9 +318,34 @@ private fun StatColumn(
 
 private fun getGreeting(): String {
     val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
-    return when {
-        hour < 12 -> "Good morning"
-        hour < 17 -> "Good afternoon"
-        else -> "Good evening"
-    }
+    val greetings = listOf(
+        Pair(0..11, listOf(
+            "Namaste, Early Bird",
+            "Good Morning, Warrior",
+            "Rise and Shine, Champion",
+            "Suprabhat, Learner"
+        )),
+        Pair(12..15, listOf(
+            "Namaste, Determined Soul",
+            "Keep Going, Warrior",
+            "Stay Strong, Fighter",
+            "Power Through, Champion"
+        )),
+        Pair(16..19, listOf(
+            "Good Evening, Achiever",
+            "Pushing Forward, Warrior",
+            "Stay Focused, Champion",
+            "Almost There, Fighter"
+        )),
+        Pair(20..23, listOf(
+            "Keep At It, Night Owl",
+            "Burning Midnight Oil, Warrior",
+            "Dedication Personified",
+            "Night Mode: Activated"
+        ))
+    )
+
+    val timeSlot = greetings.find { (range, _) -> hour in range }
+    val greetingList = timeSlot?.second ?: greetings[0].second
+    return greetingList.random()
 }

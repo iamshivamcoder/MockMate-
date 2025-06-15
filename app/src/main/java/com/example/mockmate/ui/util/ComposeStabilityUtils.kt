@@ -22,7 +22,6 @@ object ComposeStabilityUtils {
             Log.d(tag, "Composable entered the composition")
             
             onDispose {
-                // This will be called when the composable leaves the composition
                 Log.d(tag, "Composable exited the composition")
             }
         }
@@ -37,21 +36,48 @@ object ComposeStabilityUtils {
         
         DisposableEffect(lifecycleOwner) {
             val observer = LifecycleEventObserver { _, event ->
-                when (event) {
-                    Lifecycle.Event.ON_CREATE -> {
-                        Log.d("ComposeLifecycle", "Screen created")
+                try {
+                    when (event) {
+                        Lifecycle.Event.ON_CREATE -> {
+                            Log.d("ComposeLifecycle", "Screen created")
+                        }
+
+                        Lifecycle.Event.ON_STOP -> {
+                            Log.d("ComposeLifecycle", "Screen stopped")
+                        }
+
+                        Lifecycle.Event.ON_DESTROY -> {
+                            Log.d("ComposeLifecycle", "Screen destroyed")
+                        }
+
+                        else -> {
+                            // Log other events for better debugging
+                            Log.d("ComposeLifecycle", "Lifecycle event: $event")
+                        }
                     }
-                    Lifecycle.Event.ON_STOP -> {
-                        Log.d("ComposeLifecycle", "Screen stopped")
-                    }
-                    else -> { /* handle other events as needed */ }
+                } catch (e: Exception) {
+                    Log.e("ComposeLifecycle", "Error in lifecycle observer: ${e.message}", e)
+                    onError("Lifecycle error: ${e.message}")
                 }
             }
-            
-            lifecycleOwner.lifecycle.addObserver(observer)
+
+            try {
+                lifecycleOwner.lifecycle.addObserver(observer)
+            } catch (e: Exception) {
+                Log.e("ComposeLifecycle", "Failed to add lifecycle observer: ${e.message}", e)
+                onError("Failed to add lifecycle observer: ${e.message}")
+            }
             
             onDispose {
-                lifecycleOwner.lifecycle.removeObserver(observer)
+                try {
+                    lifecycleOwner.lifecycle.removeObserver(observer)
+                } catch (e: Exception) {
+                    Log.e(
+                        "ComposeLifecycle",
+                        "Failed to remove lifecycle observer: ${e.message}",
+                        e
+                    )
+                }
             }
         }
     }
