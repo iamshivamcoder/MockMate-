@@ -1,6 +1,5 @@
 package com.example.mockmate.ui.screens
 
-import android.content.Intent
 import android.net.Uri
 import android.provider.OpenableColumns
 import android.widget.Toast
@@ -29,14 +28,11 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,7 +41,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -55,7 +50,6 @@ import com.example.mockmate.model.MockTest
 import com.example.mockmate.ui.components.MockMateTopBar
 import com.example.mockmate.ui.components.SectionHeader
 import kotlinx.coroutines.launch
-import org.json.JSONArray
 import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -64,7 +58,8 @@ import java.io.InputStreamReader
 fun TestImportScreen(
     onNavigateBack: () -> Unit,
     onViewTests: () -> Unit,
-    repository: TestRepository
+    repository: TestRepository,
+    initialMode: ImportMode = ImportMode.FileImport
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -74,7 +69,7 @@ fun TestImportScreen(
     var selectedFileName by remember { mutableStateOf("No file selected") }
     var fileContent by remember { mutableStateOf<String?>(null) }
     var isProcessing by remember { mutableStateOf(false) }
-    var importStatus by remember { mutableStateOf<ImportStatus?>(null) }
+    var importStatus by remember { mutableStateOf<ImportStatus?>(if (initialMode == ImportMode.Prompt) ImportStatus.PromptMode else ImportStatus.Ready) }
     var importedTest by remember { mutableStateOf<MockTest?>(null) }
     
     // File picker launcher
@@ -224,23 +219,41 @@ fun TestImportScreen(
                             }
                         }
                     }
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    // Import buttons directly inside the card for better visibility
+                    if (importStatus is ImportStatus.Ready) {
+                        Button(
+                            onClick = { processImport() },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            enabled = fileContent != null
+                        ) {
+                            Text("Import Test Data")
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedButton(
+                            onClick = { importStatus = ImportStatus.PromptMode },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp)
+                        ) {
+                            Text("Import from Prompt")
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Scroll down for more options if needed",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
             
             // Import status
             when (val status = importStatus) {
-                is ImportStatus.Ready -> {
-                    Button(
-                        onClick = { processImport() },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 16.dp),
-                        enabled = fileContent != null
-                    ) {
-                        Text("Import Test Data")
-                    }
-                }
-                
                 is ImportStatus.Processing -> {
                     Column(
                         modifier = Modifier
@@ -368,6 +381,81 @@ fun TestImportScreen(
                     }
                 }
                 
+                is ImportStatus.PromptMode -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 16.dp)
+                    ) {
+                        Text(
+                            text = "Use this prompt to generate UPSC CSE level test data with an LLM:",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                                .padding(16.dp)
+                        ) {
+                            Text(
+                                text = "I am preparing a mock test generator for UPSC Civil Services Examination (CSE) preparation. Before generating the test in JSON format, I need to gather specific requirements. Please ask the following questions to customize the mock test:\n1. Which specific subject areas or topics do you want to focus on (e.g., History, Geography, Polity, Economy, Environment, Science & Technology, Current Affairs)?\n2. How many questions would you like in the test?\n3. What should be the difficulty level of the questions (EASY, MEDIUM, HARD, or a mix)?\nAfter receiving my answers to these questions, confirm the details with me. Only after my confirmation, generate the mock test in JSON format. The JSON should include test name, difficulty (EASY, MEDIUM, HARD), time limit in minutes, negative marking (true/false), negative marking value (if applicable), and an array of questions. Each question must have text, an array of 4 options, correct option index (0-3), detailed explanation, subject, topic within the subject, and difficulty (EASY, MEDIUM, HARD). Ensure questions are of UPSC CSE standard, covering analytical and conceptual understanding. Format the JSON exactly as shown in the example below to ensure compatibility with the app:\n\n{\n  \"name\": \"UPSC CSE Prelims Mock Test 1\",\n  \"difficulty\": \"HARD\",\n  \"timeLimit\": 120,\n  \"negativeMarking\": true,\n  \"negativeMarkingValue\": 0.66,\n  \"questions\": [\n    {\n      \"text\": \"Which of the following is a fundamental duty under the Indian Constitution?\",\n      \"options\": [\"To vote in elections\", \"To pay taxes\", \"To safeguard public property\", \"To follow traffic rules\"],\n      \"correctOptionIndex\": 2,\n      \"explanation\": \"Article 51A of the Indian Constitution lists fundamental duties, including the duty to safeguard public property and to abjure violence.\",\n      \"subject\": \"Indian Polity\",\n      \"topic\": \"Constitution\",\n      \"difficulty\": \"MEDIUM\"\n    }\n    // Add more questions here\n  ]\n}",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        OutlinedButton(
+                            onClick = {
+                                val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                val clip = android.content.ClipData.newPlainText("Prompt", "I am preparing a mock test generator for UPSC Civil Services Examination (CSE) preparation. Before generating the test in JSON format, I need to gather specific requirements. Please ask the following questions to customize the mock test:\n1. Which specific subject areas or topics do you want to focus on (e.g., History, Geography, Polity, Economy, Environment, Science & Technology, Current Affairs)?\n2. How many questions would you like in the test?\n3. What should be the difficulty level of the questions (EASY, MEDIUM, HARD, or a mix)?\nAfter receiving my answers to these questions, confirm the details with me. Only after my confirmation, generate the mock test in JSON format. The JSON should include test name, difficulty (EASY, MEDIUM, HARD), time limit in minutes, negative marking (true/false), negative marking value (if applicable), and an array of questions. Each question must have text, an array of 4 options, correct option index (0-3), detailed explanation, subject, topic within the subject, and difficulty (EASY, MEDIUM, HARD). Ensure questions are of UPSC CSE standard, covering analytical and conceptual understanding. Format the JSON exactly as shown in the example below to ensure compatibility with the app:\n\n{\n  \"name\": \"UPSC CSE Prelims Mock Test 1\",\n  \"difficulty\": \"HARD\",\n  \"timeLimit\": 120,\n  \"negativeMarking\": true,\n  \"negativeMarkingValue\": 0.66,\n  \"questions\": [\n    {\n      \"text\": \"Which of the following is a fundamental duty under the Indian Constitution?\",\n      \"options\": [\"To vote in elections\", \"To pay taxes\", \"To safeguard public property\", \"To follow traffic rules\"],\n      \"correctOptionIndex\": 2,\n      \"explanation\": \"Article 51A of the Indian Constitution lists fundamental duties, including the duty to safeguard public property and to abjure violence.\",\n      \"subject\": \"Indian Polity\",\n      \"topic\": \"Constitution\",\n      \"difficulty\": \"MEDIUM\"\n    }\n    // Add more questions here\n  ]\n}")
+                                clipboard.setPrimaryClip(clip)
+                                Toast.makeText(context, "Prompt copied to clipboard", Toast.LENGTH_SHORT).show()
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Copy Prompt")
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "Paste the JSON response from the LLM below:",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        var pastedResponse by remember { mutableStateOf("") }
+                        androidx.compose.material3.OutlinedTextField(
+                            value = pastedResponse,
+                            onValueChange = { pastedResponse = it },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp),
+                            placeholder = { Text("Paste JSON response here") }
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            OutlinedButton(onClick = { importStatus = ImportStatus.Ready }) {
+                                Text("Cancel")
+                            }
+                            Button(
+                                onClick = {
+                                    if (pastedResponse.isNotEmpty()) {
+                                        fileContent = pastedResponse
+                                        processImport()
+                                    } else {
+                                        importStatus = ImportStatus.Error("No content pasted")
+                                    }
+                                },
+                                enabled = pastedResponse.isNotEmpty()
+                            ) {
+                                Text("Import Response")
+                            }
+                        }
+                    }
+                }
                 else -> { /* Do nothing */ }
             }
             
@@ -481,4 +569,11 @@ sealed class ImportStatus {
     object Processing : ImportStatus()
     data class Success(val testName: String, val questionCount: Int) : ImportStatus()
     data class Error(val message: String) : ImportStatus()
+    object PromptMode : ImportStatus()
+}
+
+// Import mode to determine initial screen state
+enum class ImportMode {
+    FileImport,
+    Prompt
 }

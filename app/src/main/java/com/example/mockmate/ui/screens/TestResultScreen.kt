@@ -334,6 +334,83 @@ private fun ResultContent(
             }
         }
         
+        Spacer(modifier = Modifier.height(24.dp))
+        
+        // Question-wise breakdown
+        SectionHeader(text = "Question-wise Breakdown")
+        
+        test.questions.forEachIndexed { index, question ->
+            val userAnswer = attempt.userAnswers[question.id]
+            val isAnswered = userAnswer?.selectedOptionIndex != null
+            val isCorrect = isAnswered && userAnswer?.selectedOptionIndex == question.correctOptionIndex
+            
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Text(
+                        text = "Question ${index + 1}",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Medium
+                    )
+                    
+                    Spacer(modifier = Modifier.height(4.dp))
+                    
+                    Text(
+                        text = question.text,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    if (isAnswered) {
+                        Text(
+                            text = "Your Answer: ${question.options[userAnswer?.selectedOptionIndex ?: 0]}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (isCorrect) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                        )
+                        
+                        Text(
+                            text = "Correct Answer: ${question.options[question.correctOptionIndex]}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        
+                        if (!isCorrect) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Explanation: ${question.explanation}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    } else {
+                        Text(
+                            text = "Not Answered",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                        
+                        Text(
+                            text = "Correct Answer: ${question.options[question.correctOptionIndex]}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Explanation: ${question.explanation}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+        }
+        
         Spacer(modifier = Modifier.height(32.dp))
         
         Button(
