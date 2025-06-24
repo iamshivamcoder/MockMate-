@@ -49,6 +49,21 @@ import com.example.mockmate.model.UserAnswer
 import com.example.mockmate.ui.components.MockMateTopBar
 import com.example.mockmate.ui.components.SectionHeader
 import kotlinx.coroutines.flow.first
+import java.util.Locale
+
+private const val EXCELLENT_THRESHOLD = 80
+private const val GOOD_THRESHOLD = 60
+private const val PROGRESS_THRESHOLD = 40
+
+private val COLOR_EXCELLENT = Color(0xFF4CAF50) // Green
+private val COLOR_GOOD = Color(0xFF2196F3) // Blue
+private val COLOR_PROGRESS = Color(0xFFFFC107) // Yellow
+private val COLOR_NEEDS_IMPROVEMENT = Color(0xFFF44336) // Red
+
+private const val FEEDBACK_EXCELLENT = "Excellent! You've mastered this material."
+private const val FEEDBACK_GOOD = "Good job! You have a solid understanding of the material."
+private const val FEEDBACK_PROGRESS = "You're making progress, but should review some concepts."
+private const val FEEDBACK_NEEDS_IMPROVEMENT = "You need to focus on improving your understanding of this material."
 
 /**
  * Screen for displaying test results and analysis after completing a test
@@ -67,12 +82,13 @@ fun TestResultScreen(
     var attempt by remember { mutableStateOf<TestAttempt?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var loadError by remember { mutableStateOf<String?>(null) }
+    var retryCount by remember { mutableStateOf(0) }
 
     // Debug log
     android.util.Log.d("TestResultScreen", "Received attemptId: $attemptId, testId: $testId")
 
     // Fetch test data
-    LaunchedEffect(testId, attemptId) {
+    LaunchedEffect(testId, attemptId, retryCount) {
         try {
             isLoading = true
             loadError = null
@@ -89,9 +105,16 @@ fun TestResultScreen(
             android.util.Log.d("TestResultScreen", "Attempt loaded: ${attempt != null}")
 
             isLoading = false
+            retryCount = 0 // Reset retry count on success
         } catch (e: Exception) {
             loadError = e.message
             isLoading = false
+
+            // Retry up to 2 times if error occurs
+            if (retryCount < 2) {
+                retryCount++
+                android.util.Log.d("TestResultScreen", "Retrying... Attempt $retryCount")
+            }
         }
     }
 
@@ -113,7 +136,11 @@ fun TestResultScreen(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(text = loadError ?: "Unknown error", color = MaterialTheme.colorScheme.error)
                     Spacer(modifier = Modifier.height(16.dp))
-                    Button(onClick = onNavigateBack) { Text("Back") }
+                    if (retryCount < 2) {
+                        Button(onClick = { retryCount++ }) { Text("Retry") }
+                    } else {
+                        Button(onClick = onNavigateBack) { Text("Back") }
+                    }
                 }
             }
             return
@@ -344,7 +371,7 @@ fun OverallScoreCard(
             Spacer(modifier = Modifier.height(16.dp))
             
             Text(
-                text = "${String.format("%.1f", score)}/${totalMarks.toInt()}",
+                text = "${String.format(Locale.getDefault(), "%.1f", score)}/${totalMarks.toInt()}",
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
@@ -353,7 +380,7 @@ fun OverallScoreCard(
             Spacer(modifier = Modifier.height(8.dp))
             
             Text(
-                text = "${String.format("%.1f", scorePercentage)}%",
+                text = "${String.format(Locale.getDefault(), "%.1f", scorePercentage)}%",
                 style = MaterialTheme.typography.titleLarge,
                 color = getScoreColor(scorePercentage)
             )
@@ -498,20 +525,26 @@ fun SubjectPerformanceCard(
     }
 }
 
+/**
+ * Returns a color based on the score percentage.
+ */
 private fun getScoreColor(percentage: Float): Color {
     return when {
-        percentage >= 80 -> Color(0xFF4CAF50) // Green
-        percentage >= 60 -> Color(0xFF2196F3) // Blue
-        percentage >= 40 -> Color(0xFFFFC107) // Yellow
-        else -> Color(0xFFF44336) // Red
+        percentage >= EXCELLENT_THRESHOLD -> COLOR_EXCELLENT
+        percentage >= GOOD_THRESHOLD -> COLOR_GOOD
+        percentage >= PROGRESS_THRESHOLD -> COLOR_PROGRESS
+        else -> COLOR_NEEDS_IMPROVEMENT
     }
 }
 
+/**
+ * Returns feedback text based on the score percentage.
+ */
 private fun getScoreFeedback(percentage: Float): String {
     return when {
-        percentage >= 80 -> "Excellent! You've mastered this material."
-        percentage >= 60 -> "Good job! You have a solid understanding of the material."
-        percentage >= 40 -> "You're making progress, but should review some concepts."
-        else -> "You need to focus on improving your understanding of this material."
+        percentage >= EXCELLENT_THRESHOLD -> FEEDBACK_EXCELLENT
+        percentage >= GOOD_THRESHOLD -> FEEDBACK_GOOD
+        percentage >= PROGRESS_THRESHOLD -> FEEDBACK_PROGRESS
+        else -> FEEDBACK_NEEDS_IMPROVEMENT
     }
 }

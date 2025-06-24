@@ -33,12 +33,19 @@ interface TestAttemptDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertUserAnswers(userAnswers: List<UserAnswerEntity>)
     
+    @Query("DELETE FROM user_answers WHERE testAttemptId = :attemptId")
+    suspend fun deleteUserAnswersForAttempt(attemptId: String)
+
     @Transaction
     suspend fun insertTestAttemptWithAnswers(
         testAttempt: TestAttemptEntity, 
         userAnswers: List<UserAnswerEntity>
     ) {
+        // First clear any existing answers for this attempt
+        deleteUserAnswersForAttempt(testAttempt.id)
+        // Then insert the test attempt
         insertTestAttempt(testAttempt)
+        // Finally insert all answers
         insertUserAnswers(userAnswers)
     }
     

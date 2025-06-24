@@ -127,16 +127,14 @@ fun AppNavHost(navController: NavHostController, startDestination: String = Rout
 
             TestTakingScreen(
                 testId = testId,
-                onNavigateBack = {
-                    navController.popBackStack()
-                },
+                onNavigateBack = { navController.popBackStack() },
                 onFinish = { attemptId ->
+                    Log.d("Navigation", "onFinish called with attemptId=$attemptId, testId=$testId")
                     try {
                         val route = Routes.testResultRoute(attemptId, testId)
                         Routes.logRoute(route)
-
                         navController.safeNavigate(route) {
-                            popUpTo(Routes.TEST_TAKING) { inclusive = true }
+                            popUpTo(Routes.testTakingRoute(testId)) { inclusive = true }
                             launchSingleTop = true
                         }
                     } catch (e: Exception) {

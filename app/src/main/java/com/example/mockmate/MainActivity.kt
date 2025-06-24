@@ -1,6 +1,11 @@
 package com.example.mockmate
 
+import android.Manifest
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.provider.Settings
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -20,9 +25,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.runtime.LaunchedEffect
-import android.Manifest
-import android.content.pm.PackageManager
-import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.navigation.compose.rememberNavController
 import com.example.mockmate.ui.navigation.AppNavHost
@@ -32,6 +34,7 @@ import com.example.mockmate.MockMateApplication
 import androidx.compose.runtime.collectAsState
 import com.example.mockmate.data.SettingsRepository
 import androidx.activity.OnBackPressedCallback
+import android.content.pm.PackageManager
 
 class MainActivity : ComponentActivity() {
     // Permission launcher
@@ -42,7 +45,12 @@ class MainActivity : ComponentActivity() {
         if (allGranted) {
             Toast.makeText(this, "All necessary permissions granted", Toast.LENGTH_SHORT).show()
         } else {
-            Toast.makeText(this, "Some permissions were denied. App functionality may be limited.", Toast.LENGTH_LONG).show()
+            val denied = permissions.filter { !it.value }.keys.joinToString(", ")
+            Toast.makeText(
+                this,
+                "Some permissions were denied: $denied. Certain features may not work. To enable all features, please grant these permissions in your device settings.",
+                Toast.LENGTH_LONG
+            ).show()
         }
     }
 
@@ -70,18 +78,27 @@ class MainActivity : ComponentActivity() {
         )
 
         // Request all necessary permissions at startup
-        val permissions = arrayOf(
-            Manifest.permission.READ_EXTERNAL_STORAGE,
-            Manifest.permission.WRITE_EXTERNAL_STORAGE,
-            Manifest.permission.READ_MEDIA_IMAGES,
-            Manifest.permission.WRITE_SETTINGS
-        )
-
-        // Check if any permission needs to be requested
-        val permissionsToRequest = permissions.filter {
+        val permissions = mutableListOf<String>()
+        if (android.os.Build.VERSION.SDK_INT <= android.os.Build.VERSION_CODES.S_V2) { // API 32 or below
+            permissions.add(Manifest.permission.READ_EXTERNAL_STORAGE)
+            permissions.add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+        }
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) { // API 33+
+            permissions.add(Manifest.permission.READ_MEDIA_IMAGES)
+        }
+        // Do NOT add INTERNET or ACCESS_NETWORK_STATE here (manifest only)
+        // Remove WRITE_SETTINGS from here
+        val filteredPermissions = permissions.filter {
+            try {
+                packageManager.getPermissionInfo(it, 0)
+                true
+            } catch (e: Exception) {
+                false
+            }
+        }
+        val permissionsToRequest = filteredPermissions.filter {
             ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
         }.toTypedArray()
-
         if (permissionsToRequest.isNotEmpty()) {
             requestPermissionLauncher.launch(permissionsToRequest)
         }

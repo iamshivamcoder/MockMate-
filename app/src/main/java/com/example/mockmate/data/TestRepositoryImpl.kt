@@ -1,10 +1,12 @@
 package com.example.mockmate.data
 
 import android.content.Context
+import android.util.Log
 import androidx.room.withTransaction
 import com.example.mockmate.data.database.AppDatabase
 import com.example.mockmate.data.database.entities.QuestionEntity
 import com.example.mockmate.data.database.entities.TestAttemptEntity
+import com.example.mockmate.data.database.entities.TestEntity
 import com.example.mockmate.data.database.entities.TestQuestionCrossRef
 import com.example.mockmate.data.database.entities.UserAnswerEntity
 import com.example.mockmate.data.database.entities.UserStatsEntity
@@ -13,30 +15,24 @@ import com.example.mockmate.model.Question
 import com.example.mockmate.model.QuestionDifficulty
 import com.example.mockmate.model.QuestionStatus
 import com.example.mockmate.model.QuestionType
-import com.example.mockmate.model.SubjectPerformance
 import com.example.mockmate.model.TestAttempt
 import com.example.mockmate.model.TestDifficulty
 import com.example.mockmate.model.UserAnswer
 import com.example.mockmate.model.UserStats
+import com.example.mockmate.model.SubjectPerformance
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Calendar
 import java.util.Date
 import java.util.UUID
-import kotlin.random.Random
-import android.util.Log
-import com.example.mockmate.data.database.entities.TestEntity
-import kotlinx.coroutines.flow.firstOrNull
 
 /**
  * Implementation of TestRepository that uses Room database for persistence
@@ -80,11 +76,6 @@ class TestRepositoryImpl(
         }
     }
 
-    // Removed override keyword since this method doesn't exist in the interface
-    suspend fun getTestsById(id: String): MockTest? {
-        return mockTests.map { tests -> tests.find { it.id == id } }.firstOrNull()
-    }
-    
     override suspend fun getTestAttemptById(id: String): TestAttempt? {
         return withContext(Dispatchers.IO) {
             try {
@@ -98,40 +89,7 @@ class TestRepositoryImpl(
                 val attemptEntity = testAttemptDao.getTestAttemptById(id) ?: return@withContext null
                 val userAnswerEntities = testAttemptDao.getUserAnswersForAttempt(id)
 
-                // Calculate score
-                val test = getTestById(attemptEntity.testId) ?: return@withContext null
-                val questions = testDao.getQuestionsForTest(attemptEntity.testId)
-                val correctAnswers = questions.associate { it.id to it.correctOptionIndex }
-
-                var score = 0f
-                userAnswerEntities.forEach { answerEntity ->
-                    val userAnswer = UserAnswer(
-                        questionId = answerEntity.questionId,
-                        selectedOptionIndex = answerEntity.selectedOptionIndex,
-                        timeSpent = answerEntity.timeSpent,
-                        status = QuestionStatus.valueOf(answerEntity.status)
-                    )
-
-                    val correctIndex = correctAnswers[answerEntity.questionId]
-                    if (correctIndex != null && userAnswer.selectedOptionIndex == correctIndex) {
-                        score++
-                    }
-                }
-
-                // Update the attempt entity with the calculated score
-                val updatedAttemptEntity = TestAttemptEntity(
-                    id = attemptEntity.id,
-                    testId = attemptEntity.testId,
-                    startTime = attemptEntity.startTime,
-                    endTime = attemptEntity.endTime,
-                    isCompleted = attemptEntity.isCompleted,
-                    score = score // Add the calculated score
-                )
-
-                // Save the updated entity with score
-                testAttemptDao.updateTestAttempt(updatedAttemptEntity)
-
-                // Convert entities to domain model
+                // Convert entities to domain model without complex calculations
                 val userAnswers = userAnswerEntities.associate { entity ->
                     entity.questionId to UserAnswer(
                         questionId = entity.questionId,
@@ -142,12 +100,12 @@ class TestRepositoryImpl(
                 }
 
                 val testAttempt = TestAttempt(
-                    id = updatedAttemptEntity.id,
-                    testId = updatedAttemptEntity.testId,
-                    startTime = updatedAttemptEntity.startTime,
-                    endTime = updatedAttemptEntity.endTime,
+                    id = attemptEntity.id,
+                    testId = attemptEntity.testId,
+                    startTime = attemptEntity.startTime,
+                    endTime = attemptEntity.endTime,
                     userAnswers = userAnswers,
-                    isCompleted = updatedAttemptEntity.isCompleted
+                    isCompleted = attemptEntity.isCompleted
                 )
 
                 // Add to in-memory cache
@@ -237,75 +195,92 @@ class TestRepositoryImpl(
             try {
                 Log.d("TestRepositoryImpl", "Starting to save test attempt: ${attempt.id}")
 
-                // Calculate score
-                val test = getTestById(attempt.testId)
-                    ?: throw IllegalStateException("Test not found for attempt: ${attempt.id}")
-                val questions = testDao.getQuestionsForTest(attempt.testId)
-                val correctAnswers = questions.associate { it.id to it.correctOptionIndex }
-
-                var score = 0f
-                attempt.userAnswers.values.forEach { userAnswer ->
-                    val correctIndex = correctAnswers[userAnswer.questionId]
-                    if (correctIndex != null && userAnswer.selectedOptionIndex == correctIndex) {
-                        score++
-                    }
+                // Validate the attempt data first
+                if (attempt.testId.isBlank()) {
+                    throw IllegalArgumentException("Test ID cannot be empty")
                 }
 
-                // Create entities outside transaction
+                // Verify test exists
+                val testExists = testDao.getTestById(attempt.testId) != null
+                if (!testExists) {
+                    throw IllegalArgumentException("Test with ID ${attempt.testId} does not exist")
+                }
+
+                // Create the test attempt entity
                 val testAttemptEntity = TestAttemptEntity(
                     id = attempt.id,
                     testId = attempt.testId,
                     startTime = attempt.startTime,
                     endTime = attempt.endTime,
                     isCompleted = attempt.isCompleted,
-                    score = score // Add the calculated score
+                    score = 0f
                 )
 
-                val userAnswerEntities = attempt.userAnswers.map { (questionId, answer) ->
-                    UserAnswerEntity(
-                        testAttemptId = attempt.id,
-                        questionId = questionId,
-                        selectedOptionIndex = answer.selectedOptionIndex,
-                        timeSpent = answer.timeSpent,
-                        status = answer.status.name
-                    )
-                }
-
-                Log.d(
-                    "TestRepositoryImpl",
-                    "Inserting test attempt with ${userAnswerEntities.size} user answers"
-                )
-
-                // Execute database operations in transaction
-                database.withTransaction {
-                    // Save attempt and answers
-                    testAttemptDao.insertTestAttemptWithAnswers(testAttemptEntity, userAnswerEntities)
-
-                    // Verify the save was successful
-                    val savedAttempt = testAttemptDao.getTestAttemptById(attempt.id)
-                    if (savedAttempt == null) {
-                        throw IllegalStateException("Failed to save test attempt")
+                // Create user answer entities
+                val userAnswerEntities = attempt.userAnswers.mapNotNull { (questionId, answer) ->
+                    try {
+                        UserAnswerEntity(
+                            testAttemptId = attempt.id,
+                            questionId = questionId,
+                            selectedOptionIndex = answer.selectedOptionIndex,
+                            timeSpent = answer.timeSpent,
+                            status = answer.status.name
+                        )
+                    } catch (e: Exception) {
+                        Log.w(
+                            "TestRepositoryImpl",
+                            "Skipping invalid answer for question $questionId: ${e.message}"
+                        )
+                        null
                     }
-
-                    Log.d("TestRepositoryImpl", "Test attempt saved successfully")
                 }
 
-                // Update in-memory list after successful transaction
+                Log.d("TestRepositoryImpl", "Saving ${userAnswerEntities.size} user answers")
+
+                // Save everything in a single transaction with better error handling
+                database.withTransaction {
+                    try {
+                        testAttemptDao.insertTestAttemptWithAnswers(
+                            testAttemptEntity,
+                            userAnswerEntities
+                        )
+                        Log.d("TestRepositoryImpl", "Successfully saved test attempt to database")
+                    } catch (e: Exception) {
+                        Log.e("TestRepositoryImpl", "Database transaction failed", e)
+                        throw IllegalStateException("Failed to save test data to database: ${e.localizedMessage}")
+                    }
+                }
+
+                // Update in-memory list only after successful database save
                 val currentList = _testAttempts.value.toMutableList()
+                currentList.removeIf { it.id == attempt.id } // Remove if exists
                 currentList.add(attempt)
                 _testAttempts.value = currentList
 
-                // Update stats if the attempt is completed
+                Log.d("TestRepositoryImpl", "Updated in-memory cache")
+
+                // Update stats for completed tests
                 if (attempt.isCompleted) {
-                    Log.d(
-                        "TestRepositoryImpl",
-                        "Updating stats for completed attempt: ${attempt.id}"
-                    )
-                    updateStats(attempt)
+                    try {
+                        updateStats(attempt)
+                        Log.d("TestRepositoryImpl", "Updated user stats")
+                    } catch (e: Exception) {
+                        Log.w("TestRepositoryImpl", "Failed to update stats, but test was saved", e)
+                        // Don't fail the entire operation if stats update fails
+                    }
                 }
-            } catch (e: Exception) {
-                Log.e("TestRepositoryImpl", "Error saving test attempt: ${e.message}", e)
+
+                Log.d("TestRepositoryImpl", "Test attempt saved successfully")
+
+            } catch (e: IllegalArgumentException) {
+                Log.e("TestRepositoryImpl", "Invalid test attempt data", e)
                 throw e
+            } catch (e: IllegalStateException) {
+                Log.e("TestRepositoryImpl", "Failed to save test attempt", e)
+                throw e
+            } catch (e: Exception) {
+                Log.e("TestRepositoryImpl", "Unexpected error saving test attempt", e)
+                throw IllegalStateException("Could not save your test results. Please try again.")
             }
         }
     }
@@ -322,9 +297,9 @@ class TestRepositoryImpl(
                 sampleTests.forEach { test ->
                     saveTest(test)
                 }
-                
-            // Initialize user stats using the correct DAO method
-            userStatsDao.insertUserStats(UserStatsEntity())
+
+                // Initialize user stats using the correct DAO method
+                userStatsDao.insertUserStats(UserStatsEntity())
             }
 
             // Always load existing test attempts from database
@@ -393,14 +368,12 @@ class TestRepositoryImpl(
 
         // Update streak
         val today = Date()
-        val statsEntity = userStatsDao.getUserStats().map { it ?: UserStatsEntity() }
-        
-        statsEntity.collect { stats ->
-            // Only increment streak if it's a new day
-            val lastPracticeTimestamp = stats.lastPracticeDate?.time
-            if (lastPracticeTimestamp == null || !isSameDay(lastPracticeTimestamp, today.time)) {
-                userStatsDao.incrementStreak(today.time)
-            }
+        val stats = userStatsDao.getUserStats().firstOrNull() ?: UserStatsEntity()
+
+        // Only increment streak if it's a new day
+        val lastPracticeTimestamp = stats.lastPracticeDate?.time
+        if (lastPracticeTimestamp == null || !isSameDay(lastPracticeTimestamp, today.time)) {
+            userStatsDao.incrementStreak(today.time)
         }
     }
     
@@ -475,7 +448,7 @@ class TestRepositoryImpl(
                 entity.subjectPerformance,
                 object : TypeToken<Map<String, SubjectPerformance>>() {}.type
             )
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             mapOf<String, SubjectPerformance>()
         }
         
@@ -619,15 +592,7 @@ class TestRepositoryImpl(
     companion object {
         @Volatile
         private var INSTANCE: TestRepositoryImpl? = null
-        
-        fun getInstance(context: Context): TestRepositoryImpl {
-            return INSTANCE ?: synchronized(this) {
-                val instance = TestRepositoryImpl(context)
-                INSTANCE = instance
-                instance
-            }
-        }
-        
+
         // Helper function to check if two timestamps represent the same day
         private fun isSameDay(timestamp1: Long?, timestamp2: Long): Boolean {
             if (timestamp1 == null) return false
@@ -636,7 +601,7 @@ class TestRepositoryImpl(
             val cal2 = Calendar.getInstance().apply { timeInMillis = timestamp2 }
             
             return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) &&
-                   cal1.get(Calendar.MONTH) == cal2.get(Calendar.MONTH) &&
+                    cal2.get(Calendar.MONTH) == cal2.get(Calendar.MONTH) &&
                    cal1.get(Calendar.DAY_OF_MONTH) == cal2.get(Calendar.DAY_OF_MONTH)
         }
     }

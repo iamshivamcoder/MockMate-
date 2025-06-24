@@ -20,28 +20,27 @@ import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.mockmate.data.InMemoryTestRepository
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.mockmate.data.TestRepository
 import com.example.mockmate.model.MockTest
 import com.example.mockmate.model.Question
@@ -51,14 +50,8 @@ import com.example.mockmate.model.UserAnswer
 import com.example.mockmate.ui.components.MockMateTopBar
 import com.example.mockmate.ui.components.OptionItem
 import com.example.mockmate.ui.components.QuestionDifficultyBadge
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import com.example.mockmate.ui.viewmodels.TestTakingScreenViewModel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import androidx.compose.runtime.snapshotFlow
 import java.util.Date
 import java.util.UUID
 import kotlin.time.Duration.Companion.seconds
@@ -70,34 +63,28 @@ fun TestTakingScreen(
     onFinish: (attemptId: String) -> Unit,
     repository: TestRepository
 ) {
-    var mockTest by remember { mutableStateOf<MockTest?>(null) }
-    var currentQuestionIndex by remember { mutableIntStateOf(0) }
+    val viewModel: TestTakingScreenViewModel = viewModel(
+        factory = TestTakingScreenViewModel.provideFactory(repository, testId)
+    )
+
+    val mockTest by viewModel.mockTest.collectAsState()
     var timeRemaining by remember { mutableLongStateOf(0L) }
-    var selectedOptions by remember { mutableStateOf<List<Int>>(emptyList()) }
-    var questionStatus by remember { mutableStateOf<List<QuestionStatus>>(emptyList()) }
-    var showFinishDialog by remember { mutableStateOf(false) }
-    var isSaving by remember { mutableStateOf(false) }
+    val selectedOptions by viewModel.selectedOptions.collectAsState()
+    val questionStatus by viewModel.questionStatus.collectAsState()
+    val isSaving by viewModel.isSaving.collectAsState()
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    // Track time spent on each question
+    // Use local mutable state for question index and error dialog
+    var currentQuestionIndex by remember { mutableStateOf(0) }
+    var showFinishDialog by remember { mutableStateOf(false) }
     var questionTimeSpent by remember { mutableStateOf(mutableMapOf<Int, Int>()) }
-    var questionStartTimes by remember { mutableStateOf(mutableMapOf<Int, Long>()) }
+    val questionStartTimes = remember { mutableMapOf<Int, Long>() }
     var previousQuestionIndex by remember { mutableStateOf(0) }
 
-    // Fetch the test
-    LaunchedEffect(testId) {
-        try {
-            mockTest = repository.getTestById(testId)
-            mockTest?.let { test ->
-                timeRemaining = test.timeLimit.toLong() * 60
-                selectedOptions = List(test.questions.size) { -1 }
-                questionStatus = List(test.questions.size) { QuestionStatus.UNATTEMPTED }
-                questionStartTimes[0] = System.currentTimeMillis()
-            }
-        } catch (e: Exception) {
-            android.util.Log.e("TestTakingScreen", "Error loading test: ${e.message}", e)
-            errorMessage = "Failed to load test: ${e.message}"
-        }
+    // Sync ViewModel time with local state
+    val vmTimeRemaining by viewModel.timeRemaining.collectAsState()
+    LaunchedEffect(vmTimeRemaining) {
+        timeRemaining = vmTimeRemaining
     }
 
     if (mockTest == null) {
@@ -123,7 +110,7 @@ fun TestTakingScreen(
         if (currentQuestionIndex != previousQuestionIndex) {
             questionStartTimes[previousQuestionIndex]?.let { startTime ->
                 val timeSpent = ((System.currentTimeMillis() - startTime) / 1000).toInt()
-                questionTimeSpent[previousQuestionIndex] = (questionTimeSpent[previousQuestionIndex] ?: 0) + timeSpent
+                viewModel.updateQuestionTimeSpent(previousQuestionIndex, timeSpent)
             }
             questionStartTimes[currentQuestionIndex] = System.currentTimeMillis()
             previousQuestionIndex = currentQuestionIndex
@@ -133,14 +120,14 @@ fun TestTakingScreen(
     // Timer effect
     LaunchedEffect(key1 = mockTest) {
         if (mockTest != null) {
-            val startTime = System.currentTimeMillis()
             while (timeRemaining > 0) {
                 delay(1.seconds)
                 timeRemaining--
+                viewModel.updateTimeRemaining(timeRemaining)
+                if (timeRemaining <= 0) {
+                    showFinishDialog = true
+                }
             }
-
-            // Time's up, auto-submit
-            showFinishDialog = true
         }
     }
 
@@ -165,15 +152,9 @@ fun TestTakingScreen(
             question = currentQuestion,
             selectedOptionIndex = selectedOptions[currentQuestionIndex],
             onOptionSelected = { optionIndex ->
-                selectedOptions = selectedOptions.toMutableList().also {
-                    it[currentQuestionIndex] = optionIndex
-                }
-
-                // Update question status
-                if (optionIndex != -1 && questionStatus[currentQuestionIndex] == QuestionStatus.UNATTEMPTED) {
-                    questionStatus = questionStatus.toMutableList().also {
-                        it[currentQuestionIndex] = QuestionStatus.ANSWERED
-                    }
+                viewModel.updateSelectedOption(currentQuestionIndex, optionIndex)
+                if (optionIndex != -1) {
+                    viewModel.updateQuestionStatus(currentQuestionIndex, QuestionStatus.ANSWERED)
                 }
             }
         )
@@ -186,20 +167,10 @@ fun TestTakingScreen(
             onNextClick = { if (currentQuestionIndex < mockTest!!.questions.size - 1) currentQuestionIndex++ },
             onFinishClick = { showFinishDialog = true },
             onBookmarkClick = {
-                questionStatus = questionStatus.toMutableList().also {
-                    it[currentQuestionIndex] = when (it[currentQuestionIndex]) {
-                        QuestionStatus.BOOKMARKED -> QuestionStatus.UNATTEMPTED
-                        else -> QuestionStatus.BOOKMARKED
-                    }
-                }
+                viewModel.toggleBookmark(currentQuestionIndex)
             },
             onMarkForReviewClick = {
-                questionStatus = questionStatus.toMutableList().also {
-                    it[currentQuestionIndex] = when (it[currentQuestionIndex]) {
-                        QuestionStatus.MARKED_FOR_REVIEW -> QuestionStatus.UNATTEMPTED
-                        else -> QuestionStatus.MARKED_FOR_REVIEW
-                    }
-                }
+                viewModel.toggleMarkForReview(currentQuestionIndex)
             },
             isBookmarked = questionStatus[currentQuestionIndex] == QuestionStatus.BOOKMARKED,
             isMarkedForReview = questionStatus[currentQuestionIndex] == QuestionStatus.MARKED_FOR_REVIEW
@@ -209,49 +180,19 @@ fun TestTakingScreen(
     // Handle test completion
     if (showFinishDialog) {
         // Update time spent on current question before finishing
-        val currentQuestionTimeSpent = calculateTimeSpentOnQuestion(
-            currentQuestionIndex,
-            System.currentTimeMillis()
-        )
-
-        questionTimeSpent = questionTimeSpent.toMutableMap().apply {
-            this[currentQuestionIndex] = currentQuestionTimeSpent
+        questionStartTimes[currentQuestionIndex]?.let { startTime ->
+            val timeSpent = ((System.currentTimeMillis() - startTime) / 1000).toInt()
+            viewModel.updateQuestionTimeSpent(currentQuestionIndex, timeSpent)
         }
 
         val attemptedCount = selectedOptions.count { it != -1 }
 
         if (!isSaving) {
             FinishTestDialog(
-                onDismiss = {
-                    showFinishDialog = false
-                },
+                onDismiss = { showFinishDialog = false },
                 onConfirm = {
-                    val testAttempt = createTestAttempt(
-                        testId = testId,
-                        selectedOptions = selectedOptions,
-                        questionStatus = questionStatus,
-                        questionTimeSpent = questionTimeSpent,
-                        timeRemaining = timeRemaining,
-                        mockTest = mockTest!!
-                    )
-
-                    // Launch save operation
-                    isSaving = true
-
-                    // Save attempt in a coroutine
-                    CoroutineScope(Dispatchers.IO).launch {
-                        try {
-                            repository.saveTestAttempt(testAttempt)
-                            withContext(Dispatchers.Main) {
-                                isSaving = false
-                                onFinish(testAttempt.id)
-                            }
-                        } catch (e: Exception) {
-                            withContext(Dispatchers.Main) {
-                                isSaving = false
-                                errorMessage = e.message
-                            }
-                        }
+                    viewModel.submitTestAttempt { attemptId ->
+                        onFinish(attemptId)
                     }
                 },
                 attemptedQuestions = attemptedCount,
@@ -260,35 +201,52 @@ fun TestTakingScreen(
         }
     }
 
-    // Show loading dialog while saving
-    if (isSaving) {
-        AlertDialog(
-            onDismissRequest = { },
-            title = { Text("Saving test attempt...") },
-            text = {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    androidx.compose.material3.CircularProgressIndicator()
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text("Please wait while we save your test attempt...")
-                }
-            },
-            confirmButton = { }
-        )
-    }
-
     // Show error dialog if there's an error
-    errorMessage?.let { message ->
+    val errorMsg by viewModel.errorMessage.collectAsState()
+    errorMsg?.let { message ->
+        // Hide loading dialog if error occurs
+        // isSaving is a val, so don't try to reassign it
+        android.util.Log.e("TestTakingScreen", "Error dialog shown: $message")
         AlertDialog(
-            onDismissRequest = { errorMessage = null },
+            onDismissRequest = {
+                viewModel.clearError()
+                showFinishDialog = false // Also dismiss finish dialog
+            },
             title = { Text("Error") },
             text = { Text(message) },
             confirmButton = {
-                Button(onClick = { errorMessage = null }) {
+                Button(onClick = {
+                    viewModel.clearError()
+                    showFinishDialog = false // Reset finish dialog state
+                }) {
                     Text("OK")
                 }
             }
         )
     }
+
+    // MIUI/Android battery optimization warning
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val showBatteryDialog = remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        val manufacturer = android.os.Build.MANUFACTURER?.lowercase() ?: ""
+        if (manufacturer.contains("xiaomi") || manufacturer.contains("miui")) {
+            showBatteryDialog.value = true
+        }
+    }
+    if (showBatteryDialog.value) {
+        AlertDialog(
+            onDismissRequest = { showBatteryDialog.value = false },
+            title = { Text("Battery Optimization Warning") },
+            text = { Text("To ensure smooth operation, please disable battery optimization for this app in your device settings. Otherwise, the app may be killed in the background and you may experience stuck loading screens or lost progress.") },
+            confirmButton = {
+                Button(onClick = { showBatteryDialog.value = false }) { Text("OK") }
+            }
+        )
+    }
+
+    // Debug: Log when composable is recomposed
+    android.util.Log.d("TestTakingScreen", "Recomposed. isSaving=$isSaving, errorMessage=$errorMsg")
 }
 
 @Composable

@@ -19,12 +19,6 @@
     <!-- Vibration for feedback during tests -->
     <uses-permission android:name="android.permission.VIBRATE" />
 
-    <!-- MIUI-specific permissions -->
-    <uses-permission android:name="android.permission.WRITE_SETTINGS"
-        tools:ignore="ProtectedPermissions" />
-    <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS"
-        tools:ignore="ProtectedPermissions" />
-
     <application
         android:name=".MockMateApplication"
         android:allowBackup="true"
@@ -62,4 +56,3 @@
     </application>
 
 </manifest>
-
