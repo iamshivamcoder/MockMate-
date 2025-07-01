@@ -156,8 +156,77 @@ private fun TestHistoryContent(
 
         // Test history list
         SectionHeader(text = "Test History")
+        
+        // Sorting options
+        var sortBy by remember { mutableStateOf("Date") }
+        var sortAscending by remember { mutableStateOf(false) }
+        var showSortMenu by remember { mutableStateOf(false) }
+        
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Sort by: $sortBy",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+            )
+            
+            IconButton(onClick = { showSortMenu = true }) {
+                Icon(
+                    imageVector = Icons.Default.MoreVert,
+                    contentDescription = "Sort options",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+            
+            DropdownMenu(
+                expanded = showSortMenu,
+                onDismissRequest = { showSortMenu = false }
+            ) {
+                DropdownMenuItem(
+                    text = { Text("Date") },
+                    onClick = {
+                        sortBy = "Date"
+                        showSortMenu = false
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text("Score") },
+                    onClick = {
+                        sortBy = "Score"
+                        showSortMenu = false
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text("Test Name") },
+                    onClick = {
+                        sortBy = "Test Name"
+                        showSortMenu = false
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text(if (sortAscending) "Ascending" else "Descending") },
+                    onClick = {
+                        sortAscending = !sortAscending
+                        showSortMenu = false
+                    }
+                )
+            }
+        }
+        
+        // Sort the test attempts based on selected criteria
+        val sortedAttempts = when (sortBy) {
+            "Date" -> if (sortAscending) testAttempts.sortedBy { it.date } else testAttempts.sortedByDescending { it.date }
+            "Score" -> if (sortAscending) testAttempts.sortedBy { it.score } else testAttempts.sortedByDescending { it.score }
+            "Test Name" -> if (sortAscending) testAttempts.sortedBy { it.testName } else testAttempts.sortedByDescending { it.testName }
+            else -> testAttempts
+        }
 
-        if (testAttempts.isEmpty()) {
+        if (sortedAttempts.isEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -172,7 +241,7 @@ private fun TestHistoryContent(
             }
         } else {
             LazyColumn {
-                items(testAttempts) { attempt ->
+                items(sortedAttempts) { attempt ->
                     TestHistoryItem(
                         attempt = attempt,
                         onViewResult = { onViewResult(attempt.attemptId, attempt.testId) }

@@ -1,7 +1,6 @@
 package com.example.mockmate
 
 import org.junit.Test
-
 import org.junit.Assert.*
 
 /**

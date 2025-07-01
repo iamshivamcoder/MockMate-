@@ -13,8 +13,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material3.AlertDialog
@@ -395,31 +395,31 @@ fun TestNavigationFooter(
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (currentQuestionIndex > 0) {
-                Button(
-                    onClick = onPreviousClick,
-                    modifier = Modifier.padding(horizontal = 4.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.ArrowBack,
-                        contentDescription = "Previous"
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Previous")
-                }
+                    Button(
+                        onClick = onPreviousClick,
+                        modifier = Modifier.padding(horizontal = 4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Previous"
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Previous")
+                    }
             }
 
             if (currentQuestionIndex < totalQuestions - 1) {
-                Button(
-                    onClick = onNextClick,
-                    modifier = Modifier.padding(horizontal = 4.dp)
-                ) {
-                    Text("Next")
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Icon(
-                        imageVector = Icons.Default.ArrowForward,
-                        contentDescription = "Next"
-                    )
-                }
+                    Button(
+                        onClick = onNextClick,
+                        modifier = Modifier.padding(horizontal = 4.dp)
+                    ) {
+                        Text("Next")
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                            contentDescription = "Next"
+                        )
+                    }
             } else {
                 Button(
                     onClick = onFinishClick,

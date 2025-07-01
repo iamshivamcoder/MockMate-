@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import android.widget.Toast
+import androidx.compose.material3.HorizontalDivider
 import com.example.mockmate.MockMateApplication
 import com.example.mockmate.data.SettingsRepository
 import com.example.mockmate.model.TestDifficulty
@@ -78,7 +79,7 @@ fun SettingsScreen(
                 onCheckedChange = { settingsRepository.updateDarkMode(it) }
             )
             
-            Divider(modifier = Modifier.padding(vertical = 8.dp))
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
             
             SectionHeader(text = "Notifications")
             
@@ -95,7 +96,7 @@ fun SettingsScreen(
                 onItemClick = { showTimePickerDialog = true }
             )
             
-            Divider(modifier = Modifier.padding(vertical = 8.dp))
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
             
             SectionHeader(text = "Mock Test Preferences")
             
@@ -268,4 +269,3 @@ fun DifficultySelectionDialog(
         }
     }
 }
-

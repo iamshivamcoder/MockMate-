@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ShowChart
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ShowChart
 import androidx.compose.material.icons.filled.Timer
@@ -254,7 +255,7 @@ private fun ResultContent(
             MetricCard(
                 title = "Attempted",
                 value = "$attemptedQuestions/$totalQuestions",
-                icon = Icons.Default.ShowChart,
+                icon = Icons.AutoMirrored.Filled.ShowChart,
                 color = MaterialTheme.colorScheme.secondary,
                 modifier = Modifier.weight(1f)
             )

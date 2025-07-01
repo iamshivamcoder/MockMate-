@@ -1,14 +1,18 @@
 package com.example.mockmate.ui.navigation
 
-import androidx.compose.ui.platform.LocalContext
+import android.util.Log
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
-import androidx.navigation.NavOptions
+import androidx.navigation.NavOptionsBuilder
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import androidx.navigation.navOptions
+import com.example.mockmate.MockMateApplication
+import com.example.mockmate.data.TestRepository
 import com.example.mockmate.ui.screens.DashboardScreen
 import com.example.mockmate.ui.screens.MockTestSelectionScreen
 import com.example.mockmate.ui.screens.ParagraphAnalysisScreen
@@ -16,15 +20,9 @@ import com.example.mockmate.ui.screens.PracticeModeSelectionScreen
 import com.example.mockmate.ui.screens.SettingsScreen
 import com.example.mockmate.ui.screens.TestHistoryScreen
 import com.example.mockmate.ui.screens.TestImportScreen
-import com.example.mockmate.ui.screens.TestTakingScreen
 import com.example.mockmate.ui.screens.TestResultScreen
-import com.example.mockmate.data.TestRepository
-import com.example.mockmate.MockMateApplication
+import com.example.mockmate.ui.screens.TestTakingScreen
 import com.example.mockmate.ui.util.ComposeStabilityUtils
-import android.util.Log
-import androidx.compose.runtime.LaunchedEffect
-import androidx.navigation.NavOptionsBuilder
-import androidx.compose.runtime.remember
 
 object Routes {
     const val DASHBOARD = "dashboard"
