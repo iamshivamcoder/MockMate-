@@ -10,7 +10,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -40,8 +42,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.mockmate.data.TestRepository
-import com.example.mockmate.model.MockTest
-import com.example.mockmate.model.TestAttempt
 import com.example.mockmate.ui.components.MockMateTopBar
 import com.example.mockmate.ui.components.SectionHeader
 import java.text.SimpleDateFormat
@@ -169,52 +169,67 @@ private fun TestHistoryContent(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "Sort by: $sortBy",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-            )
-            
-            IconButton(onClick = { showSortMenu = true }) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "Sort by: $sortBy",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
                 Icon(
-                    imageVector = Icons.Default.MoreVert,
-                    contentDescription = "Sort options",
-                    tint = MaterialTheme.colorScheme.primary
+                    imageVector = if (sortAscending) Icons.Default.DateRange else Icons.Default.Assessment, // Use icons to indicate order
+                    contentDescription = if (sortAscending) "Ascending" else "Descending",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(18.dp)
+                )
+                Text(
+                    text = if (sortAscending) " (Asc)" else " (Desc)",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
-            
-            DropdownMenu(
-                expanded = showSortMenu,
-                onDismissRequest = { showSortMenu = false }
-            ) {
-                DropdownMenuItem(
-                    text = { Text("Date") },
-                    onClick = {
-                        sortBy = "Date"
-                        showSortMenu = false
-                    }
-                )
-                DropdownMenuItem(
-                    text = { Text("Score") },
-                    onClick = {
-                        sortBy = "Score"
-                        showSortMenu = false
-                    }
-                )
-                DropdownMenuItem(
-                    text = { Text("Test Name") },
-                    onClick = {
-                        sortBy = "Test Name"
-                        showSortMenu = false
-                    }
-                )
-                DropdownMenuItem(
-                    text = { Text(if (sortAscending) "Ascending" else "Descending") },
-                    onClick = {
-                        sortAscending = !sortAscending
-                        showSortMenu = false
-                    }
-                )
+            Box {
+                IconButton(onClick = { showSortMenu = true }) {
+                    Icon(
+                        imageVector = Icons.Default.MoreVert,
+                        contentDescription = "Sort options",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+                DropdownMenu(
+                    expanded = showSortMenu,
+                    onDismissRequest = { showSortMenu = false },
+                    modifier = Modifier.widthIn(min = 180.dp) // Make menu more responsive
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Date") },
+                        onClick = {
+                            sortBy = "Date"
+                            showSortMenu = false
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Score") },
+                        onClick = {
+                            sortBy = "Score"
+                            showSortMenu = false
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Test Name") },
+                        onClick = {
+                            sortBy = "Test Name"
+                            showSortMenu = false
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(if (sortAscending) "Ascending" else "Descending") },
+                        onClick = {
+                            sortAscending = !sortAscending
+                            showSortMenu = false
+                        }
+                    )
+                }
             }
         }
         

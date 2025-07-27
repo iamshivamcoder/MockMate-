@@ -24,36 +24,6 @@ data class Question(
     val timeRecommended: Int = 60 // in seconds
 )
 
-// Paragraph analysis models
-data class ParagraphQuestion(
-    val id: String = UUID.randomUUID().toString(),
-    val questionText: String,
-    val options: List<String>,
-    val correctOptionIndex: Int,
-    var selectedOptionIndex: Int? = null,
-    var isSubmitted: Boolean = false
-) {
-    fun selectAnswer(optionIndex: Int) {
-        selectedOptionIndex = optionIndex
-        isSubmitted = true
-    }
-
-    fun getSelectedAnswer(): String? {
-        return selectedOptionIndex?.let { options[it] }
-    }
-
-    fun displaySelectedAnswer() {
-        if (isSubmitted) {
-            val selectedAnswer = getSelectedAnswer()
-            if (selectedAnswer == options[correctOptionIndex]) {
-                println("Correct answer!")
-            } else {
-                println("Incorrect answer. The correct answer is ${options[correctOptionIndex]}")
-            }
-        }
-    }
-}
-
 // Test models
 data class MockTest(
     val id: String = UUID.randomUUID().toString(),

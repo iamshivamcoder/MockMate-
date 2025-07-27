@@ -15,7 +15,6 @@ import com.example.mockmate.MockMateApplication
 import com.example.mockmate.data.TestRepository
 import com.example.mockmate.ui.screens.DashboardScreen
 import com.example.mockmate.ui.screens.MockTestSelectionScreen
-import com.example.mockmate.ui.screens.ParagraphAnalysisScreen
 import com.example.mockmate.ui.screens.PracticeModeSelectionScreen
 import com.example.mockmate.ui.screens.SettingsScreen
 import com.example.mockmate.ui.screens.TestHistoryScreen
@@ -188,13 +187,8 @@ fun AppNavHost(navController: NavHostController, startDestination: String = Rout
                 onNavigateBack = { navController.navigateUp() }
             )
         }
-        
-        composable(Routes.PARAGRAPH_ANALYSIS) {
-            ParagraphAnalysisScreen(
-                onNavigateBack = { navController.navigateUp() }
-            )
-        }
-        
+
+
         // Test History Screen
         composable(Routes.TEST_HISTORY) {
             TestHistoryScreen(
