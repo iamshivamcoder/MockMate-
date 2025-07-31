@@ -23,7 +23,7 @@ import com.example.mockmate.ui.components.PracticeModeCard
 fun PracticeModeSelectionScreen(
     onNavigateBack: () -> Unit,
     onMockTestClick: () -> Unit,
-    onParagraphAnalysisClick: () -> Unit = {},
+    onParagraphAnalysisClick: () -> Unit = {}, // This lambda now navigates to Match The Column
     onSettingsClick: () -> Unit
 ) {
     Column(
@@ -65,10 +65,10 @@ fun PracticeModeSelectionScreen(
             )
             
             PracticeModeCard(
-                mode = PracticeMode.PARAGRAPH_ANALYSIS,
-                title = "Paragraph Analysis",
-                description = "Paste a paragraph you've read to test your understanding and knowledge",
-                onClick = onParagraphAnalysisClick
+                mode = PracticeMode.PARAGRAPH_ANALYSIS, // We can create a new mode if icon is an issue
+                title = "Match the Column",
+                description = "Test your knowledge by matching items from two columns.",
+                onClick = onParagraphAnalysisClick 
             )
         }
     }
