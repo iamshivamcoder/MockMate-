@@ -39,6 +39,12 @@ interface TestRepository {
     
     // Save a test attempt
     suspend fun saveTestAttempt(attempt: TestAttempt)
+
+    // Delete a test attempt
+    suspend fun deleteTestAttempt(attemptId: String)
+    
+    // Update a test attempt's custom name
+    suspend fun updateTestAttemptCustomName(attemptId: String, customName: String)
     
     // Initialize repository with sample data if empty
     suspend fun initializeIfEmpty()
@@ -146,7 +152,27 @@ class InMemoryTestRepository : TestRepository {
             throw e
         }
     }
-    
+
+    override suspend fun deleteTestAttempt(attemptId: String) {
+        val currentAttempts = _testAttempts.value.toMutableList()
+        val attemptRemoved = currentAttempts.removeIf { it.id == attemptId }
+        if (attemptRemoved) {
+            _testAttempts.value = currentAttempts
+            // Note: This simple implementation does not reverse the user stat changes.
+            // A more robust implementation might need to recalculate stats or store attempt-specific stat changes.
+        }
+    }
+
+    override suspend fun updateTestAttemptCustomName(attemptId: String, customName: String) {
+        val currentAttempts = _testAttempts.value.toMutableList()
+        val index = currentAttempts.indexOfFirst { it.id == attemptId }
+        if (index != -1) {
+            val updatedAttempt = currentAttempts[index].copy(customName = customName)
+            currentAttempts[index] = updatedAttempt
+            _testAttempts.value = currentAttempts
+        }
+    }
+
     // Initialize if empty - already initialized in constructor
     override suspend fun initializeIfEmpty() {
         // Nothing to do, tests already loaded in constructor

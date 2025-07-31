@@ -66,7 +66,8 @@ data class TestAttemptEntity(
     val startTime: Date,
     val endTime: Date?,
     val isCompleted: Boolean,
-    val score: Float = 0f
+    val score: Float = 0f,
+    val customName: String? = null
 )
 
 @Entity(

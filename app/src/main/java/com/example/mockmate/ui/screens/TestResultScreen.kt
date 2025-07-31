@@ -19,16 +19,19 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ShowChart
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.ShowChart
 import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -43,13 +46,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.mockmate.data.TestRepository
 import com.example.mockmate.model.MockTest
 import com.example.mockmate.model.TestAttempt
-import com.example.mockmate.model.UserAnswer
 import com.example.mockmate.ui.components.MockMateTopBar
 import com.example.mockmate.ui.components.SectionHeader
-import kotlinx.coroutines.flow.first
+import com.example.mockmate.viewmodel.TestResultViewModel
 import java.util.Locale
 
 private const val EXCELLENT_THRESHOLD = 80
@@ -66,6 +71,23 @@ private const val FEEDBACK_GOOD = "Good job! You have a solid understanding of t
 private const val FEEDBACK_PROGRESS = "You're making progress, but should review some concepts."
 private const val FEEDBACK_NEEDS_IMPROVEMENT = "You need to focus on improving your understanding of this material."
 
+
+// ViewModelFactory for TestResultViewModel
+@Suppress("UNCHECKED_CAST")
+class TestResultViewModelFactory(
+    private val repository: TestRepository,
+    private val testId: String,
+    private val attemptId: String
+) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(TestResultViewModel::class.java)) {
+            return TestResultViewModel(repository, testId, attemptId) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+    }
+}
+
+
 /**
  * Screen for displaying test results and analysis after completing a test
  */
@@ -77,91 +99,113 @@ fun TestResultScreen(
     onDashboardClick: () -> Unit,
     repository: TestRepository
 ) {
-    // In a real app, we'd fetch the attempt from database
-    // For now, we'll use mock data
-    var test by remember { mutableStateOf<MockTest?>(null) }
-    var attempt by remember { mutableStateOf<TestAttempt?>(null) }
-    var isLoading by remember { mutableStateOf(true) }
-    var loadError by remember { mutableStateOf<String?>(null) }
-    var retryCount by remember { mutableStateOf(0) }
+    val viewModel: TestResultViewModel = viewModel(
+        factory = TestResultViewModelFactory(repository, testId, attemptId)
+    )
+    val uiState by viewModel.uiState.collectAsState()
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var showRenameDialog by remember { mutableStateOf(false) }
+    var newName by remember { mutableStateOf("") }
 
-    // Debug log
-    android.util.Log.d("TestResultScreen", "Received attemptId: $attemptId, testId: $testId")
+    // Navigate back when deletion is confirmed
+    LaunchedEffect(uiState.isDeleted) {
+        if (uiState.isDeleted) {
+            onNavigateBack()
+        }
+    }
 
-    // Fetch test data
-    LaunchedEffect(testId, attemptId, retryCount) {
-        try {
-            isLoading = true
-            loadError = null
-
-            // Log for debugging
-            android.util.Log.d("TestResultScreen", "Fetching test data for ID: $testId")
-
-            // First get the test
-            test = repository.getTestById(testId)
-            android.util.Log.d("TestResultScreen", "Test loaded: ${test != null}")
-
-            // Fetch the test attempt from the database
-            attempt = repository.getTestAttemptById(attemptId)
-            android.util.Log.d("TestResultScreen", "Attempt loaded: ${attempt != null}")
-
-            isLoading = false
-            retryCount = 0 // Reset retry count on success
-        } catch (e: Exception) {
-            loadError = e.message
-            isLoading = false
-
-            // Retry up to 2 times if error occurs
-            if (retryCount < 2) {
-                retryCount++
-                android.util.Log.d("TestResultScreen", "Retrying... Attempt $retryCount")
+    Scaffold(
+        topBar = {
+            MockMateTopBar(
+                title = uiState.testAttempt?.customName ?: uiState.mockTest?.name ?: "Test Result",
+                onBackClick = onNavigateBack,
+                dropdownContent = {
+                    DropdownMenuItem(
+                        text = { Text("Rename") },
+                        onClick = {
+                            newName = uiState.testAttempt?.customName ?: uiState.mockTest?.name ?: ""
+                            showRenameDialog = true
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Delete") },
+                        onClick = { showDeleteDialog = true }
+                    )
+                }
+            )
+        }
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            when {
+                uiState.isLoading -> {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                }
+                uiState.error != null -> {
+                    Text(
+                        text = "Error: ${uiState.error}",
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
+                uiState.mockTest != null && uiState.testAttempt != null -> {
+                    ResultContent(
+                        test = uiState.mockTest!!,
+                        attempt = uiState.testAttempt!!,
+                        onDashboardClick = onDashboardClick
+                    )
+                }
             }
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        MockMateTopBar(
-            title = "Test Results",
-            onBackClick = onNavigateBack
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Delete Attempt") },
+            text = { Text("Are you sure you want to permanently delete this test attempt?") },
+            confirmButton = {
+                Button(onClick = {
+                    viewModel.deleteTestAttempt()
+                    showDeleteDialog = false
+                }) {
+                    Text("Confirm")
+                }
+            },
+            dismissButton = {
+                Button(onClick = { showDeleteDialog = false }) {
+                    Text("Cancel")
+                }
+            }
         )
+    }
 
-        if (isLoading) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                androidx.compose.material3.CircularProgressIndicator()
-            }
-            return
-        }
-
-        if (loadError != null) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(text = loadError ?: "Unknown error", color = MaterialTheme.colorScheme.error)
-                    Spacer(modifier = Modifier.height(16.dp))
-                    if (retryCount < 2) {
-                        Button(onClick = { retryCount++ }) { Text("Retry") }
-                    } else {
-                        Button(onClick = onNavigateBack) { Text("Back") }
-                    }
+    if (showRenameDialog) {
+        AlertDialog(
+            onDismissRequest = { showRenameDialog = false },
+            title = { Text("Rename Test") },
+            text = {
+                TextField(
+                    value = newName,
+                    onValueChange = { newName = it },
+                    label = { Text("New test name") }
+                )
+            },
+            confirmButton = {
+                Button(onClick = {
+                    viewModel.renameTestAttempt(newName)
+                    showRenameDialog = false
+                }) {
+                    Text("Save")
+                }
+            },
+            dismissButton = {
+                Button(onClick = { showRenameDialog = false }) {
+                    Text("Cancel")
                 }
             }
-            return
-        }
-
-        if (test == null || attempt == null) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(text = "Test or attempt not found.", color = MaterialTheme.colorScheme.error)
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Button(onClick = onNavigateBack) { Text("Back") }
-                }
-            }
-            return
-        }
-
-        ResultContent(
-            test = test!!,
-            attempt = attempt!!,
-            onDashboardClick = onDashboardClick
         )
     }
 }
@@ -179,23 +223,23 @@ private fun ResultContent(
         val question = test.questions.find { it.id == questionId }
         question?.correctOptionIndex == answer.selectedOptionIndex
     }
-    
+
     val accuracy = if (attemptedQuestions > 0) {
         correctAnswers.toFloat() / attemptedQuestions
     } else {
         0f
     }
-    
-    val totalScore = correctAnswers - 
-        if (test.negativeMarking) {
-            (attemptedQuestions - correctAnswers) * test.negativeMarkingValue
-        } else {
-            0f
-        }
-    
+
+    val totalScore = correctAnswers -
+            if (test.negativeMarking) {
+                (attemptedQuestions - correctAnswers) * test.negativeMarkingValue
+            } else {
+                0f
+            }
+
     val totalMarks = test.questions.size.toFloat()
     val scorePercentage = totalScore / totalMarks * 100
-    
+
     // Group questions by subject
     val subjectPerformance = test.questions
         .groupBy { it.subject }
@@ -210,7 +254,7 @@ private fun ResultContent(
             }
             Triple(subjectQuestions, subjectAttempted, subjectCorrect)
         }
-    
+
     // Calculate average time per question
     val totalTime = attempt.userAnswers.values.sumOf { it.timeSpent }
     val avgTimePerQuestion = if (attemptedQuestions > 0) {
@@ -218,7 +262,7 @@ private fun ResultContent(
     } else {
         0
     }
-    
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -231,12 +275,12 @@ private fun ResultContent(
             totalMarks = totalMarks,
             scorePercentage = scorePercentage
         )
-        
+
         Spacer(modifier = Modifier.height(24.dp))
-        
+
         // Performance breakdown
         SectionHeader(text = "Performance Breakdown")
-        
+
         // Key metrics
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -249,9 +293,9 @@ private fun ResultContent(
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.weight(1f)
             )
-            
+
             Spacer(modifier = Modifier.width(8.dp))
-            
+
             MetricCard(
                 title = "Attempted",
                 value = "$attemptedQuestions/$totalQuestions",
@@ -259,9 +303,9 @@ private fun ResultContent(
                 color = MaterialTheme.colorScheme.secondary,
                 modifier = Modifier.weight(1f)
             )
-            
+
             Spacer(modifier = Modifier.width(8.dp))
-            
+
             MetricCard(
                 title = "Avg Time",
                 value = "${avgTimePerQuestion}s",
@@ -270,16 +314,16 @@ private fun ResultContent(
                 modifier = Modifier.weight(1f)
             )
         }
-        
+
         Spacer(modifier = Modifier.height(24.dp))
-        
+
         // Subject-wise performance
         SectionHeader(text = "Subject-wise Performance")
-        
+
         subjectPerformance.forEach { (subject, performance) ->
             val (total, attempted, correct) = performance
             val subjectAccuracy = if (attempted > 0) correct.toFloat() / attempted else 0f
-            
+
             SubjectPerformanceCard(
                 subject = subject,
                 accuracy = subjectAccuracy,
@@ -287,36 +331,36 @@ private fun ResultContent(
                 total = total,
                 correct = correct
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
         }
-        
+
         // Areas to focus on
         if (subjectPerformance.isNotEmpty()) {
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             SectionHeader(text = "Areas to Focus On")
-            
+
             // Find subjects with lowest accuracy
             val weakestSubjects = subjectPerformance.entries
-                .filter { (_, performance) -> 
+                .filter { (_, performance) ->
                     val (_, attempted, correct) = performance
                     attempted > 0 && correct.toFloat() / attempted < 0.7f
                 }
-                .sortedBy { (_, performance) -> 
+                .sortedBy { (_, performance) ->
                     val (_, attempted, correct) = performance
                     if (attempted > 0) correct.toFloat() / attempted else 0f
                 }
                 .take(2)
                 .map { it.key }
-            
+
             if (weakestSubjects.isNotEmpty()) {
                 Text(
                     text = "Focus on improving your knowledge in:",
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(start = 16.dp, top = 8.dp)
                 )
-                
+
                 weakestSubjects.forEach { subject ->
                     Text(
                         text = "• $subject",
@@ -334,19 +378,21 @@ private fun ResultContent(
                 )
             }
         }
-        
+
         Spacer(modifier = Modifier.height(24.dp))
-        
+
         // Question-wise breakdown
         SectionHeader(text = "Question-wise Breakdown")
-        
+
         test.questions.forEachIndexed { index, question ->
             val userAnswer = attempt.userAnswers[question.id]
             val isAnswered = userAnswer?.selectedOptionIndex != null
             val isCorrect = isAnswered && userAnswer?.selectedOptionIndex == question.correctOptionIndex
-            
+
             Card(
-                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
             ) {
                 Column(
@@ -357,29 +403,29 @@ private fun ResultContent(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Medium
                     )
-                    
+
                     Spacer(modifier = Modifier.height(4.dp))
-                    
+
                     Text(
                         text = question.text,
                         style = MaterialTheme.typography.bodyMedium
                     )
-                    
+
                     Spacer(modifier = Modifier.height(8.dp))
-                    
+
                     if (isAnswered) {
                         Text(
                             text = "Your Answer: ${question.options[userAnswer?.selectedOptionIndex ?: 0]}",
                             style = MaterialTheme.typography.bodyMedium,
                             color = if (isCorrect) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
                         )
-                        
+
                         Text(
                             text = "Correct Answer: ${question.options[question.correctOptionIndex]}",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.primary
                         )
-                        
+
                         if (!isCorrect) {
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
@@ -394,13 +440,13 @@ private fun ResultContent(
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.error
                         )
-                        
+
                         Text(
                             text = "Correct Answer: ${question.options[question.correctOptionIndex]}",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.primary
                         )
-                        
+
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = "Explanation: ${question.explanation}",
@@ -411,16 +457,16 @@ private fun ResultContent(
                 }
             }
         }
-        
+
         Spacer(modifier = Modifier.height(32.dp))
-        
+
         Button(
             onClick = onDashboardClick,
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Return to Dashboard")
         }
-        
+
         Spacer(modifier = Modifier.height(16.dp))
     }
 }
@@ -445,26 +491,26 @@ fun OverallScoreCard(
                 text = "Your Score",
                 style = MaterialTheme.typography.titleMedium
             )
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             Text(
                 text = "${String.format(Locale.getDefault(), "%.1f", score)}/${totalMarks.toInt()}",
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             Text(
                 text = "${String.format(Locale.getDefault(), "%.1f", scorePercentage)}%",
                 style = MaterialTheme.typography.titleLarge,
                 color = getScoreColor(scorePercentage)
             )
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             LinearProgressIndicator(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -474,9 +520,9 @@ fun OverallScoreCard(
                 color = getScoreColor(scorePercentage),
                 trackColor = MaterialTheme.colorScheme.surfaceVariant
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             Text(
                 text = getScoreFeedback(scorePercentage),
                 style = MaterialTheme.typography.bodyMedium,
@@ -517,14 +563,14 @@ fun MetricCard(
                     tint = color
                 )
             }
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodySmall
             )
-            
+
             Text(
                 text = value,
                 style = MaterialTheme.typography.titleMedium,
@@ -556,9 +602,9 @@ fun SubjectPerformanceCard(
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Medium
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -568,9 +614,9 @@ fun SubjectPerformanceCard(
                         text = "Accuracy: ${(accuracy * 100).toInt()}%",
                         style = MaterialTheme.typography.bodyMedium
                     )
-                    
+
                     Spacer(modifier = Modifier.height(4.dp))
-                    
+
                     LinearProgressIndicator(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -581,9 +627,9 @@ fun SubjectPerformanceCard(
                         trackColor = MaterialTheme.colorScheme.surfaceVariant
                     )
                 }
-                
+
                 Spacer(modifier = Modifier.width(16.dp))
-                
+
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
                         text = "$correct/$attempted",
@@ -591,7 +637,7 @@ fun SubjectPerformanceCard(
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.primary
                     )
-                    
+
                     Text(
                         text = "questions",
                         style = MaterialTheme.typography.bodySmall,

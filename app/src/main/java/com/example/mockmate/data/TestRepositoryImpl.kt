@@ -5,11 +5,10 @@ import android.util.Log
 import androidx.room.withTransaction
 import com.example.mockmate.data.database.AppDatabase
 import com.example.mockmate.data.database.entities.QuestionEntity
-import com.example.mockmate.data.database.entities.TestAttemptEntity
-import com.example.mockmate.data.database.entities.TestEntity
 import com.example.mockmate.data.database.entities.TestQuestionCrossRef
-import com.example.mockmate.data.database.entities.UserAnswerEntity
 import com.example.mockmate.data.database.entities.UserStatsEntity
+import com.example.mockmate.data.database.mappers.asDomainObject
+import com.example.mockmate.data.database.mappers.asEntity
 import com.example.mockmate.model.MockTest
 import com.example.mockmate.model.Question
 import com.example.mockmate.model.QuestionDifficulty
@@ -99,14 +98,7 @@ class TestRepositoryImpl(
                     )
                 }
 
-                val testAttempt = TestAttempt(
-                    id = attemptEntity.id,
-                    testId = attemptEntity.testId,
-                    startTime = attemptEntity.startTime,
-                    endTime = attemptEntity.endTime,
-                    userAnswers = userAnswers,
-                    isCompleted = attemptEntity.isCompleted
-                )
+                val testAttempt = attemptEntity.asDomainObject().copy(userAnswers = userAnswers)
 
                 // Add to in-memory cache
                 val currentList = _testAttempts.value.toMutableList()
@@ -141,14 +133,7 @@ class TestRepositoryImpl(
                         )
                     }
 
-                    TestAttempt(
-                        id = entity.id,
-                        testId = entity.testId,
-                        startTime = entity.startTime,
-                        endTime = entity.endTime,
-                        userAnswers = userAnswers,
-                        isCompleted = entity.isCompleted
-                    )
+                    entity.asDomainObject().copy(userAnswers = userAnswers)
                 } catch (e: Exception) {
                     Log.e(
                         "TestRepositoryImpl",
@@ -207,19 +192,12 @@ class TestRepositoryImpl(
                 }
 
                 // Create the test attempt entity
-                val testAttemptEntity = TestAttemptEntity(
-                    id = attempt.id,
-                    testId = attempt.testId,
-                    startTime = attempt.startTime,
-                    endTime = attempt.endTime,
-                    isCompleted = attempt.isCompleted,
-                    score = 0f
-                )
+                val testAttemptEntity = attempt.asEntity()
 
                 // Create user answer entities
                 val userAnswerEntities = attempt.userAnswers.mapNotNull { (questionId, answer) ->
                     try {
-                        UserAnswerEntity(
+                        com.example.mockmate.data.database.entities.UserAnswerEntity(
                             testAttemptId = attempt.id,
                             questionId = questionId,
                             selectedOptionIndex = answer.selectedOptionIndex,
@@ -285,6 +263,30 @@ class TestRepositoryImpl(
         }
     }
     
+    override suspend fun deleteTestAttempt(attemptId: String) {
+        withContext(Dispatchers.IO) {
+            testAttemptDao.deleteAttemptAndAnswers(attemptId)
+            // Also remove from the in-memory cache
+            val currentList = _testAttempts.value.toMutableList()
+            currentList.removeIf { it.id == attemptId }
+            _testAttempts.value = currentList
+        }
+    }
+
+    override suspend fun updateTestAttemptCustomName(attemptId: String, customName: String) {
+        withContext(Dispatchers.IO) {
+            testAttemptDao.updateCustomName(attemptId, customName)
+            // Also update the in-memory cache
+            val currentList = _testAttempts.value.toMutableList()
+            val index = currentList.indexOfFirst { it.id == attemptId }
+            if (index != -1) {
+                val updatedAttempt = currentList[index].copy(customName = customName)
+                currentList[index] = updatedAttempt
+                _testAttempts.value = currentList
+            }
+        }
+    }
+
     override suspend fun initializeIfEmpty() {
         withContext(Dispatchers.IO) {
             // Check if we already have questions and tests
@@ -413,8 +415,8 @@ class TestRepositoryImpl(
         )
     }
     
-    private fun testModelToEntity(test: MockTest): TestEntity {
-        return TestEntity(
+    private fun testModelToEntity(test: MockTest): com.example.mockmate.data.database.entities.TestEntity {
+        return com.example.mockmate.data.database.entities.TestEntity(
             id = test.id,
             name = test.name,
             difficulty = test.difficulty.name,
@@ -425,7 +427,7 @@ class TestRepositoryImpl(
     }
     
     private fun testEntityToModel(
-        entity: TestEntity, 
+        entity: com.example.mockmate.data.database.entities.TestEntity,
         questionEntities: List<QuestionEntity>
     ): MockTest {
         val questions = questionEntities.map { questionEntityToModel(it) }

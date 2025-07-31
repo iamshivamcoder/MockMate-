@@ -26,7 +26,7 @@ import com.example.mockmate.data.database.entities.UserStatsEntity
         UserStatsEntity::class,
         TestQuestionCrossRef::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 @TypeConverters(DateConverter::class)

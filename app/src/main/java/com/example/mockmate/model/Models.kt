@@ -49,7 +49,9 @@ data class TestAttempt(
     val startTime: Date = Date(),
     val endTime: Date? = null,
     val userAnswers: Map<String, UserAnswer> = mapOf(),
-    val isCompleted: Boolean = false
+    val isCompleted: Boolean = false,
+    val score: Float = 0f,
+    val customName: String? = null
 )
 
 // User stats
