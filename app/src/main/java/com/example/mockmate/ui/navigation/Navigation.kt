@@ -41,7 +41,7 @@ object Routes {
     
     // Log navigation routes for debugging
     fun logRoute(route: String) {
-        android.util.Log.d("Navigation", "Navigating to route: $route")
+        Log.d("Navigation", "Navigating to route: $route")
     }
 }
 
@@ -81,7 +81,7 @@ fun AppNavHost(navController: NavHostController, startDestination: String = Rout
         startDestination = startDestination
     ) {
         composable(Routes.DASHBOARD) {
-            val context = LocalContext.current
+            LocalContext.current
             DashboardScreen(
                 onPracticeClick = { navController.navigate(Routes.PRACTICE_MODE_SELECTION) },
                 onHistoryClick = { navController.navigate(Routes.TEST_HISTORY) },

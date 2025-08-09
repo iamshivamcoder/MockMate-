@@ -72,12 +72,10 @@ fun TestTakingScreen(
     val selectedOptions by viewModel.selectedOptions.collectAsState()
     val questionStatus by viewModel.questionStatus.collectAsState()
     val isSaving by viewModel.isSaving.collectAsState()
-    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     // Use local mutable state for question index and error dialog
     var currentQuestionIndex by remember { mutableStateOf(0) }
     var showFinishDialog by remember { mutableStateOf(false) }
-    var questionTimeSpent by remember { mutableStateOf(mutableMapOf<Int, Int>()) }
     val questionStartTimes = remember { mutableMapOf<Int, Long>() }
     var previousQuestionIndex by remember { mutableStateOf(0) }
 
@@ -226,12 +224,11 @@ fun TestTakingScreen(
     }
 
     // MIUI/Android battery optimization warning
-    val context = androidx.compose.ui.platform.LocalContext.current
     val showBatteryDialog = remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         val manufacturer = android.os.Build.MANUFACTURER?.lowercase() ?: ""
         if (manufacturer.contains("xiaomi") || manufacturer.contains("miui")) {
-            showBatteryDialog.value = true
+            // showBatteryDialog.value = true
         }
     }
     if (showBatteryDialog.value) {
