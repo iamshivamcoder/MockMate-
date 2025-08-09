@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -34,7 +33,6 @@ import android.widget.Toast
 import androidx.compose.material3.HorizontalDivider
 import com.example.mockmate.MockMateApplication
 import com.example.mockmate.data.SettingsRepository
-import com.example.mockmate.model.TestDifficulty
 import com.example.mockmate.ui.components.MockMateTopBar
 import com.example.mockmate.ui.components.SectionHeader
 import com.example.mockmate.ui.components.SettingsItem
@@ -47,7 +45,6 @@ fun SettingsScreen(
 ) {
     val settings by settingsRepository.settings.collectAsState(initial = com.example.mockmate.model.AppSettings())
     var showTimePickerDialog by remember { mutableStateOf(false) }
-    var showDifficultyDialog by remember { mutableStateOf(false) }
 
     // State to store the time temporarily
     var reminderTimeInput by remember { mutableStateOf(settings.reminderTime) }
@@ -98,21 +95,6 @@ fun SettingsScreen(
             
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
             
-            SectionHeader(text = "Mock Test Preferences")
-            
-            SettingsItem(
-                title = "Default Difficulty",
-                value = settings.defaultTestDifficulty.name,
-                onItemClick = { showDifficultyDialog = true }
-            )
-            
-            SettingsSwitch(
-                title = "Show Explanations",
-                description = "Show explanations after answering questions",
-                checked = settings.showExplanations,
-                onCheckedChange = { settingsRepository.updateShowExplanations(it) }
-            )
-            
             Spacer(modifier = Modifier.height(32.dp))
             
             Text(
@@ -135,19 +117,6 @@ fun SettingsScreen(
                     settingsRepository.updateReminderTime(time)
                     showTimePickerDialog = false
                     Toast.makeText(context, "Reminder time set to $time", Toast.LENGTH_SHORT).show()
-                }
-            )
-        }
-        
-        // Difficulty Selection Dialog
-        if (showDifficultyDialog) {
-            DifficultySelectionDialog(
-                currentDifficulty = settings.defaultTestDifficulty,
-                onDismiss = { showDifficultyDialog = false },
-                onDifficultySelected = { difficulty ->
-                    settingsRepository.updateDefaultTestDifficulty(difficulty)
-                    showDifficultyDialog = false
-                    Toast.makeText(context, "Default difficulty set to ${difficulty.name}", Toast.LENGTH_SHORT).show()
                 }
             )
         }
@@ -206,64 +175,6 @@ fun TimePickerDialog(
                     ) {
                         Text("OK")
                     }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun DifficultySelectionDialog(
-    currentDifficulty: TestDifficulty,
-    onDismiss: () -> Unit,
-    onDifficultySelected: (TestDifficulty) -> Unit
-) {
-    Dialog(
-        onDismissRequest = onDismiss
-    ) {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            shape = MaterialTheme.shapes.medium,
-            color = MaterialTheme.colorScheme.surface
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Text(
-                    text = "Select Default Difficulty",
-                    style = MaterialTheme.typography.titleLarge
-                )
-                
-                Spacer(modifier = Modifier.height(16.dp))
-                
-                TestDifficulty.values().forEach { difficulty ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onDifficultySelected(difficulty) }
-                            .padding(vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = difficulty.name,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = if (difficulty == currentDifficulty) 
-                                MaterialTheme.colorScheme.primary 
-                            else 
-                                MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                }
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                TextButton(
-                    onClick = onDismiss,
-                    modifier = Modifier.align(Alignment.End)
-                ) {
-                    Text("Cancel")
                 }
             }
         }

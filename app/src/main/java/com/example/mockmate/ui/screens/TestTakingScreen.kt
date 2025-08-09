@@ -32,6 +32,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,18 +43,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.mockmate.data.TestRepository
-import com.example.mockmate.model.MockTest
 import com.example.mockmate.model.Question
 import com.example.mockmate.model.QuestionStatus
-import com.example.mockmate.model.TestAttempt
-import com.example.mockmate.model.UserAnswer
 import com.example.mockmate.ui.components.MockMateTopBar
 import com.example.mockmate.ui.components.OptionItem
 import com.example.mockmate.ui.components.QuestionDifficultyBadge
 import com.example.mockmate.ui.viewmodels.TestTakingScreenViewModel
 import kotlinx.coroutines.delay
-import java.util.Date
-import java.util.UUID
 import kotlin.time.Duration.Companion.seconds
 
 @Composable
@@ -74,10 +70,10 @@ fun TestTakingScreen(
     val isSaving by viewModel.isSaving.collectAsState()
 
     // Use local mutable state for question index and error dialog
-    var currentQuestionIndex by remember { mutableStateOf(0) }
+    var currentQuestionIndex by remember { mutableIntStateOf(0) }
     var showFinishDialog by remember { mutableStateOf(false) }
     val questionStartTimes = remember { mutableMapOf<Int, Long>() }
-    var previousQuestionIndex by remember { mutableStateOf(0) }
+    var previousQuestionIndex by remember { mutableIntStateOf(0) }
 
     // Sync ViewModel time with local state
     val vmTimeRemaining by viewModel.timeRemaining.collectAsState()
@@ -117,14 +113,13 @@ fun TestTakingScreen(
 
     // Timer effect
     LaunchedEffect(key1 = mockTest) {
-        if (mockTest != null) {
-            while (timeRemaining > 0) {
-                delay(1.seconds)
-                timeRemaining--
-                viewModel.updateTimeRemaining(timeRemaining)
-                if (timeRemaining <= 0) {
-                    showFinishDialog = true
-                }
+        // mockTest is guaranteed to be non-null here due to the check above
+        while (timeRemaining > 0) {
+            delay(1.seconds)
+            timeRemaining--
+            viewModel.updateTimeRemaining(timeRemaining)
+            if (timeRemaining <= 0) {
+                showFinishDialog = true
             }
         }
     }
@@ -226,10 +221,7 @@ fun TestTakingScreen(
     // MIUI/Android battery optimization warning
     val showBatteryDialog = remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
-        val manufacturer = android.os.Build.MANUFACTURER?.lowercase() ?: ""
-        if (manufacturer.contains("xiaomi") || manufacturer.contains("miui")) {
-            // showBatteryDialog.value = true
-        }
+        // Removed empty if block that previously checked for xiaomi/miui
     }
     if (showBatteryDialog.value) {
         AlertDialog(
@@ -484,43 +476,6 @@ fun formatTime(seconds: Long): String {
     return "${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}"
 }
 
-fun createTestAttempt(
-    testId: String,
-    selectedOptions: List<Int>,
-    questionStatus: List<QuestionStatus>,
-    questionTimeSpent: Map<Int, Int>,
-    timeRemaining: Long,
-    mockTest: MockTest
-): TestAttempt {
-    val attemptId = UUID.randomUUID().toString()
-    val userAnswers = mutableMapOf<String, UserAnswer>()
+// Removed unused function createTestAttempt
 
-    // Create user answers from selected options
-    mockTest.questions.forEachIndexed { index, question ->
-        // Include all questions in the attempt, with proper null handling
-        val selectedOption = if (selectedOptions[index] == -1) null else selectedOptions[index]
-        userAnswers[question.id] = UserAnswer(
-            questionId = question.id,
-            selectedOptionIndex = selectedOption,
-            timeSpent = questionTimeSpent[index] ?: 0,
-            status = questionStatus[index]
-        )
-    }
-
-    val testDuration = (mockTest.timeLimit * 60) - timeRemaining.toInt()
-
-    // Create the test attempt with proper null handling
-    return TestAttempt(
-        id = attemptId,
-        testId = testId,
-        startTime = Date(System.currentTimeMillis() - (testDuration * 1000L)),
-        endTime = Date(),
-        userAnswers = userAnswers,
-        isCompleted = true
-    )
-}
-
-fun calculateTimeSpentOnQuestion(questionIndex: Int, endTimeMillis: Long): Int {
-    // Calculate the time spent on a specific question
-    return ((endTimeMillis - (questionIndex * 60 * 1000L)) / 1000).toInt()
-}
+// Removed unused function calculateTimeSpentOnQuestion

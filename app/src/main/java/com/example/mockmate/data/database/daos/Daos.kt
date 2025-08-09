@@ -50,7 +50,7 @@ interface TestDao {
         WHERE tq.testId = :testId
         ORDER BY tq.questionOrder
     """)
-    suspend fun getQuestionsForTest(testId: String): List<com.example.mockmate.data.database.entities.QuestionEntity>
+    suspend fun getQuestionsForTest(testId: String): List<QuestionEntity>
 }
 
 // Content from QuestionDao.kt

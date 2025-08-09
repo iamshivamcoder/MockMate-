@@ -54,7 +54,7 @@ import com.example.mockmate.model.MockTest
 import com.example.mockmate.model.TestAttempt
 import com.example.mockmate.ui.components.MockMateTopBar
 import com.example.mockmate.ui.components.SectionHeader
-import com.example.mockmate.viewmodel.TestResultViewModel
+import com.example.mockmate.ui.viewmodels.TestResultViewModel
 import java.util.Locale
 
 private const val EXCELLENT_THRESHOLD = 80

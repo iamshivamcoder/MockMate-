@@ -1,4 +1,4 @@
-package com.example.mockmate.viewmodel
+package com.example.mockmate.ui.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
