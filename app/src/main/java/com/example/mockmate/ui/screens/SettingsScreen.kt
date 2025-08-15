@@ -17,7 +17,8 @@ import com.example.mockmate.ui.components.MockMateTopBar
 @Composable
 fun SettingsScreen(
     onNavigateBack: () -> Unit,
-    onNavigateToAboutDeveloper: () -> Unit, // New navigation callback
+    onNavigateToAboutDeveloper: () -> Unit,
+    onNavigateToHelp: () -> Unit, // New navigation callback for Help
     onShowSnackbar: (String) -> Unit
 ) {
     Scaffold(
@@ -69,9 +70,17 @@ fun SettingsScreen(
             }
 
             item {
-                // This now navigates to the new screen
                 SettingsItem(
-                    icon = Icons.Filled.Info,
+                    icon = Icons.Filled.HelpOutline, // Changed Icon for Help
+                    title = "Help & FAQ",
+                    subtitle = "Find answers and guides",
+                    onClick = onNavigateToHelp
+                )
+            }
+
+            item {
+                SettingsItem(
+                    icon = Icons.Filled.Info, 
                     title = "About Developer",
                     subtitle = "Information about the app and developer",
                     onClick = onNavigateToAboutDeveloper

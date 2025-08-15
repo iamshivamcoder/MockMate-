@@ -15,6 +15,7 @@ import com.example.mockmate.MockMateApplication
 import com.example.mockmate.data.TestRepository
 import com.example.mockmate.ui.screens.AboutDeveloperScreen
 import com.example.mockmate.ui.screens.DashboardScreen
+import com.example.mockmate.ui.screens.HelpScreen // Added import
 import com.example.mockmate.ui.screens.MatchTheColumnScreen
 import com.example.mockmate.ui.screens.MockTestSelectionScreen
 import com.example.mockmate.ui.screens.PracticeModeSelectionScreen
@@ -35,7 +36,8 @@ object Routes {
     const val TEST_HISTORY = "test_history"
     const val TEST_IMPORT = "test_import"
     const val MATCH_THE_COLUMN = "match_the_column"
-    const val ABOUT_DEVELOPER = "about_developer" // New route
+    const val ABOUT_DEVELOPER = "about_developer"
+    const val HELP_AND_FAQ = "help_and_faq" // Added route
 
     // Helper functions to navigate with parameters
     fun testTakingRoute(testId: String) = "test_taking/$testId"
@@ -189,6 +191,7 @@ fun AppNavHost(navController: NavHostController, startDestination: String = Rout
             SettingsScreen(
                 onNavigateBack = { navController.navigateUp() },
                 onNavigateToAboutDeveloper = { navController.navigate(Routes.ABOUT_DEVELOPER) },
+                onNavigateToHelp = { navController.navigate(Routes.HELP_AND_FAQ) }, // Added navigation
                 onShowSnackbar = { message ->
                     // In a real app, you'd have a mechanism to show a Snackbar here
                     // For now, we'll just log it
@@ -227,9 +230,16 @@ fun AppNavHost(navController: NavHostController, startDestination: String = Rout
             )
         }
         
-        // About Developer Screen (New Destination)
+        // About Developer Screen
         composable(Routes.ABOUT_DEVELOPER) {
             AboutDeveloperScreen(
+                onNavigateBack = { navController.navigateUp() }
+            )
+        }
+
+        // Help & FAQ Screen (New Destination)
+        composable(Routes.HELP_AND_FAQ) {
+            HelpScreen(
                 onNavigateBack = { navController.navigateUp() }
             )
         }
