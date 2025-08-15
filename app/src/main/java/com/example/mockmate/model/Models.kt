@@ -32,7 +32,8 @@ data class MockTest(
     val questions: List<Question>,
     val timeLimit: Int, // in minutes
     val negativeMarking: Boolean = false,
-    val negativeMarkingValue: Float = 0.25f
+    val negativeMarkingValue: Float = 0.25f,
+    val creationDate: Date = Date() // Added creationDate
 )
 
 // User attempt data
