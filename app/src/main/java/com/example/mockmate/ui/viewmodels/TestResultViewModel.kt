@@ -71,12 +71,27 @@ class TestResultViewModel(
 
     fun renameTestAttempt(customName: String) {
         viewModelScope.launch {
-            try {
-                testRepository.updateTestAttemptCustomName(attemptId, customName)
-                _uiState.update { it.copy(updatedCustomName = customName) }
-            } catch (e: Exception) {
+            _uiState.value.testAttempt?.let { currentAttempt -> // Get the current attempt
+                try {
+                    testRepository.updateTestAttemptCustomName(attemptId, customName)
+                    // Update the testAttempt object in the uiState with the new customName
+                    val updatedAttempt = currentAttempt.copy(customName = customName)
+                    _uiState.update {
+                        it.copy(
+                            testAttempt = updatedAttempt,
+                            updatedCustomName = customName, // You can keep this if used elsewhere
+                            error = null // Clear any previous error
+                        )
+                    }
+                } catch (e: Exception) {
+                    _uiState.update {
+                        it.copy(error = e.message ?: "Failed to rename attempt")
+                    }
+                }
+            } ?: run {
+                 // Handle case where currentAttempt is null, though unlikely if rename is attempted
                 _uiState.update {
-                    it.copy(error = e.message ?: "Failed to rename attempt")
+                    it.copy(error = "Cannot rename, attempt data is missing.")
                 }
             }
         }
