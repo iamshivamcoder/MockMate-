@@ -1,10 +1,9 @@
 package com.example.mockmate.ui.screens
 
+import android.util.Log
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,7 +17,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -33,7 +31,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -75,7 +72,8 @@ val sampleItemsB = listOf(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MatchTheColumnScreen(
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    testId: String? = null // Added testId parameter
 ) {
     var columnAItems by remember { mutableStateOf(sampleItemsA) }
     var columnBItems by remember { mutableStateOf(sampleItemsB) }
@@ -84,6 +82,16 @@ fun MatchTheColumnScreen(
     var selectedBItemId by remember { mutableStateOf<String?>(null) }
     val matchedPairs = remember { mutableStateListOf<MatchedPair>() }
     var submitted by remember { mutableStateOf(false) }
+
+    // Log the testId if it's provided (placeholder for actual data loading)
+    LaunchedEffect(testId) {
+        if (testId != null) {
+            Log.d("MatchTheColumnScreen", "Received testId: $testId")
+            // Here you would typically launch a coroutine to fetch test data
+            // using the testId and a ViewModel/Repository.
+            // For now, it will still use sampleItemsA and sampleItemsB.
+        }
+    }
 
     val isMatched: (String) -> Boolean = { itemId ->
         matchedPairs.any { it.itemA.id == itemId || it.itemB.id == itemId }
@@ -105,7 +113,8 @@ fun MatchTheColumnScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Match The Column") },
+                // Dynamically change title based on whether it's a test or practice
+                title = { Text(if (testId != null) "Match The Column Test" else "Match The Column Practice") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Navigate back")
@@ -277,6 +286,16 @@ fun MatchItemCard(
 @Composable
 fun MatchTheColumnScreenPreview() {
     MockMateTheme {
+        // Preview with testId (simulates navigating to a specific test)
+        MatchTheColumnScreen(onNavigateBack = {}, testId = "sampleTest123")
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun MatchTheColumnScreenPracticePreview() {
+    MockMateTheme {
+        // Preview without testId (simulates general practice mode)
         MatchTheColumnScreen(onNavigateBack = {})
     }
 }

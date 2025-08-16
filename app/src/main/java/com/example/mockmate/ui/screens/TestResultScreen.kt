@@ -243,7 +243,7 @@ private fun ResultContent(
     // Group questions by subject
     val subjectPerformance = test.questions
         .groupBy { it.subject }
-        .mapValues { (subject, questions) ->
+        .mapValues { (_, questions) -> // Removed unused 'subject' parameter
             val subjectQuestions = questions.size
             val subjectAttempted = questions.count { question ->
                 attempt.userAnswers[question.id]?.selectedOptionIndex != null
@@ -321,14 +321,14 @@ private fun ResultContent(
         SectionHeader(text = "Subject-wise Performance")
 
         subjectPerformance.forEach { (subject, performance) ->
-            val (total, attempted, correct) = performance
+            val (totalInSubject, attempted, correct) = performance // Renamed 'total' to 'totalInSubject'
             val subjectAccuracy = if (attempted > 0) correct.toFloat() / attempted else 0f
 
             SubjectPerformanceCard(
                 subject = subject,
                 accuracy = subjectAccuracy,
                 attempted = attempted,
-                total = total,
+                totalInSubject = totalInSubject, // Pass renamed 'totalInSubject'
                 correct = correct
             )
 
@@ -415,13 +415,13 @@ private fun ResultContent(
 
                     if (isAnswered) {
                         Text(
-                            text = "Your Answer: ${question.options[userAnswer?.selectedOptionIndex ?: 0]}",
+                            text = "Your Answer: ${question.options?.get(userAnswer?.selectedOptionIndex ?: 0)}",
                             style = MaterialTheme.typography.bodyMedium,
                             color = if (isCorrect) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
                         )
 
                         Text(
-                            text = "Correct Answer: ${question.options[question.correctOptionIndex]}",
+                            text = "Correct Answer: ${question.options?.get(question.correctOptionIndex ?: 0)}",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.primary
                         )
@@ -442,7 +442,7 @@ private fun ResultContent(
                         )
 
                         Text(
-                            text = "Correct Answer: ${question.options[question.correctOptionIndex]}",
+                            text = "Correct Answer: ${question.options?.get(question.correctOptionIndex ?: 0)}",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.primary
                         )
@@ -585,7 +585,7 @@ fun SubjectPerformanceCard(
     subject: String,
     accuracy: Float,
     attempted: Int,
-    total: Int,
+    totalInSubject: Int, // Renamed 'total' to 'totalInSubject'
     correct: Int
 ) {
     Card(

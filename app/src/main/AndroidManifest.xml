@@ -19,6 +19,12 @@
     <!-- Vibration for feedback during tests -->
     <uses-permission android:name="android.permission.VIBRATE" />
 
+    <!-- Permission for posting notifications (for API 33+) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+
+    <!-- Permission for scheduling exact alarms (for API 31+ for setExactAndAllowWhileIdle, or for setExact on all API levels) -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+
     <application
         android:name=".MockMateApplication"
         android:allowBackup="true"
@@ -53,6 +59,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Test Reminder Receiver -->
+        <receiver android:name=".notifications.TestReminderReceiver"
+            android:enabled="true"
+            android:exported="false" />
+
     </application>
 
 </manifest>

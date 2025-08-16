@@ -328,7 +328,7 @@ fun QuestionContent(
             modifier = Modifier.padding(vertical = 8.dp)
         )
 
-        question.options.forEachIndexed { index, option ->
+        question.options?.forEachIndexed { index, option ->
             OptionItem(
                 optionText = option,
                 selected = selectedOptionIndex == index,

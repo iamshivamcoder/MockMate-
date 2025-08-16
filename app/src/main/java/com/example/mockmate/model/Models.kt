@@ -5,7 +5,7 @@ import java.util.UUID
 
 // Enums
 enum class QuestionDifficulty { EASY, MEDIUM, HARD }
-enum class QuestionType { MULTIPLE_CHOICE, TRUE_FALSE, FILL_BLANK }
+enum class QuestionType { MULTIPLE_CHOICE, TRUE_FALSE, FILL_BLANK, MATCH_THE_COLUMN }
 enum class TestDifficulty { EASY, MEDIUM, HARD }
 enum class PracticeMode { DAILY_CHALLENGE, FOCUSED_PRACTICE, CUSTOM_PRACTICE, MOCK_TEST, PARAGRAPH_ANALYSIS }
 enum class QuestionStatus { UNATTEMPTED, ANSWERED, MARKED_FOR_REVIEW, BOOKMARKED }
@@ -14,14 +14,17 @@ enum class QuestionStatus { UNATTEMPTED, ANSWERED, MARKED_FOR_REVIEW, BOOKMARKED
 data class Question(
     val id: String = UUID.randomUUID().toString(),
     val text: String,
-    val options: List<String>,
-    val correctOptionIndex: Int,
+    val options: List<String>? = null,
+    val correctOptionIndex: Int? = null,
     val explanation: String,
     val difficulty: QuestionDifficulty = QuestionDifficulty.MEDIUM,
     val type: QuestionType = QuestionType.MULTIPLE_CHOICE,
     val subject: String,
     val topic: String,
-    val timeRecommended: Int = 60 // in seconds
+    val timeRecommended: Int = 60, // in seconds
+    val leftColumn: List<String>? = null,
+    val rightColumn: List<String>? = null,
+    val answers: List<String>? = null
 )
 
 // Test models

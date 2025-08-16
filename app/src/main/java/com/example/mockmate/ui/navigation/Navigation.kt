@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
 import androidx.navigation.NavOptionsBuilder
@@ -13,10 +14,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.mockmate.MockMateApplication
 import com.example.mockmate.data.TestRepository
+import com.example.mockmate.model.QuestionType
 import com.example.mockmate.ui.screens.AboutDeveloperScreen
 import com.example.mockmate.ui.screens.DashboardScreen
-import com.example.mockmate.ui.screens.HelpScreen // Added import
+import com.example.mockmate.ui.screens.HelpScreen
 import com.example.mockmate.ui.screens.MatchTheColumnScreen
+import com.example.mockmate.ui.screens.MatchTheColumnSelectionScreen // Added import
 import com.example.mockmate.ui.screens.MockTestSelectionScreen
 import com.example.mockmate.ui.screens.PracticeModeSelectionScreen
 import com.example.mockmate.ui.screens.SettingsScreen
@@ -25,25 +28,27 @@ import com.example.mockmate.ui.screens.TestImportScreen
 import com.example.mockmate.ui.screens.TestResultScreen
 import com.example.mockmate.ui.screens.TestTakingScreen
 import com.example.mockmate.ui.util.ComposeStabilityUtils
+import kotlinx.coroutines.launch
 
 object Routes {
     const val DASHBOARD = "dashboard"
     const val PRACTICE_MODE_SELECTION = "practice_mode_selection"
     const val MOCK_TEST_SELECTION = "mock_test_selection"
+    const val MATCH_THE_COLUMN_SELECTION = "match_the_column_selection" // New route
     const val TEST_TAKING = "test_taking/{testId}"
     const val TEST_RESULT = "test_result/{attemptId}/{testId}"
     const val SETTINGS = "settings"
     const val TEST_HISTORY = "test_history"
     const val TEST_IMPORT = "test_import"
-    const val MATCH_THE_COLUMN = "match_the_column"
+    const val MATCH_THE_COLUMN_OLD = "match_the_column_old" // Renamed old route
+    const val MATCH_THE_COLUMN_TAKING = "match_the_column_taking/{testId}"
     const val ABOUT_DEVELOPER = "about_developer"
-    const val HELP_AND_FAQ = "help_and_faq" // Added route
+    const val HELP_AND_FAQ = "help_and_faq"
 
-    // Helper functions to navigate with parameters
     fun testTakingRoute(testId: String) = "test_taking/$testId"
     fun testResultRoute(attemptId: String, testId: String) = "test_result/$attemptId/$testId"
-    
-    // Log navigation routes for debugging
+    fun matchTheColumnTakingRoute(testId: String) = "match_the_column_taking/$testId"
+
     fun logRoute(route: String) {
         Log.d("Navigation", "Navigating to route: $route")
     }
@@ -59,59 +64,93 @@ private fun NavHostController.safeNavigate(
         Log.d("Navigation", "Successfully navigated to: $route")
     } catch (e: Exception) {
         Log.e("Navigation", "Navigation failed to $route: ${e.message}", e)
-        // Fallback navigation to ensure user isn't stuck
         try {
             popBackStack()
             navigate(Routes.DASHBOARD)
-        } catch (e: Exception) {
-            Log.e("Navigation", "Even fallback navigation failed: ${e.message}", e)
+        } catch (ef: Exception) {
+            Log.e("Navigation", "Even fallback navigation failed: ${ef.message}", ef)
         }
     }
 }
 
 @Composable
-fun AppNavHost(navController: NavHostController, startDestination: String = Routes.DASHBOARD, repository: TestRepository = MockMateApplication.getTestRepository()) {
-    // Add stability monitoring
+fun AppNavHost(
+    navController: NavHostController,
+    startDestination: String = Routes.DASHBOARD,
+    repository: TestRepository = MockMateApplication.getTestRepository()
+) {
     ComposeStabilityUtils.LogCompositionErrors("AppNavHost")
     ComposeStabilityUtils.MonitorLifecycle { errorMsg ->
         Log.e("Navigation", "Lifecycle error: $errorMsg")
     }
-    
-    // Use a stable repository reference that won't change during recompositions
+
     val stableRepository = remember { repository }
-    
+    val coroutineScope = rememberCoroutineScope()
+
     NavHost(
         navController = navController,
         startDestination = startDestination
     ) {
         composable(Routes.DASHBOARD) {
-            LocalContext.current
+            LocalContext.current // Keep this if needed for other reasons
             DashboardScreen(
-                onPracticeClick = { navController.navigate(Routes.PRACTICE_MODE_SELECTION) },
-                onHistoryClick = { navController.navigate(Routes.TEST_HISTORY) },
-                onImportClick = { navController.navigate(Routes.TEST_IMPORT) },
-                onSettingsClick = { navController.navigate(Routes.SETTINGS) }
+                onPracticeClick = { navController.safeNavigate(Routes.PRACTICE_MODE_SELECTION) },
+                onHistoryClick = { navController.safeNavigate(Routes.TEST_HISTORY) },
+                onImportClick = { navController.safeNavigate(Routes.TEST_IMPORT) },
+                onSettingsClick = { navController.safeNavigate(Routes.SETTINGS) }
             )
         }
-        
+
         composable(Routes.PRACTICE_MODE_SELECTION) {
             PracticeModeSelectionScreen(
                 onNavigateBack = { navController.navigateUp() },
-                onMockTestClick = { navController.navigate(Routes.MOCK_TEST_SELECTION) },
-                onParagraphAnalysisClick = { navController.navigate(Routes.MATCH_THE_COLUMN) },
-                onSettingsClick = { navController.navigate(Routes.SETTINGS) }
+                onMockTestClick = { navController.safeNavigate(Routes.MOCK_TEST_SELECTION) },
+                // Updated to navigate to the new selection screen for Match the Column tests
+                onParagraphAnalysisClick = { navController.safeNavigate(Routes.MATCH_THE_COLUMN_SELECTION) },
+                onSettingsClick = { navController.safeNavigate(Routes.SETTINGS) }
             )
         }
-        
+
         composable(Routes.MOCK_TEST_SELECTION) {
             MockTestSelectionScreen(
                 onNavigateBack = { navController.navigateUp() },
-                onTestSelected = { testId -> navController.navigate(Routes.testTakingRoute(testId)) },
-                onSettingsClick = { navController.navigate(Routes.SETTINGS) },
+                onTestSelected = { testId ->
+                    coroutineScope.launch {
+                        try {
+                            val test = stableRepository.getTestById(testId)
+                            if (test != null) {
+                                if (test.questions.firstOrNull()?.type == QuestionType.MATCH_THE_COLUMN) {
+                                    navController.safeNavigate(Routes.matchTheColumnTakingRoute(testId))
+                                } else {
+                                    navController.safeNavigate(Routes.testTakingRoute(testId))
+                                }
+                            } else {
+                                Log.e("Navigation", "Test with ID $testId not found.")
+                                // Optionally navigate to an error screen or back
+                                navController.popBackStack()
+                            }
+                        } catch (e: Exception) {
+                            Log.e("Navigation", "Error fetching test $testId: ${e.message}", e)
+                            navController.popBackStack()
+                        }
+                    }
+                },
+                onSettingsClick = { navController.safeNavigate(Routes.SETTINGS) },
                 repository = stableRepository
             )
         }
         
+        composable(Routes.MATCH_THE_COLUMN_SELECTION) { // New composable entry
+            MatchTheColumnSelectionScreen(
+                onNavigateBack = { navController.navigateUp() },
+                onTestSelected = { testId ->
+                    navController.safeNavigate(Routes.matchTheColumnTakingRoute(testId))
+                },
+                onSettingsClick = { navController.safeNavigate(Routes.SETTINGS) },
+                repository = stableRepository
+            )
+        }
+
         composable(
             route = Routes.TEST_TAKING,
             arguments = listOf(navArgument("testId") { type = NavType.StringType })
@@ -120,13 +159,10 @@ fun AppNavHost(navController: NavHostController, startDestination: String = Rout
             if (testId.isEmpty()) {
                 Log.e("Navigation", "Missing required testId argument for TestTakingScreen")
                 LaunchedEffect(Unit) {
-                    navController.safeNavigate(Routes.DASHBOARD) {
-                        popUpTo(Routes.DASHBOARD) { inclusive = true }
-                    }
+                    navController.safeNavigate(Routes.DASHBOARD) { popUpTo(Routes.DASHBOARD) { inclusive = true } }
                 }
                 return@composable
             }
-
             TestTakingScreen(
                 testId = testId,
                 onNavigateBack = { navController.popBackStack() },
@@ -147,65 +183,62 @@ fun AppNavHost(navController: NavHostController, startDestination: String = Rout
                 repository = stableRepository
             )
         }
+        
+        composable(
+            route = Routes.MATCH_THE_COLUMN_TAKING,
+            arguments = listOf(navArgument("testId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val testId = backStackEntry.arguments?.getString("testId")
+            if (testId.isNullOrEmpty()) {
+                 Log.e("Navigation", "Missing testId for MatchTheColumnScreen")
+                 LaunchedEffect(Unit) { // Use LaunchedEffect for side effects in composables
+                    navController.popBackStack() // Go back if no ID
+                 }
+                 return@composable // Prevent further composition
+            }
+            MatchTheColumnScreen(
+                onNavigateBack = { navController.navigateUp() }, 
+                testId = testId // Pass the testId here
+            )
+        }
 
         composable(
             route = Routes.TEST_RESULT,
             arguments = listOf(
-                navArgument("attemptId") {
-                    type = NavType.StringType
-                    nullable = false
-                },
-                navArgument("testId") {
-                    type = NavType.StringType
-                    nullable = false
-                }
+                navArgument("attemptId") { type = NavType.StringType; nullable = false },
+                navArgument("testId") { type = NavType.StringType; nullable = false }
             )
         ) { backStackEntry ->
             val attemptId = backStackEntry.arguments?.getString("attemptId")
             val testId = backStackEntry.arguments?.getString("testId")
-
             if (attemptId == null || testId == null) {
                 Log.e("Navigation", "Missing required arguments for TestResultScreen")
                 LaunchedEffect(Unit) {
-                    navController.navigate(Routes.DASHBOARD) {
-                        popUpTo(Routes.DASHBOARD) { inclusive = true }
-                    }
+                    navController.safeNavigate(Routes.DASHBOARD) { popUpTo(Routes.DASHBOARD) { inclusive = true } }
                 }
                 return@composable
             }
-
             TestResultScreen(
                 attemptId = attemptId,
                 testId = testId,
                 onNavigateBack = { navController.navigateUp() },
-                onDashboardClick = {
-                    navController.safeNavigate(Routes.DASHBOARD) {
-                        popUpTo(Routes.DASHBOARD) { inclusive = true }
-                    }
-                },
+                onDashboardClick = { navController.safeNavigate(Routes.DASHBOARD) { popUpTo(Routes.DASHBOARD) { inclusive = true } } },
                 repository = stableRepository
             )
         }
-        
+
         composable(Routes.SETTINGS) {
             SettingsScreen(
                 onNavigateBack = { navController.navigateUp() },
-                onNavigateToAboutDeveloper = { navController.navigate(Routes.ABOUT_DEVELOPER) },
-                onNavigateToHelp = { navController.navigate(Routes.HELP_AND_FAQ) }, // Added navigation
-                onShowSnackbar = { message ->
-                    // In a real app, you'd have a mechanism to show a Snackbar here
-                    // For now, we'll just log it
-                    Log.d("Settings", "Snackbar requested: $message")
-                }
+                onNavigateToAboutDeveloper = { navController.safeNavigate(Routes.ABOUT_DEVELOPER) },
+                onNavigateToHelp = { navController.safeNavigate(Routes.HELP_AND_FAQ) }
             )
         }
 
-        // Test History Screen
         composable(Routes.TEST_HISTORY) {
             TestHistoryScreen(
                 onNavigateBack = { navController.navigateUp() },
                 onViewTestResult = { attemptId, testId ->
-                    // Navigate to test result screen
                     val route = Routes.testResultRoute(attemptId, testId)
                     Routes.logRoute(route)
                     navController.safeNavigate(route)
@@ -213,35 +246,28 @@ fun AppNavHost(navController: NavHostController, startDestination: String = Rout
                 repository = stableRepository
             )
         }
-        
-        // Test Import Screen
+
         composable(Routes.TEST_IMPORT) {
             TestImportScreen(
                 onNavigateBack = { navController.navigateUp() },
-                onViewTests = { navController.navigate(Routes.MOCK_TEST_SELECTION) },
+                onViewTests = { navController.safeNavigate(Routes.MOCK_TEST_SELECTION) },
                 repository = stableRepository
             )
         }
 
-        // Match The Column Screen
-        composable(Routes.MATCH_THE_COLUMN) {
+        composable(Routes.MATCH_THE_COLUMN_OLD) { // Original MatchTheColumn, no testId
             MatchTheColumnScreen(
                 onNavigateBack = { navController.navigateUp() }
-            )
-        }
-        
-        // About Developer Screen
-        composable(Routes.ABOUT_DEVELOPER) {
-            AboutDeveloperScreen(
-                onNavigateBack = { navController.navigateUp() }
+                // testId is null by default in MatchTheColumnScreen
             )
         }
 
-        // Help & FAQ Screen (New Destination)
+        composable(Routes.ABOUT_DEVELOPER) {
+            AboutDeveloperScreen(onNavigateBack = { navController.navigateUp() })
+        }
+
         composable(Routes.HELP_AND_FAQ) {
-            HelpScreen(
-                onNavigateBack = { navController.navigateUp() }
-            )
+            HelpScreen(onNavigateBack = { navController.navigateUp() })
         }
     }
 }

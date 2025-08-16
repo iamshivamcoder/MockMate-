@@ -12,6 +12,8 @@ through mock tests, practice sessions, and performance analytics.
 
 ## JSON Test Data Format
 
+### Standard Multiple Choice Questions
+
 To import custom test data, create a JSON file with the following structure:
 
 ```json
@@ -45,6 +47,33 @@ To import custom test data, create a JSON file with the following structure:
 }
 ```
 
+### Match the Column Questions
+
+For "Match the Column" questions, the `questions` array should contain objects with the following structure:
+
+```json
+{
+  "name": "History Match the Column Test",
+  "difficulty": "MEDIUM",
+  "timeLimit": 30,
+  "negativeMarking": true,
+  "negativeMarkingValue": 0.33,
+  "questions": [
+    {
+      "text": "Match the following historical events with their years.",
+      "type": "MATCH_THE_COLUMN",
+      "leftColumn": ["Quit India Movement", "Jallianwala Bagh Massacre", "Formation of Indian National Congress", "Partition of Bengal"],
+      "rightColumn": ["1942", "1919", "1885", "1905"],
+      "answers": ["1", "2", "3", "4"],
+      "explanation": "A detailed explanation of the historical timeline and significance of each event.",
+      "subject": "History",
+      "topic": "Modern India",
+      "difficulty": "MEDIUM"
+    }
+  ]
+}
+```
+
 ### Field Descriptions
 
 - `name`: Name of the test
@@ -57,23 +86,44 @@ To import custom test data, create a JSON file with the following structure:
 #### Question Fields
 
 - `text`: The question text
-- `options`: Array of options (typically 4 options)
-- `correctOptionIndex`: Index of the correct option (0-based)
+- `options` (for MCQ): Array of options (typically 4 options)
+- `correctOptionIndex` (for MCQ): Index of the correct option (0-based)
+- `type` (for Match the Column): Must be `"MATCH_THE_COLUMN"`
+- `leftColumn` (for Match the Column): An array of strings for the left column items.
+- `rightColumn` (for Match the Column): An array of strings for the right column items. The order should correspond to the `leftColumn`.
+- `answers` (for Match the Column): An array of strings representing the correct mapping. For example, if the first item in `leftColumn` matches the first item in `rightColumn`, the first answer would be "1".
 - `explanation`: Explanation for the answer
 - `subject`: Subject category (Indian Polity, History, Geography, etc.)
 - `topic`: Specific topic within the subject
 - `difficulty`: Question difficulty (EASY, MEDIUM, HARD)
 
+
 ## How to Import Test Data
 
-1. Create a JSON file following the format above
-2. From the Dashboard, tap "Import Data"
-3. Select your JSON file
-4. Review and confirm the import
-5. Your test will be available in the mock tests section
+1.  From the Dashboard, tap "Import Data".
+2.  Choose one of the import methods:
+
+    **A) Import from File:**
+    - Prepare a JSON file with the correct format (either MCQ or Match the Column).
+    - Tap "Select JSON File".
+    - Choose your prepared JSON file.
+    - Tap "Import Test Data".
+
+    **B) Import from Prompt (for MCQs):**
+    - Tap "Import from Prompt".
+    - Paste your MCQ JSON data into the text field.
+    - Tap "Import".
+
+    **C) Import Match the Column (from Prompt):**
+    - Tap "Import Match the Column".
+    - A new dialog will appear.
+    - Paste your "Match the Column" JSON data into the text field.
+    - Tap "Import".
+
+3.  Your test will be available in the mock tests section after a successful import.
 
 ## Requirements
 
 - Android 8.0 (API level 26) or higher
 - Internet connection for updates and sync
-- Storage permission for importing/exporting tests
+- Storage permission for importing/exporting tests from files.

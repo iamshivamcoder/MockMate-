@@ -374,7 +374,7 @@ class TestRepositoryImpl(
 
         // Only increment streak if it's a new day
         val lastPracticeTimestamp = stats.lastPracticeDate?.time
-        if (lastPracticeTimestamp == null || !isSameDay(lastPracticeTimestamp, today.time)) {
+        if (lastPracticeTimestamp == null || !inSameDay(lastPracticeTimestamp, today.time)) {
             userStatsDao.incrementStreak(today.time)
         }
     }
@@ -385,7 +385,7 @@ class TestRepositoryImpl(
             id = question.id,
             text = question.text,
             options = gson.toJson(question.options),
-            correctOptionIndex = question.correctOptionIndex,
+            correctOptionIndex = question.correctOptionIndex ?: -1,
             explanation = question.explanation,
             difficulty = question.difficulty.name,
             type = question.type.name,
@@ -396,9 +396,9 @@ class TestRepositoryImpl(
     }
     
     private fun questionEntityToModel(entity: QuestionEntity): Question {
-        val options = gson.fromJson<List<String>>(
+        val options = gson.fromJson<List<String>?>(
             entity.options,
-            object : TypeToken<List<String>>() {}.type
+            object : TypeToken<List<String>?>() {}.type
         )
         
         return Question(
@@ -411,7 +411,10 @@ class TestRepositoryImpl(
             type = QuestionType.valueOf(entity.type),
             subject = entity.subject,  // Use subject from entity
             topic = entity.topic,     // Use topic from entity
-            timeRecommended = entity.timeRecommended
+            timeRecommended = entity.timeRecommended,
+            leftColumn = null, // Added for Match the Column
+            rightColumn = null, // Added for Match the Column
+            answers = null // Added for Match the Column
         )
     }
     
@@ -583,7 +586,10 @@ class TestRepositoryImpl(
                     type = QuestionType.MULTIPLE_CHOICE,
                     subject = subject,
                     topic = topic,
-                    timeRecommended = 60 // Default 60 seconds per question
+                    timeRecommended = 60, // Default 60 seconds per question
+                    leftColumn = null, // Added for Match the Column
+                    rightColumn = null, // Added for Match the Column
+                    answers = null // Added for Match the Column
                 )
             )
         }
@@ -596,14 +602,14 @@ class TestRepositoryImpl(
         private var INSTANCE: TestRepositoryImpl? = null
 
         // Helper function to check if two timestamps represent the same day
-        private fun isSameDay(timestamp1: Long?, timestamp2: Long): Boolean {
+        private fun inSameDay(timestamp1: Long?, timestamp2: Long): Boolean {
             if (timestamp1 == null) return false
             
             val cal1 = Calendar.getInstance().apply { timeInMillis = timestamp1 }
             val cal2 = Calendar.getInstance().apply { timeInMillis = timestamp2 }
             
             return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) &&
-                    cal2.get(Calendar.MONTH) == cal2.get(Calendar.MONTH) &&
+                   cal1.get(Calendar.MONTH) == cal2.get(Calendar.MONTH) && // Corrected this line
                    cal1.get(Calendar.DAY_OF_MONTH) == cal2.get(Calendar.DAY_OF_MONTH)
         }
     }
