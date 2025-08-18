@@ -41,10 +41,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.mockmate.ui.theme.MockMateTheme
 
 data class MatchItem(val id: String, val text: String, val matchId: String)
 data class MatchedPair(val itemA: MatchItem, val itemB: MatchItem) {
@@ -278,86 +276,6 @@ fun MatchItemCard(
                     color = if (isCorrect == true) Color.DarkGray else Color.White
                 )
             }
-        }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun MatchTheColumnScreenPreview() {
-    MockMateTheme {
-        // Preview with testId (simulates navigating to a specific test)
-        MatchTheColumnScreen(onNavigateBack = {}, testId = "sampleTest123")
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun MatchTheColumnScreenPracticePreview() {
-    MockMateTheme {
-        // Preview without testId (simulates general practice mode)
-        MatchTheColumnScreen(onNavigateBack = {})
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun MatchItemCardPreview() {
-    MockMateTheme {
-        // Hoist colorScheme values to local variables
-        val primaryContainerColor = colorScheme.primaryContainer
-        val onPrimaryContainerColor = colorScheme.onPrimaryContainer
-        val secondaryContainerColor = colorScheme.secondaryContainer
-        val onSecondaryContainerColor = colorScheme.onSecondaryContainer
-        val correctBackgroundColor = Color.Green.copy(alpha = 0.3f)
-        val correctTextColor = Color.Black
-        val incorrectBackgroundColor = Color.Red.copy(alpha = 0.3f)
-        val incorrectTextColor = Color.White
-
-        Column {
-            MatchItemCard(
-                text = "Sample Text 1",
-                isSelected = true,
-                isMatched = false,
-                onClick = {},
-                submitted = false,
-                isCorrect = null,
-                backgroundColor = primaryContainerColor,
-                textColor = onPrimaryContainerColor
-            )
-            Spacer(Modifier.height(8.dp))
-            MatchItemCard(
-                text = "Sample Text 2",
-                isSelected = false,
-                isMatched = true,
-                onClick = {},
-                submitted = false,
-                isCorrect = null,
-                backgroundColor = secondaryContainerColor,
-                textColor = onSecondaryContainerColor
-            )
-            Spacer(Modifier.height(8.dp))
-            MatchItemCard(
-                text = "Sample Text 3 Correct",
-                isSelected = false,
-                isMatched = true,
-                onClick = {},
-                submitted = true,
-                isCorrect = true,
-                backgroundColor = correctBackgroundColor,
-                textColor = correctTextColor
-            )
-            Spacer(Modifier.height(8.dp))
-            MatchItemCard(
-                text = "Sample Text 4 Incorrect",
-                isSelected = false,
-                isMatched = true,
-                onClick = {},
-                submitted = true,
-                isCorrect = false,
-                backgroundColor = incorrectBackgroundColor,
-                textColor = incorrectTextColor
-            )
         }
     }
 }

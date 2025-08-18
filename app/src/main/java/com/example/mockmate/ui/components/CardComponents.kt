@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -26,9 +27,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.mockmate.model.MockTest
 import com.example.mockmate.model.PracticeMode
+import com.example.mockmate.model.UserStats
 import com.example.mockmate.ui.theme.extendedColorScheme
 
 /**
@@ -103,7 +106,7 @@ fun PracticeModeCard(
                 PracticeMode.MOCK_TEST -> MaterialTheme.extendedColorScheme.mockTestColor
                 PracticeMode.PARAGRAPH_ANALYSIS -> MaterialTheme.extendedColorScheme.paragraphAnalysisColor
             }
-            
+
             Box(
                 modifier = Modifier
                     .size(50.dp)
@@ -125,9 +128,9 @@ fun PracticeModeCard(
                     color = iconColor
                 )
             }
-            
+
             Spacer(modifier = Modifier.width(16.dp))
-            
+
             Column {
                 Text(
                     text = title,
@@ -141,9 +144,9 @@ fun PracticeModeCard(
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
             }
-            
+
             Spacer(modifier = Modifier.weight(1f))
-            
+
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                 contentDescription = "Go to $title",
@@ -179,9 +182,9 @@ fun TestCard(
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -196,9 +199,114 @@ fun TestCard(
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
-                
+
                 DifficultyBadge(difficulty = test.difficulty) // DifficultyBadge is in BadgeComponents.kt
             }
         }
+    }
+}
+
+@Composable
+fun UserStatsSection(userStats: UserStats) {
+    SectionHeader(text = "Your Progress")
+
+    val accuracy = if (userStats.questionsAnswered > 0) {
+        userStats.correctAnswers.toFloat() / userStats.questionsAnswered
+    } else {
+        0f
+    }
+
+    ElevatedCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 3.dp),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            StatColumn(
+                title = "Questions Attempted",
+                value = userStats.questionsAnswered.toString(),
+                modifier = Modifier.weight(1f)
+            )
+            StatColumn(
+                title = "Current Streak",
+                value = "${userStats.streak} days",
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+
+    Spacer(modifier = Modifier.height(20.dp))
+
+    ElevatedCard(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.Start
+        ) {
+            Text(
+                text = "Overall Accuracy: ${(accuracy * 100).toInt()}%",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Medium
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            ProgressBar(progress = accuracy)
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Correct Answers: ${userStats.correctAnswers} out of ${userStats.questionsAnswered}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "Focus on consistent daily practice to improve your UPSC preparation!",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+            )
+        }
+    }
+}
+
+@Composable
+fun StatColumn(
+    title: String,
+    value: String,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = modifier
+    ) {
+        Text(
+            text = value,
+            style = MaterialTheme.typography.headlineLarge,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyMedium,
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+        )
     }
 }
