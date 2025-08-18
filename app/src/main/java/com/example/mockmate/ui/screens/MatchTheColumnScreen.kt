@@ -163,8 +163,6 @@ fun MatchTheColumnScreen(
                     onItemClick = { itemId ->
                         if (!isMatched(itemId) && selectedAItemId != null) { // Only allow selection if an item in A is selected
                             selectedBItemId = itemId
-                        } else if (!isMatched(itemId) && selectedAItemId == null) {
-                            // Optionally allow selecting B first, or provide feedback
                         }
                     },
                     isMatched = isMatched,

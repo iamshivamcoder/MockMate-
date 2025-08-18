@@ -173,7 +173,7 @@ fun MockTestSelectionScreen(
                         expanded = sortDropdownExpanded,
                         onDismissRequest = { sortDropdownExpanded = false }
                     ) {
-                        SortCriteria.values().filterNot { it == SortCriteria.NONE }.forEach { selectionCriteria ->
+                        SortCriteria.entries.filterNot { it == SortCriteria.NONE }.forEach { selectionCriteria ->
                             DropdownMenuItem(
                                 text = { Text(getSortCriteriaDisplayName(selectionCriteria)) },
                                 onClick = {
