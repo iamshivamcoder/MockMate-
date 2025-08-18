@@ -1,6 +1,6 @@
 package com.example.mockmate.ui.screens
 
-
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,10 +12,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
-import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -30,9 +32,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,6 +45,7 @@ import com.example.mockmate.model.MockTest
 import com.example.mockmate.model.TestDifficulty
 import com.example.mockmate.ui.components.MockMateTopBar
 import com.example.mockmate.ui.components.TestCard
+import kotlinx.coroutines.launch
 import java.util.Date
 import java.util.Locale
 
@@ -62,7 +65,7 @@ data class DisplayableMockTest(
     val lastAttemptDate: Date? = null
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun MockTestSelectionScreen(
     onNavigateBack: () -> Unit,
@@ -84,34 +87,15 @@ fun MockTestSelectionScreen(
         }
     }
 
-    var selectedTabIndex by remember { mutableIntStateOf(0) }
+    val tabTitles = listOf("Basic (30 min)", "Standard (60 min)", "Full Length (90 min)")
+    val pagerState = rememberPagerState(pageCount = { tabTitles.size })
     var currentSortCriteria by remember { mutableStateOf(SortCriteria.DATE) } // Default sort criteria
     var sortAscending by remember { mutableStateOf(false) } // Default to descending
     var sortDropdownExpanded by remember { mutableStateOf(false) }
-
-    val filteredAndSortedTests = remember(allDisplayableTests, selectedTabIndex, currentSortCriteria, sortAscending) {
-        val difficultyFiltered = when (selectedTabIndex) {
-            0 -> allDisplayableTests.filter { it.mockTest.difficulty == TestDifficulty.EASY }
-            1 -> allDisplayableTests.filter { it.mockTest.difficulty == TestDifficulty.MEDIUM }
-            2 -> allDisplayableTests.filter { it.mockTest.difficulty == TestDifficulty.HARD }
-            else -> allDisplayableTests
-        }
-
-        when (currentSortCriteria) {
-            SortCriteria.MARKS -> if (sortAscending) difficultyFiltered.sortedBy { it.latestScore } else difficultyFiltered.sortedByDescending { it.latestScore }
-            SortCriteria.DATE -> if (sortAscending) difficultyFiltered.sortedBy { it.mockTest.creationDate } else difficultyFiltered.sortedByDescending { it.mockTest.creationDate }
-            SortCriteria.LAST_GIVEN -> if (sortAscending) difficultyFiltered.sortedBy { it.lastAttemptDate } else difficultyFiltered.sortedByDescending { it.lastAttemptDate }
-            SortCriteria.FORGETTING_CURVE -> {
-                // Placeholder for forgetting curve logic
-                if (sortAscending) difficultyFiltered.sortedBy { it.mockTest.creationDate } // Fallback
-                else difficultyFiltered.sortedByDescending { it.mockTest.creationDate } // Fallback
-            }
-            SortCriteria.NONE -> difficultyFiltered
-        }
-    }
+    val scope = rememberCoroutineScope()
 
     fun getSortCriteriaDisplayName(criteria: SortCriteria): String {
-        return criteria.name.replace('_', ' ').toLowerCase(Locale.getDefault())
+        return criteria.name.replace('_', ' ').lowercase()
             .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
     }
 
@@ -139,22 +123,18 @@ fun MockTestSelectionScreen(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)
             )
 
-            TabRow(selectedTabIndex = selectedTabIndex) {
-                Tab(
-                    selected = selectedTabIndex == 0,
-                    onClick = { selectedTabIndex = 0 },
-                    text = { Text("Basic (30 min)") }
-                )
-                Tab(
-                    selected = selectedTabIndex == 1,
-                    onClick = { selectedTabIndex = 1 },
-                    text = { Text("Standard (60 min)") }
-                )
-                Tab(
-                    selected = selectedTabIndex == 2,
-                    onClick = { selectedTabIndex = 2 },
-                    text = { Text("Full Length (90 min)") }
-                )
+            TabRow(selectedTabIndex = pagerState.currentPage) {
+                tabTitles.forEachIndexed { index, title ->
+                    Tab(
+                        selected = pagerState.currentPage == index,
+                        onClick = {
+                            scope.launch {
+                                pagerState.animateScrollToPage(index)
+                            }
+                        },
+                        text = { Text(title) }
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -168,7 +148,7 @@ fun MockTestSelectionScreen(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Icon(
-                    imageVector = Icons.Filled.Sort,
+                    imageVector = Icons.AutoMirrored.Filled.Sort,
                     contentDescription = "Sort Options Icon",
                     modifier = Modifier.padding(end = 8.dp)
                 )
@@ -214,16 +194,45 @@ fun MockTestSelectionScreen(
             }
             Spacer(modifier = Modifier.height(8.dp))
 
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 16.dp)
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxWidth().weight(1f)
             ) {
-                items(filteredAndSortedTests) { displayableTest ->
-                    TestCard(
-                        test = displayableTest.mockTest, // Pass the original MockTest to TestCard
-                        onClick = { onTestSelected(displayableTest.mockTest.id) }
-                    )
+                page -> // page index
+                val difficultyFiltered = remember(allDisplayableTests, page) {
+                    when (page) {
+                        0 -> allDisplayableTests.filter { it.mockTest.difficulty == TestDifficulty.EASY }
+                        1 -> allDisplayableTests.filter { it.mockTest.difficulty == TestDifficulty.MEDIUM }
+                        2 -> allDisplayableTests.filter { it.mockTest.difficulty == TestDifficulty.HARD }
+                        else -> allDisplayableTests
+                    }
+                }
+
+                val filteredAndSortedTests = remember(difficultyFiltered, currentSortCriteria, sortAscending) {
+                    when (currentSortCriteria) {
+                        SortCriteria.MARKS -> if (sortAscending) difficultyFiltered.sortedBy { it.latestScore } else difficultyFiltered.sortedByDescending { it.latestScore }
+                        SortCriteria.DATE -> if (sortAscending) difficultyFiltered.sortedBy { it.mockTest.creationDate } else difficultyFiltered.sortedByDescending { it.mockTest.creationDate }
+                        SortCriteria.LAST_GIVEN -> if (sortAscending) difficultyFiltered.sortedBy { it.lastAttemptDate } else difficultyFiltered.sortedByDescending { it.lastAttemptDate }
+                        SortCriteria.FORGETTING_CURVE -> {
+                            // Placeholder for forgetting curve logic
+                            if (sortAscending) difficultyFiltered.sortedBy { it.mockTest.creationDate } // Fallback
+                            else difficultyFiltered.sortedByDescending { it.mockTest.creationDate } // Fallback
+                        }
+                        SortCriteria.NONE -> difficultyFiltered
+                    }
+                }
+
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp)
+                ) {
+                    items(filteredAndSortedTests) { displayableTest ->
+                        TestCard(
+                            test = displayableTest.mockTest, // Pass the original MockTest to TestCard
+                            onClick = { onTestSelected(displayableTest.mockTest.id) }
+                        )
+                    }
                 }
             }
         }
