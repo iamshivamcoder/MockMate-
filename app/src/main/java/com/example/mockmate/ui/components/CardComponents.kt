@@ -1,8 +1,9 @@
 package com.example.mockmate.ui.components
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -83,6 +84,7 @@ fun StatCard(title: String, value: String, modifier: Modifier = Modifier) {
  * @param onClick Lambda to be invoked when the card is clicked.
  * @param modifier Optional [Modifier] for this component.
  */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun PracticeModeCard(
     mode: PracticeMode,
@@ -95,7 +97,7 @@ fun PracticeModeCard(
         modifier = modifier
             .padding(8.dp)
             .fillMaxWidth()
-            .clickable { onClick() },
+            .combinedClickable(onClick = onClick), // Using combinedClickable here too for consistency, though only onClick is used
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Row(
@@ -164,33 +166,38 @@ fun PracticeModeCard(
  *
  * @param test The [MockTest] data to display.
  * @param onClick Lambda to be invoked when the card is clicked.
+ * @param onLongClick Optional lambda to be invoked on long click.
  * @param modifier Optional [Modifier] for this component.
  */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class) // Added for combinedClickable
 @Composable
 fun TestCard(
     test: MockTest,
     onClick: () -> Unit,
+    onLongClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Card(
         modifier = modifier
             .padding(8.dp)
             .fillMaxWidth()
-            .clickable { onClick() },
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp), // Using a slightly lower elevation for outlined card
-        colors = CardDefaults.outlinedCardColors(), // Using outlined card colors
-        border = CardDefaults.outlinedCardBorder()  // Adding outlined card border
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick
+            ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.outlinedCardColors(),
+        border = CardDefaults.outlinedCardBorder()
     ) {
         Column(
             modifier = Modifier
-                // .fillMaxSize() // Removed as the card itself will size appropriately
                 .padding(16.dp)
         ) {
             Text(
                 text = test.name,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface // Reverted text color
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -204,12 +211,12 @@ fun TestCard(
                     Text(
                         text = "${test.questions.size} Questions",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f) // Reverted text color
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
                     )
                     Text(
                         text = "${test.timeLimit} Minutes",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f) // Reverted text color
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
                     )
                 }
 

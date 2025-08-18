@@ -36,6 +36,9 @@ interface TestRepository {
     
     // Save a test
     suspend fun saveTest(test: MockTest)
+
+    // Delete a mock test by ID
+    suspend fun deleteMockTestById(testId: String)
     
     // Save a test attempt
     suspend fun saveTestAttempt(attempt: TestAttempt)
@@ -104,6 +107,23 @@ class InMemoryTestRepository : TestRepository {
     // Get a test by ID
     override suspend fun getTestById(id: String): MockTest? {
         return _mockTests.value.find { it.id == id }
+    }
+
+    // Delete a mock test by ID
+    override suspend fun deleteMockTestById(testId: String) {
+        val currentTests = _mockTests.value.toMutableList()
+        val removed = currentTests.removeIf { it.id == testId }
+        if (removed) {
+            _mockTests.value = currentTests
+            // Consider if associated test attempts should also be deleted.
+            // For now, they will remain but might be orphaned if not handled elsewhere.
+            // A more complete solution would also delete TestAttempts associated with this testId.
+            val currentAttempts = _testAttempts.value.toMutableList()
+            val attemptsRemoved = currentAttempts.removeIf { it.testId == testId }
+            if (attemptsRemoved) {
+                _testAttempts.value = currentAttempts
+            }
+        }
     }
     
     // Get a test attempt by ID

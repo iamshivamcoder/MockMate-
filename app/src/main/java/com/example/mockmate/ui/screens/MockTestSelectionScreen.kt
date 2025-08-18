@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -29,6 +30,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -42,6 +44,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.mockmate.data.TestRepository
 import com.example.mockmate.model.MockTest
+import com.example.mockmate.model.TestAttempt
 import com.example.mockmate.model.TestDifficulty
 import com.example.mockmate.ui.components.MockMateTopBar
 import com.example.mockmate.ui.components.TestCard
@@ -75,14 +78,23 @@ fun MockTestSelectionScreen(
 ) {
     // Fetch raw MockTest objects
     val allRawMockTests by repository.mockTests.collectAsState(initial = emptyList())
+    // Fetch all TestAttempt objects
+    val allTestAttempts by repository.getAllTestAttempts().collectAsState(initial = emptyList())
 
-    // Map raw MockTests to DisplayableMockTests with placeholder data for now.
-    val allDisplayableTests = remember(allRawMockTests) {
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var testToDelete by remember { mutableStateOf<MockTest?>(null) }
+
+    // Map raw MockTests to DisplayableMockTests, now including attempt data
+    val allDisplayableTests = remember(allRawMockTests, allTestAttempts) {
         allRawMockTests.map { mockTest ->
+            val relevantAttempts = allTestAttempts
+                .filter { it.testId == mockTest.id && it.isCompleted }
+                .sortedByDescending { it.endTime } // Get the most recent completed attempt first
+
             DisplayableMockTest(
                 mockTest = mockTest,
-                latestScore = null, // Placeholder: To be fetched from TestAttempt via TestRepository
-                lastAttemptDate = null // Placeholder: To be fetched from TestAttempt via TestRepository
+                latestScore = relevantAttempts.firstOrNull()?.score,
+                lastAttemptDate = relevantAttempts.firstOrNull()?.endTime
             )
         }
     }
@@ -109,6 +121,40 @@ fun MockTestSelectionScreen(
             showSettings = true,
             onSettingsClick = onSettingsClick
         )
+
+        if (showDeleteDialog) {
+            AlertDialog(
+                onDismissRequest = { showDeleteDialog = false },
+                title = { Text("Delete Test") },
+                text = { Text("Are you sure you want to delete \"${testToDelete?.name}\"? This action cannot be undone.") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            testToDelete?.let {
+                                // Call repository delete function here
+                                // repository.deleteMockTest(it.id) // Placeholder
+                                println("Deleting test: ${it.name} (ID: ${it.id})") // Actual deletion logic pending
+                                scope.launch { // Ensure deletion happens in a coroutine if repository function is suspend
+                                    repository.deleteMockTestById(it.id) // Assumed suspend fun in repo
+                                }
+                            }
+                            showDeleteDialog = false
+                            testToDelete = null
+                        }
+                    ) {
+                        Text("Delete")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { 
+                        showDeleteDialog = false
+                        testToDelete = null 
+                    }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
 
         Column(
             modifier = Modifier
@@ -197,8 +243,7 @@ fun MockTestSelectionScreen(
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier.fillMaxWidth().weight(1f)
-            ) {
-                page -> // page index
+            ) { page -> // page index
                 val difficultyFiltered = remember(allDisplayableTests, page) {
                     when (page) {
                         0 -> allDisplayableTests.filter { it.mockTest.difficulty == TestDifficulty.EASY }
@@ -210,13 +255,22 @@ fun MockTestSelectionScreen(
 
                 val filteredAndSortedTests = remember(difficultyFiltered, currentSortCriteria, sortAscending) {
                     when (currentSortCriteria) {
-                        SortCriteria.MARKS -> if (sortAscending) difficultyFiltered.sortedBy { it.latestScore } else difficultyFiltered.sortedByDescending { it.latestScore }
-                        SortCriteria.DATE -> if (sortAscending) difficultyFiltered.sortedBy { it.mockTest.creationDate } else difficultyFiltered.sortedByDescending { it.mockTest.creationDate }
-                        SortCriteria.LAST_GIVEN -> if (sortAscending) difficultyFiltered.sortedBy { it.lastAttemptDate } else difficultyFiltered.sortedByDescending { it.lastAttemptDate }
+                        SortCriteria.MARKS -> {
+                            if (sortAscending) difficultyFiltered.sortedBy { it.latestScore }
+                            else difficultyFiltered.sortedByDescending { it.latestScore }
+                        }
+                        SortCriteria.DATE -> {
+                            if (sortAscending) difficultyFiltered.sortedBy { it.mockTest.creationDate }
+                            else difficultyFiltered.sortedByDescending { it.mockTest.creationDate }
+                        }
+                        SortCriteria.LAST_GIVEN -> {
+                            if (sortAscending) difficultyFiltered.sortedWith(compareBy(nullsLast()) { it.lastAttemptDate })
+                            else difficultyFiltered.sortedWith(compareByDescending(nullsFirst()) { it.lastAttemptDate })
+                        }
                         SortCriteria.FORGETTING_CURVE -> {
-                            // Placeholder for forgetting curve logic
-                            if (sortAscending) difficultyFiltered.sortedBy { it.mockTest.creationDate } // Fallback
-                            else difficultyFiltered.sortedByDescending { it.mockTest.creationDate } // Fallback
+                            // Placeholder for forgetting curve logic - current fallback to DATE
+                            if (sortAscending) difficultyFiltered.sortedBy { it.mockTest.creationDate } 
+                            else difficultyFiltered.sortedByDescending { it.mockTest.creationDate }
                         }
                         SortCriteria.NONE -> difficultyFiltered
                     }
@@ -229,8 +283,12 @@ fun MockTestSelectionScreen(
                 ) {
                     items(filteredAndSortedTests) { displayableTest ->
                         TestCard(
-                            test = displayableTest.mockTest, // Pass the original MockTest to TestCard
-                            onClick = { onTestSelected(displayableTest.mockTest.id) }
+                            test = displayableTest.mockTest,
+                            onClick = { onTestSelected(displayableTest.mockTest.id) },
+                            onLongClick = {
+                                testToDelete = displayableTest.mockTest
+                                showDeleteDialog = true
+                            }
                         )
                     }
                 }

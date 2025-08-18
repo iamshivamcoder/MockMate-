@@ -308,6 +308,34 @@ class TestRepositoryImpl(
             loadTestAttemptsFromDatabase()
         }
     }
+
+    override suspend fun deleteMockTestById(testId: String) {
+        withContext(Dispatchers.IO) {
+            try {
+                database.withTransaction {
+                    // Step 1: Delete all test attempts associated with this test
+                    testAttemptDao.deleteAttemptsByTestId(testId)
+
+                    // Step 2: Delete all TestQuestionCrossRef entries for this test
+                    testDao.deleteCrossRefsByTestId(testId)
+
+                    // Step 3: Delete the test entity itself
+                    testDao.deleteTestEntityById(testId)
+                }
+
+                // Step 4: Update the in-memory cache of test attempts
+                val currentAttempts = _testAttempts.value.toMutableList()
+                val removed = currentAttempts.removeAll { it.testId == testId }
+                if (removed) {
+                    _testAttempts.value = currentAttempts
+                }
+                Log.d("TestRepositoryImpl", "Successfully deleted test $testId and its associated data.")
+            } catch (e: Exception) {
+                Log.e("TestRepositoryImpl", "Error deleting test $testId: ${e.message}", e)
+                throw IllegalStateException("Failed to delete test $testId: ${e.localizedMessage}", e)
+            }
+        }
+    }
     
     private suspend fun updateStats(attempt: TestAttempt) {
         // Get the test and questions
@@ -414,7 +442,7 @@ class TestRepositoryImpl(
             timeRecommended = entity.timeRecommended,
             leftColumn = null, // Added for Match the Column
             rightColumn = null, // Added for Match the Column
-            answers = null // Added for Match the Column
+            answers = null // Added for Match
         )
     }
     

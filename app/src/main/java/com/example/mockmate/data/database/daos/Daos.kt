@@ -42,7 +42,10 @@ interface TestDao {
     }
 
     @Query("DELETE FROM tests WHERE id = :testId")
-    suspend fun deleteTest(testId: String)
+    suspend fun deleteTestEntityById(testId: String) // Renamed from deleteTest
+
+    @Query("DELETE FROM test_questions WHERE testId = :testId") // Assuming table name 'test_questions' from getQuestionsForTest
+    suspend fun deleteCrossRefsByTestId(testId: String)
 
     @Query("""
         SELECT q.* FROM questions q
@@ -166,6 +169,9 @@ interface TestAttemptDao {
 
     @Query("DELETE FROM test_attempts WHERE id = :attemptId")
     suspend fun deleteTestAttemptById(attemptId: String)
+    
+    @Query("DELETE FROM test_attempts WHERE testId = :testId")
+    suspend fun deleteAttemptsByTestId(testId: String)
 
     @Transaction
     suspend fun deleteAttemptAndAnswers(attemptId: String) {
