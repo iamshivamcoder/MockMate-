@@ -32,7 +32,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -42,7 +41,6 @@ import com.example.mockmate.model.UserStats
 import com.example.mockmate.ui.components.MockMateTopBar
 import com.example.mockmate.ui.components.ProgressBar
 import com.example.mockmate.ui.components.SectionHeader
-import com.example.mockmate.ui.components.StatCard
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -56,7 +54,7 @@ fun DashboardScreen(
     repository: TestRepository = com.example.mockmate.MockMateApplication.getTestRepository()
 ) {
     val userStats by repository.userStats.collectAsState(initial = UserStats(questionsAnswered = 0, correctAnswers = 0, streak = 0))
-    
+
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -66,7 +64,7 @@ fun DashboardScreen(
             showSettings = true,
             onSettingsClick = onSettingsClick
         )
-        
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -77,37 +75,34 @@ fun DashboardScreen(
             WelcomeCard(userName = "") // Remove 'Aspirant' to avoid showing it in greeting
 
             Spacer(modifier = Modifier.height(32.dp))
-            
+
             UserStatsSection(userStats)
-            
+
             Spacer(modifier = Modifier.height(40.dp))
-            
+
             ActionButton(
                 text = "Start Practicing",
                 icon = Icons.Default.PlayArrow,
                 onClick = onPracticeClick,
-                primaryColor = MaterialTheme.colorScheme.primary,
-                secondaryColor = MaterialTheme.colorScheme.primaryContainer
+                primaryColor = MaterialTheme.colorScheme.primary
             )
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             ActionButton(
                 text = "View History & Analytics",
                 icon = Icons.Default.DataExploration,
                 onClick = onHistoryClick,
-                primaryColor = MaterialTheme.colorScheme.secondary,
-                secondaryColor = MaterialTheme.colorScheme.secondaryContainer
+                primaryColor = MaterialTheme.colorScheme.secondary
             )
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             ActionButton(
                 text = "Import Data",
                 icon = Icons.Default.Upload,
                 onClick = onImportClick,
-                primaryColor = MaterialTheme.colorScheme.tertiary,
-                secondaryColor = MaterialTheme.colorScheme.tertiaryContainer
+                primaryColor = MaterialTheme.colorScheme.tertiary
             )
         }
     }
@@ -116,13 +111,13 @@ fun DashboardScreen(
 @Composable
 private fun UserStatsSection(userStats: UserStats) {
     SectionHeader(text = "Your Progress")
-    
+
     val accuracy = if (userStats.questionsAnswered > 0) {
         userStats.correctAnswers.toFloat() / userStats.questionsAnswered
     } else {
         0f
     }
-    
+
     ElevatedCard(
         modifier = Modifier
             .fillMaxWidth()
@@ -150,9 +145,9 @@ private fun UserStatsSection(userStats: UserStats) {
             )
         }
     }
-    
+
     Spacer(modifier = Modifier.height(20.dp))
-    
+
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
@@ -168,9 +163,9 @@ private fun UserStatsSection(userStats: UserStats) {
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Medium
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             ProgressBar(progress = accuracy)
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -182,7 +177,7 @@ private fun UserStatsSection(userStats: UserStats) {
             )
 
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             Text(
                 text = "Focus on consistent daily practice to improve your UPSC preparation!",
                 style = MaterialTheme.typography.bodyMedium,
@@ -195,7 +190,7 @@ private fun UserStatsSection(userStats: UserStats) {
 @Composable
 private fun WelcomeCard(userName: String) {
     val greeting = remember { getGreeting() }
-    
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -216,17 +211,17 @@ private fun WelcomeCard(userName: String) {
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onPrimaryContainer
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             Text(
                 text = "Ready to continue your UPSC preparation journey?",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
             )
-            
+
             Spacer(modifier = Modifier.height(12.dp))
-            
+
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -236,9 +231,9 @@ private fun WelcomeCard(userName: String) {
                     tint = MaterialTheme.colorScheme.onPrimaryContainer,
                     modifier = Modifier.size(20.dp)
                 )
-                
+
                 Spacer(modifier = Modifier.padding(4.dp))
-                
+
                 Text(
                     text = remember { SimpleDateFormat("EEE, MMM d, yyyy", Locale.getDefault()).format(Date()) },
                     style = MaterialTheme.typography.bodyMedium,
@@ -254,8 +249,7 @@ private fun ActionButton(
     text: String,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     onClick: () -> Unit,
-    primaryColor: Color,
-    secondaryColor: Color
+    primaryColor: Color
 ) {
     Button(
         onClick = onClick,
@@ -278,9 +272,9 @@ private fun ActionButton(
                 contentDescription = null,
                 modifier = Modifier.size(24.dp)
             )
-            
+
             Spacer(modifier = Modifier.padding(horizontal = 8.dp))
-            
+
             Text(
                 text = text,
                 style = MaterialTheme.typography.titleMedium,
@@ -306,7 +300,7 @@ private fun StatColumn(
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary
         )
-        
+
         Text(
             text = title,
             style = MaterialTheme.typography.bodyMedium,

@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
 /**
  * Repository that manages user settings and preferences
  */
-class SettingsRepository(private val context: Context) {
+class SettingsRepository(context: Context) {
     
     private val sharedPreferences: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     private val gson = Gson()
@@ -48,60 +48,6 @@ class SettingsRepository(private val context: Context) {
         )
     }
 
-    fun updateDarkMode(darkMode: Boolean) {
-        _settings.value = _settings.value.copy(darkMode = darkMode)
-        saveSetting(KEY_DARK_MODE, darkMode)
-    }
-    
-    fun updateNotificationsEnabled(enabled: Boolean) {
-        _settings.value = _settings.value.copy(notificationsEnabled = enabled)
-        saveSetting(KEY_NOTIFICATIONS_ENABLED, enabled)
-    }
-    
-    fun updateReminderTime(time: String) {
-        _settings.value = _settings.value.copy(reminderTime = time)
-        saveSetting(KEY_REMINDER_TIME, time)
-    }
-    
-    fun updateDefaultTestDifficulty(difficulty: TestDifficulty) {
-        _settings.value = _settings.value.copy(defaultTestDifficulty = difficulty)
-        saveSetting(KEY_DEFAULT_TEST_DIFFICULTY, difficulty.name)
-    }
-    
-    fun updateShowExplanations(show: Boolean) {
-        _settings.value = _settings.value.copy(showExplanations = show)
-        saveSetting(KEY_SHOW_EXPLANATIONS, show)
-    }
-    
-    fun updateCurrentAffairsUpdates(enabled: Boolean) {
-        _settings.value = _settings.value.copy(currentAffairsUpdates = enabled)
-        sharedPreferences.edit().putBoolean(KEY_CURRENT_AFFAIRS_UPDATES, enabled).apply()
-    }
-    
-    fun getCurrentAffairsUpdates(): Boolean {
-        return sharedPreferences.getBoolean(KEY_CURRENT_AFFAIRS_UPDATES, false)
-    }
-    
-    fun updateOptionalSubject(subject: String) {
-        _settings.value = _settings.value.copy(optionalSubject = subject)
-        sharedPreferences.edit().putString(KEY_OPTIONAL_SUBJECT, subject).apply()
-    }
-    
-    fun getOptionalSubject(): String {
-        return sharedPreferences.getString(KEY_OPTIONAL_SUBJECT, "Not Selected") ?: "Not Selected"
-    }
-    
-    /**
-     * Helper methods to save settings to SharedPreferences
-     */
-    private fun saveSetting(key: String, value: Boolean) {
-        sharedPreferences.edit().putBoolean(key, value).apply()
-    }
-    
-    private fun saveSetting(key: String, value: String) {
-        sharedPreferences.edit().putString(key, value).apply()
-    }
-    
     companion object {
         private const val PREFS_NAME = "mockmate_settings"
         private const val KEY_DARK_MODE = "dark_mode"
