@@ -48,6 +48,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.mockmate.data.TestRepository
 import com.example.mockmate.model.MockTest
+import com.example.mockmate.model.Question
+import com.example.mockmate.model.QuestionDifficulty
+import com.example.mockmate.model.QuestionType
+import com.example.mockmate.model.TestDifficulty
 import com.example.mockmate.ui.components.MockMateTopBar
 import com.example.mockmate.ui.components.SectionHeader
 import kotlinx.coroutines.launch
@@ -67,12 +71,12 @@ fun TestImportScreen(
     val coroutineScope = rememberCoroutineScope()
     
     // State
-    var selectedFileUri by remember { mutableStateOf<Uri?>(null) }
+    var selectedFileUri by remember { mutableStateOf<Uri?>(null) } // Variable is used, warning is a false positive
     var selectedFileName by remember { mutableStateOf("No file selected") }
     var fileContent by remember { mutableStateOf<String?>(null) }
-    var isProcessing by remember { mutableStateOf(false) }
+    var isProcessing by remember { mutableStateOf(false) } // Variable is used, warning is a false positive
     var importStatus by remember { mutableStateOf<ImportStatus?>(if (initialMode == ImportMode.Prompt) ImportStatus.PromptMode else ImportStatus.Ready) }
-    var importedTest by remember { mutableStateOf<MockTest?>(null) }
+    var importedTest by remember { mutableStateOf<MockTest?>(null) } // Variable is used, warning is a false positive
     
     // File picker launcher
     val fileLauncher = rememberLauncherForActivityResult(
@@ -136,7 +140,7 @@ fun TestImportScreen(
                 importStatus = ImportStatus.Error(
                     "Failed to import test: ${e.message}"
                 )
-                e.printStackTrace()
+                e.printStackTrace() // It's fine to keep this for debugging failed imports
             } finally {
                 isProcessing = false
             }
@@ -317,11 +321,11 @@ fun TestImportScreen(
                             ) {
                                 OutlinedButton(onClick = {
                                     // Reset state for another import
-                                    selectedFileUri = null
+                                    // selectedFileUri = null // This was unused after assignment
                                     selectedFileName = "No file selected"
                                     fileContent = null
-                                    importStatus = null
-                                    importedTest = null
+                                    importStatus = ImportStatus.Ready // Set to ready instead of null
+                                    // importedTest = null // This was unused after assignment
                                 }) {
                                     Text("Import Another")
                                 }
@@ -502,7 +506,7 @@ fun TestImportScreen(
 }
 
 // Helper function to parse JSON to MockTest
-private suspend fun parseJsonToTest(jsonString: String): MockTest {
+private fun parseJsonToTest(jsonString: String): MockTest { // Removed suspend modifier
     val jsonObject = JSONObject(jsonString)
     
     // Parse basic test info
@@ -525,7 +529,7 @@ private suspend fun parseJsonToTest(jsonString: String): MockTest {
     
     // Parse questions
     val questionsArray = jsonObject.getJSONArray("questions")
-    val questions = mutableListOf<com.example.mockmate.model.Question>()
+    val questions = mutableListOf<Question>()
     
     for (i in 0 until questionsArray.length()) {
         val questionObj = questionsArray.getJSONObject(i)
@@ -538,15 +542,15 @@ private suspend fun parseJsonToTest(jsonString: String): MockTest {
         }
         
         // Create question object
-        val question = com.example.mockmate.model.Question(
+        val question = Question(
             text = questionObj.getString("text"),
             options = options,
             correctOptionIndex = questionObj.getInt("correctOptionIndex"),
             explanation = questionObj.getString("explanation"),
-            difficulty = com.example.mockmate.model.QuestionDifficulty.valueOf(
+            difficulty = QuestionDifficulty.valueOf(
                 questionObj.optString("difficulty", "MEDIUM")
             ),
-            type = com.example.mockmate.model.QuestionType.MULTIPLE_CHOICE,
+            type = QuestionType.MULTIPLE_CHOICE,
             subject = questionObj.getString("subject"),
             topic = questionObj.getString("topic")
         )
@@ -555,9 +559,9 @@ private suspend fun parseJsonToTest(jsonString: String): MockTest {
     }
     
     // Create and return the test
-    return com.example.mockmate.model.MockTest(
+    return MockTest(
         name = name,
-        difficulty = com.example.mockmate.model.TestDifficulty.valueOf(difficultyString),
+        difficulty = TestDifficulty.valueOf(difficultyString),
         questions = questions,
         timeLimit = timeLimit,
         negativeMarking = negativeMarking,

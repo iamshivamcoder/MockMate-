@@ -5,7 +5,6 @@ import com.example.mockmate.ui.screens.DisplayableMockTest
 import com.example.mockmate.ui.screens.SortCriteria
 import com.example.mockmate.model.AttemptWithTest // Updated import
 import com.example.mockmate.ui.screens.TestHistorySortCriteria // Added import
-import java.util.Date // Required for sorting by Date
 
 /**
  * Filters a list of DisplayableMockTest objects based on a page index representing difficulty.

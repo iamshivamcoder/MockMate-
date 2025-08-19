@@ -41,9 +41,9 @@ class TestReminderReceiver : BroadcastReceiver() {
             Log.d("TestReminderReceiver", "scheduleTestReminder called")
 
             // 3 times: 9 AM, 2 PM, 7 PM
-            val morningScheduled = scheduleDaily(context, alarmManager, 9, 0, MORNING_CODE)
-            val afternoonScheduled = scheduleDaily(context, alarmManager, 14, 0, AFTERNOON_CODE)
-            val eveningScheduled = scheduleDaily(context, alarmManager, 19, 0, EVENING_CODE)
+            val morningScheduled = scheduleDaily(context, alarmManager, 9, MORNING_CODE)
+            val afternoonScheduled = scheduleDaily(context, alarmManager, 14, AFTERNOON_CODE)
+            val eveningScheduled = scheduleDaily(context, alarmManager, 19, EVENING_CODE)
 
             return morningScheduled && afternoonScheduled && eveningScheduled
         }
@@ -60,7 +60,6 @@ class TestReminderReceiver : BroadcastReceiver() {
             context: Context,
             alarmManager: AlarmManager,
             hour: Int,
-            minute: Int,
             requestCode: Int
         ): Boolean { // Return Boolean
             val intent = Intent(context, TestReminderReceiver::class.java).apply {
@@ -76,7 +75,7 @@ class TestReminderReceiver : BroadcastReceiver() {
             val calendar = Calendar.getInstance().apply {
                 timeInMillis = System.currentTimeMillis()
                 set(Calendar.HOUR_OF_DAY, hour)
-                set(Calendar.MINUTE, minute)
+                set(Calendar.MINUTE, 0) // Set minute to 0 directly
                 set(Calendar.SECOND, 0)
                 // If the scheduled time today has already passed, schedule for the next day.
                 if (before(Calendar.getInstance())) {
@@ -84,25 +83,19 @@ class TestReminderReceiver : BroadcastReceiver() {
                 }
             }
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
-                Log.e("TestReminderReceiver", "SCHEDULE_EXACT_ALARM permission not granted. Cannot schedule exact daily reminder for $hour:$minute. Please enable 'Alarms & Reminders' for the app in system settings.")
+            // SDK_INT is always >= 26 (minSdk is 26), so no need for this check
+            if (!alarmManager.canScheduleExactAlarms()) {
+                Log.e("TestReminderReceiver", "SCHEDULE_EXACT_ALARM permission not granted. Cannot schedule exact daily reminder for $hour:00. Please enable 'Alarms & Reminders' for the app in system settings.")
                 return false // Indicate failure
             }
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                alarmManager.setExactAndAllowWhileIdle(
-                    AlarmManager.RTC_WAKEUP,
-                    calendar.timeInMillis,
-                    pendingIntent
-                )
-            } else {
-                alarmManager.setExact(
-                    AlarmManager.RTC_WAKEUP,
-                    calendar.timeInMillis,
-                    pendingIntent
-                )
-            }
-            Log.d("TestReminderReceiver", "Alarm scheduled for $hour:$minute with request code $requestCode at ${calendar.timeInMillis}")
+            // SDK_INT is always >= 26 (minSdk is 26), so setExactAndAllowWhileIdle is always available
+            alarmManager.setExactAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP,
+                calendar.timeInMillis,
+                pendingIntent
+            )
+            Log.d("TestReminderReceiver", "Alarm scheduled for $hour:00 with request code $requestCode at ${calendar.timeInMillis}")
             return true // Indicate success
         }
 
@@ -126,15 +119,14 @@ class TestReminderReceiver : BroadcastReceiver() {
             val notificationManager =
                 context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                val channel = NotificationChannel(
-                    CHANNEL_ID,
-                    "Test Reminders", // Channel name
-                    NotificationManager.IMPORTANCE_HIGH
-                )
-                channel.description = "Daily reminders to take a test"
-                notificationManager.createNotificationChannel(channel)
-            }
+            // SDK_INT is always >= 26 (minSdk is 26), so NotificationChannel is always available
+            val channel = NotificationChannel(
+                CHANNEL_ID,
+                "Test Reminders", // Channel name
+                NotificationManager.IMPORTANCE_HIGH
+            )
+            channel.description = "Daily reminders to take a test"
+            notificationManager.createNotificationChannel(channel)
 
             // Create an Intent to open MainActivity
             val intent = Intent(context, MainActivity::class.java).apply {
@@ -167,7 +159,7 @@ class TestReminderReceiver : BroadcastReceiver() {
             else -> "Time to study and crack UPSC 💪" // Default fallback
         }
 
-        Companion.showNotification(context, msg) // Call companion object method
+        showNotification(context, msg) // Removed Companion qualifier
         // This reschedules all three for their next occurrences.
         scheduleTestReminder(context)
     }

@@ -50,7 +50,7 @@ fun SettingsScreen(
                         // intent.data = Uri.parse("package:" + context.packageName)
                         try {
                             context.startActivity(intent)
-                        } catch (e: Exception) {
+                        } catch (_: Exception) { // Parameter "e" is now replaced with "_"
                             // Fallback if specific intent fails (e.g. for older devices or custom ROMs)
                             // Open general app settings
                             val fallbackIntent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)

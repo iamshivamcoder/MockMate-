@@ -42,6 +42,7 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import com.example.mockmate.R
 import com.example.mockmate.ui.components.MockMateTopBar
 
@@ -159,7 +160,7 @@ fun AboutDeveloperCard() {
                     text = "support@mockmate.com", // TODO: Replace with your real support email
                     onClick = {
                         val intent = Intent(Intent.ACTION_SENDTO).apply {
-                            data = Uri.parse("mailto:support@mockmate.com") // TODO: Replace
+                            data = "mailto:support@mockmate.com".toUri() // TODO: Replace
                         }
                         context.startActivity(intent)
                     }

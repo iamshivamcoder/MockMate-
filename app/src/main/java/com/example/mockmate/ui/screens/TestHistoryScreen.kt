@@ -183,7 +183,7 @@ private fun TestHistoryContent(
             // Use the new SortControls Composable
             SortControls(
                 currentSortCriteria = sortBy,
-                sortCriteriaOptions = TestHistorySortCriteria.values().toList(),
+                sortCriteriaOptions = TestHistorySortCriteria.entries.toList(),
                 onSortCriteriaChange = { sortBy = it },
                 sortAscending = sortAscending,
                 onSortAscendingChange = { sortAscending = it },
@@ -201,7 +201,7 @@ private fun TestHistoryContent(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "You haven't taken any tests yet.",
+                        text = "You haven\'t taken any tests yet.",
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
