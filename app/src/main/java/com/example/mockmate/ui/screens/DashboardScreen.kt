@@ -69,6 +69,7 @@ fun DashboardScreen(
                 currentStreak = userStats.streak,
                 onSettingsClick = onSettingsClick,
                 onStreakClick = { showStreakInfoDialog = true },
+                onImportClick = onImportClick, // Pass the onImportClick lambda
                 scrollBehavior = scrollBehavior
             )
         }

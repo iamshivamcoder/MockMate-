@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import com.example.mockmate.data.prefs.NotificationPreferences
 import com.example.mockmate.notifications.TestReminderReceiver
 import com.example.mockmate.ui.components.MockMateTopBar
+import androidx.compose.ui.input.nestedscroll.nestedScroll // Added import
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,6 +33,7 @@ fun SettingsScreen(
         mutableStateOf(NotificationPreferences.areNotificationsEnabled(context))
     }
     var showPermissionDialog by remember { mutableStateOf(false) }
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState()) // Added scrollBehavior
 
     if (showPermissionDialog) {
         AlertDialog(
@@ -70,11 +72,13 @@ fun SettingsScreen(
     }
 
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), // Added modifier
         topBar = {
             MockMateTopBar(
                 title = "Settings",
                 showBackButton = true,
-                onBackClick = onNavigateBack
+                onBackClick = onNavigateBack,
+                scrollBehavior = scrollBehavior // Passed scrollBehavior
             )
         }
     ) { paddingValues ->

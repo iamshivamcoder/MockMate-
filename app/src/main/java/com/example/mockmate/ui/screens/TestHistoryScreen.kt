@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -29,7 +30,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -39,6 +43,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -62,9 +67,9 @@ fun TestHistoryScreen(
     val testAttemptsList by testAttemptsFlow.collectAsState(initial = emptyList())
     val userStats by repository.userStats.collectAsState(initial = UserStats(questionsAnswered = 0, correctAnswers = 0, streak = 0))
 
-
     var isLoading by remember { mutableStateOf(true) }
     var attemptsWithTest by remember { mutableStateOf<List<AttemptWithTest>>(emptyList()) }
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
 
     LaunchedEffect(testAttemptsList) {
         isLoading = true
@@ -87,31 +92,38 @@ fun TestHistoryScreen(
                     attemptedQuestions = attemptedQuestions,
                     correctAnswers = correctAnswers,
                     totalQuestions = test.questions.size,
-                    score = correctAnswers // Assuming score is correct answers for now
+                    score = correctAnswers
                 )
             } else {
-                null // Skip attempts for tests that are not found
+                null
             }
         }
         attemptsWithTest = processedAttempts
         isLoading = false
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        MockMateTopBar(
-            title = "Test History & Analytics",
-            onBackClick = onNavigateBack
-        )
-
+    Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        topBar = {
+            MockMateTopBar(
+                title = "Test History & Analytics",
+                onBackClick = onNavigateBack,
+                scrollBehavior = scrollBehavior
+            )
+        }
+    ) { innerPadding ->
         if (isLoading) {
             Box(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
                 contentAlignment = Alignment.Center
             ) {
                 CircularProgressIndicator()
             }
         } else {
             TestHistoryContent(
+                modifier = Modifier.padding(innerPadding), // Pass innerPadding
                 userStats = userStats,
                 testAttempts = attemptsWithTest,
                 onViewResult = { attemptId, testId ->
@@ -124,134 +136,139 @@ fun TestHistoryScreen(
 
 @Composable
 private fun TestHistoryContent(
+    modifier: Modifier = Modifier,
     userStats: UserStats,
     testAttempts: List<AttemptWithTest>,
     onViewResult: (String, String) -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
+    var sortBy by remember { mutableStateOf("Date") }
+    var sortAscending by remember { mutableStateOf(false) }
+    var showSortMenu by remember { mutableStateOf(false) }
+
+    val sortedAttempts = when (sortBy) {
+        "Date" -> if (sortAscending) testAttempts.sortedBy { it.date } else testAttempts.sortedByDescending { it.date }
+        "Score" -> if (sortAscending) testAttempts.sortedBy { it.score } else testAttempts.sortedByDescending { it.score }
+        "Test Name" -> if (sortAscending) testAttempts.sortedBy { it.testName } else testAttempts.sortedByDescending { it.testName }
+        else -> testAttempts
+    }
+
+    LazyColumn(
+        modifier = modifier.fillMaxSize(), // Applied modifier (which includes innerPadding)
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp) // Overall padding for LazyColumn content
     ) {
-        UserStatsSection(userStats)
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Test history list
-        SectionHeader(text = "Test History")
-        
-        // Sorting options
-        var sortBy by remember { mutableStateOf("Date") }
-        var sortAscending by remember { mutableStateOf(false) }
-        var showSortMenu by remember { mutableStateOf(false) }
-        
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = "Sort by: $sortBy",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Icon(
-                    imageVector = if (sortAscending) Icons.Default.DateRange else Icons.Default.Assessment, // Use icons to indicate order
-                    contentDescription = if (sortAscending) "Ascending" else "Descending",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(18.dp)
-                )
-                Text(
-                    text = if (sortAscending) " (Asc)" else " (Desc)",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-            Box {
-                IconButton(onClick = { showSortMenu = true }) {
-                    Icon(
-                        imageVector = Icons.Default.MoreVert,
-                        contentDescription = "Sort options",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-                DropdownMenu(
-                    expanded = showSortMenu,
-                    onDismissRequest = { showSortMenu = false },
-                    modifier = Modifier.widthIn(min = 180.dp) // Make menu more responsive
-                ) {
-                    DropdownMenuItem(
-                        text = { Text("Date") },
-                        onClick = {
-                            sortBy = "Date"
-                            showSortMenu = false
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Score") },
-                        onClick = {
-                            sortBy = "Score"
-                            showSortMenu = false
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Test Name") },
-                        onClick = {
-                            sortBy = "Test Name"
-                            showSortMenu = false
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text(if (sortAscending) "Ascending" else "Descending") },
-                        onClick = {
-                            sortAscending = !sortAscending
-                            showSortMenu = false
-                        }
-                    )
-                }
-            }
+        item {
+            UserStatsSection(userStats)
         }
-        
-        // Sort the test attempts based on selected criteria
-        val sortedAttempts = when (sortBy) {
-            "Date" -> if (sortAscending) testAttempts.sortedBy { it.date } else testAttempts.sortedByDescending { it.date }
-            "Score" -> if (sortAscending) testAttempts.sortedBy { it.score } else testAttempts.sortedByDescending { it.score }
-            "Test Name" -> if (sortAscending) testAttempts.sortedBy { it.testName } else testAttempts.sortedByDescending { it.testName }
-            else -> testAttempts
+
+        item {
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        item {
+            SectionHeader(text = "Test History")
+        }
+
+        item {
+            // Sorting options
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp), // Padding for the sorting row itself
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "Sort by: $sortBy",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Icon(
+                        imageVector = if (sortAscending) Icons.Default.DateRange else Icons.Default.Assessment, 
+                        contentDescription = if (sortAscending) "Ascending" else "Descending",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Text(
+                        text = if (sortAscending) " (Asc)" else " (Desc)",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                Box {
+                    IconButton(onClick = { showSortMenu = true }) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = "Sort options",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = showSortMenu,
+                        onDismissRequest = { showSortMenu = false },
+                        modifier = Modifier.widthIn(min = 180.dp)
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Date") },
+                            onClick = {
+                                sortBy = "Date"
+                                showSortMenu = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Score") },
+                            onClick = {
+                                sortBy = "Score"
+                                showSortMenu = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Test Name") },
+                            onClick = {
+                                sortBy = "Test Name"
+                                showSortMenu = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(if (sortAscending) "Change to Descending" else "Change to Ascending") },
+                            onClick = {
+                                sortAscending = !sortAscending
+                                showSortMenu = false
+                            }
+                        )
+                    }
+                }
+            }
         }
 
         if (sortedAttempts.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(32.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "You haven't taken any tests yet.",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                )
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "You haven't taken any tests yet.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                }
             }
         } else {
-            LazyColumn {
-                items(sortedAttempts) { attempt ->
-                    TestHistoryItem(
-                        attempt = attempt,
-                        onViewResult = { onViewResult(attempt.attemptId, attempt.testId) }
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-
-                item {
-                    // Add some bottom spacing
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
+            items(sortedAttempts, key = { it.attemptId }) { attempt ->
+                TestHistoryItem(
+                    attempt = attempt,
+                    onViewResult = { onViewResult(attempt.attemptId, attempt.testId) }
+                )
+                Spacer(modifier = Modifier.height(8.dp))
             }
+        }
+
+        item {
+            Spacer(modifier = Modifier.height(16.dp)) 
         }
     }
 }
@@ -297,7 +314,6 @@ private fun TestHistoryItem(
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
-            // Top row with test name and menu
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -340,7 +356,6 @@ private fun TestHistoryItem(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Date and score
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -370,6 +385,7 @@ private fun TestHistoryItem(
                 Spacer(modifier = Modifier.width(4.dp))
 
                 Text(
+                    // Added "%)" to correctly display percentage
                     text = "(${(attempt.score.toFloat() / attempt.totalQuestions * 100).toInt()}%)",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
@@ -378,7 +394,6 @@ private fun TestHistoryItem(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Progress indicator
             val progress = if (attempt.totalQuestions > 0) attempt.score.toFloat() / attempt.totalQuestions else 0f
             LinearProgressIndicator(
                 modifier = Modifier
@@ -391,7 +406,6 @@ private fun TestHistoryItem(
     }
 }
 
-// Helper class to combine test and attempt info
 data class AttemptWithTest(
     val attemptId: String,
     val testId: String,

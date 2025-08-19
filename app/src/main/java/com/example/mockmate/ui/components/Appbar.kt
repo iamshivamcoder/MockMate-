@@ -6,17 +6,17 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.clickable // Added import
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column // Added import
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.LocalFireDepartment // Import for streak icon
+import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.MoreVert
-// Imports from BottomNavigationBar.kt merged below
+import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.ModelTraining
@@ -28,7 +28,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarScrollBehavior // Added import
+import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.runtime.Composable
@@ -38,10 +38,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color // Added import for Color
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp // Added import for sp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.mockmate.ui.navigation.Screen
@@ -56,6 +56,7 @@ import com.example.mockmate.ui.navigation.Screen
  * @param onBackClick Lambda to be invoked when the back button is clicked.
  * @param onSettingsClick Lambda to be invoked when the settings icon is clicked.
  * @param onStreakClick Lambda to be invoked when the streak display is clicked.
+ * @param onImportClick Lambda to be invoked when the import icon is clicked.
  * @param dropdownContent Optional composable content for a dropdown menu.
  * @param scrollBehavior Optional [TopAppBarScrollBehavior] to apply to the TopAppBar.
  */
@@ -68,9 +69,10 @@ fun MockMateTopBar(
     currentStreak: Int? = null,
     onBackClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
-    onStreakClick: (() -> Unit)? = null, // Added onStreakClick parameter
+    onStreakClick: (() -> Unit)? = null,
+    onImportClick: (() -> Unit)? = null,
     dropdownContent: (@Composable ColumnScope.() -> Unit)? = null,
-    scrollBehavior: TopAppBarScrollBehavior? = null // Added scrollBehavior parameter
+    scrollBehavior: TopAppBarScrollBehavior? = null
 ) {
     var showMenu by remember { mutableStateOf(false) }
 
@@ -99,30 +101,39 @@ fun MockMateTopBar(
                     ), label = "streak_icon_alpha"
                 )
 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.clickable(enabled = onStreakClick != null) { onStreakClick?.invoke() } // Made streak display clickable
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.clickable(enabled = onStreakClick != null) { onStreakClick?.invoke() }
                 ) {
                     Icon(
                         imageVector = Icons.Default.LocalFireDepartment,
                         contentDescription = "Current Streak",
-                        tint = Color(0xFFFF4500).copy(alpha = iconAlpha), // Apply animated alpha
-                        modifier = Modifier.size(24.dp) // Added size for consistency
+                        tint = Color(0xFFFF4500).copy(alpha = iconAlpha),
+                        modifier = Modifier.size(24.dp)
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = "$currentStreak",
                         style = MaterialTheme.typography.titleMedium,
-                        color = Color(0xFFFF4500) // Changed to OrangeRed
+                        color = Color(0xFFFF4500)
                     )
-                    Spacer(modifier = Modifier.width(8.dp)) // Spacing before other icons
+                }
+                Spacer(modifier = Modifier.width(8.dp)) // Spacer after the streak Column
+            }
+
+            // Display import icon if onImportClick is provided
+            onImportClick?.let {
+                IconButton(onClick = it) {
+                    Icon(
+                        imageVector = Icons.Filled.FileUpload,
+                        contentDescription = "Import Test"
+                    )
                 }
             }
 
             if (showSettings) {
                 IconButton(onClick = onSettingsClick) {
                     Icon(
-                        imageVector = Icons.Filled.Settings, // Changed to Icons.Filled.Settings from Icons.Default.Settings for consistency
+                        imageVector = Icons.Filled.Settings,
                         contentDescription = "Settings"
                     )
                 }
@@ -142,7 +153,7 @@ fun MockMateTopBar(
                 }
             }
         },
-        scrollBehavior = scrollBehavior // Passed scrollBehavior to TopAppBar
+        scrollBehavior = scrollBehavior
     )
 }
 
@@ -174,16 +185,10 @@ fun AppBottomNavigationBar(navController: NavController) {
                 selected = currentRoute == item.route,
                 onClick = {
                     navController.navigate(item.route) {
-                        // Pop up to the start destination of the graph to
-                        // avoid building up a large stack of destinations
-                        // on the back stack as users select items
                         popUpTo(navController.graph.startDestinationId) {
                             saveState = true
                         }
-                        // Avoid multiple copies of the same destination when
-                        // reselecting the same item
                         launchSingleTop = true
-                        // Restore state when reselecting a previously selected item
                         restoreState = true
                     }
                 }
