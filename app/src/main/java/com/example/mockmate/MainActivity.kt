@@ -1,40 +1,33 @@
 package com.example.mockmate
 
 import android.Manifest
-import android.content.Intent
-import android.net.Uri
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
-import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf // Added import
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.runtime.LaunchedEffect
 import androidx.core.content.ContextCompat
 import androidx.navigation.compose.rememberNavController
+import com.example.mockmate.notifications.TestReminderReceiver
 import com.example.mockmate.ui.navigation.AppNavHost
 import com.example.mockmate.ui.theme.MockMateTheme
-import com.example.mockmate.data.TestRepository
-import com.example.mockmate.MockMateApplication
-import androidx.compose.runtime.collectAsState
-import com.example.mockmate.data.SettingsRepository
-import androidx.activity.OnBackPressedCallback
-import android.content.pm.PackageManager
 
 class MainActivity : ComponentActivity() {
     // Permission launcher
@@ -55,7 +48,7 @@ class MainActivity : ComponentActivity() {
     }
 
     // Add back handler
-    private val backPressedTime = mutableStateOf(0L)
+    private val backPressedTime = mutableLongStateOf(0L) // Changed to mutableLongStateOf
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -79,12 +72,13 @@ class MainActivity : ComponentActivity() {
 
         // Request all necessary permissions at startup
         val permissions = mutableListOf<String>()
-        if (android.os.Build.VERSION.SDK_INT <= android.os.Build.VERSION_CODES.S_V2) { // API 32 or below
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2) { // API 32 or below
             permissions.add(Manifest.permission.READ_EXTERNAL_STORAGE)
             permissions.add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
         }
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) { // API 33+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) { // API 33+
             permissions.add(Manifest.permission.READ_MEDIA_IMAGES)
+            permissions.add(Manifest.permission.POST_NOTIFICATIONS)
         }
         // Do NOT add INTERNET or ACCESS_NETWORK_STATE here (manifest only)
         // Remove WRITE_SETTINGS from here
@@ -92,7 +86,7 @@ class MainActivity : ComponentActivity() {
             try {
                 packageManager.getPermissionInfo(it, 0)
                 true
-            } catch (e: Exception) {
+            } catch (_: Exception) { // Changed e to _
                 false
             }
         }
@@ -120,6 +114,9 @@ class MainActivity : ComponentActivity() {
         // Initialize repositories with stable reference
         val testRepository = MockMateApplication.getTestRepository()
         val settingsRepository = MockMateApplication.getSettingsRepository()
+
+        // Schedule reminders
+        TestReminderReceiver.scheduleTestReminder(this)
         
         // Set content with error handling
         try {
@@ -174,33 +171,13 @@ class MainActivity : ComponentActivity() {
         }
     }
     
-    // Check and request necessary permissions
-    private fun checkAndRequestPermissions() {
-        val permissionsToRequest = mutableListOf<String>()
-        
-        // Check which permissions are not granted
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            permissionsToRequest.add(Manifest.permission.READ_EXTERNAL_STORAGE)
-        }
-        
-        // For Android 13+
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES) != PackageManager.PERMISSION_GRANTED) {
-                permissionsToRequest.add(Manifest.permission.READ_MEDIA_IMAGES)
-            }
-        }
-        
-        // Request permissions if needed
-        if (permissionsToRequest.isNotEmpty()) {
-            requestPermissionLauncher.launch(permissionsToRequest.toTypedArray())
-        }
-    }
+    // Removed unused checkAndRequestPermissions function
 
     private fun isMIUI(): Boolean {
         return try {
-            val prop = android.os.Build::class.java.getMethod("getPropertyByName", String::class.java)
+            val prop = Build::class.java.getMethod("getPropertyByName", String::class.java)
             prop.invoke(null, "ro.miui.ui.version.name") != null
-        } catch (e: Exception) {
+        } catch (_: Exception) { // Changed e to _
             false
         }
     }

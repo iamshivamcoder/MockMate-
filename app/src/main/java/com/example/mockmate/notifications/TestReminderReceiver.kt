@@ -5,12 +5,15 @@ import android.content.*
 import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import com.example.mockmate.MainActivity
+import com.example.mockmate.R
 import java.util.*
 
 class TestReminderReceiver : BroadcastReceiver() {
 
     companion object {
         private const val CHANNEL_ID = "test_reminder_channel"
+        private const val NOTIFICATION_ID = 123 // Added a fixed notification ID
         private val MORNING_CODE = 1001
         private val AFTERNOON_CODE = 1002
         private val EVENING_CODE = 1003
@@ -118,6 +121,40 @@ class TestReminderReceiver : BroadcastReceiver() {
             alarmManager.cancel(pendingIntent)
             Log.d("TestReminderReceiver", "Alarm canceled for request code $requestCode")
         }
+
+        fun showNotification(context: Context, message: String) {
+            val notificationManager =
+                context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val channel = NotificationChannel(
+                    CHANNEL_ID,
+                    "Test Reminders", // Channel name
+                    NotificationManager.IMPORTANCE_HIGH
+                )
+                channel.description = "Daily reminders to take a test"
+                notificationManager.createNotificationChannel(channel)
+            }
+
+            // Create an Intent to open MainActivity
+            val intent = Intent(context, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            }
+            val pendingIntent: PendingIntent = PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+
+            val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+                .setContentTitle("UPSC Reminder 📚")
+                .setContentText(message)
+                .setSmallIcon(R.drawable.ic_launcher_foreground) // Set your app's icon
+                .setStyle(NotificationCompat.BigTextStyle().bigText(message)) // Use BigTextStyle
+                .setContentIntent(pendingIntent) // Set the PendingIntent
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setAutoCancel(true)
+                .build()
+
+            notificationManager.notify(NOTIFICATION_ID, notification) // Use a fixed ID to update the notification
+            Log.d("TestReminderReceiver", "Notification shown: $message")
+        }
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -130,35 +167,8 @@ class TestReminderReceiver : BroadcastReceiver() {
             else -> "Time to study and crack UPSC 💪" // Default fallback
         }
 
-        showNotification(context, msg)
+        Companion.showNotification(context, msg) // Call companion object method
         // This reschedules all three for their next occurrences.
-        // We can choose to handle the return value here if needed, e.g., log if rescheduling fails.
         scheduleTestReminder(context)
-    }
-
-    private fun showNotification(context: Context, message: String) {
-        val notificationManager =
-            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                "Test Reminders", // Channel name
-                NotificationManager.IMPORTANCE_HIGH
-            )
-            channel.description = "Daily reminders to take a test"
-            notificationManager.createNotificationChannel(channel)
-        }
-
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setContentTitle("UPSC Reminder 📚")
-            .setContentText(message)
-            .setSmallIcon(android.R.drawable.ic_dialog_info) // Standard Android icon
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setAutoCancel(true)
-            .build()
-
-        notificationManager.notify(System.currentTimeMillis().toInt(), notification)
-        Log.d("TestReminderReceiver", "Notification shown: $message")
     }
 }

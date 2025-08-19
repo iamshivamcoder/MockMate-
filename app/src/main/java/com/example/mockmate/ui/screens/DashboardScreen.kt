@@ -2,18 +2,24 @@ package com.example.mockmate.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DataExploration
 import androidx.compose.material.icons.filled.Pets // Import for placeholder icon
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.RocketLaunch
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -32,7 +38,6 @@ import androidx.compose.ui.unit.dp
 import com.example.mockmate.data.TestRepository
 import com.example.mockmate.model.UserStats
 import com.example.mockmate.ui.components.MockMateTopBar
-import com.example.mockmate.ui.components.UserStatsSection
 import com.example.mockmate.ui.components.WelcomeCard
 import com.example.mockmate.ui.components.ActionButton
 
@@ -69,9 +74,7 @@ fun DashboardScreen(
         ) {
             WelcomeCard(userName = "")
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            UserStatsSection(userStats)
+            PracticeLureSection()
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -142,5 +145,45 @@ fun DashboardScreen(
                 }
             }
         )
+    }
+}
+
+@Composable
+fun PracticeLureSection() {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceAround
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Thoda practice ho jaye?",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Apne knowledge ko next level pe le jao!",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                )
+            }
+            Icon(
+                imageVector = Icons.Default.RocketLaunch,
+                contentDescription = "Practice Rocket",
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(48.dp)
+            )
+        }
     }
 }

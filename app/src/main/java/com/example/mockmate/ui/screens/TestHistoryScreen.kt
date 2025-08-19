@@ -42,8 +42,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.mockmate.data.TestRepository
+import com.example.mockmate.model.UserStats
 import com.example.mockmate.ui.components.MockMateTopBar
 import com.example.mockmate.ui.components.SectionHeader
+import com.example.mockmate.ui.components.UserStatsSection
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -56,6 +58,8 @@ fun TestHistoryScreen(
 ) {
     val testAttemptsFlow = repository.getAllTestAttempts()
     val testAttemptsList by testAttemptsFlow.collectAsState(initial = emptyList())
+    val userStats by repository.userStats.collectAsState(initial = UserStats(questionsAnswered = 0, correctAnswers = 0, streak = 0))
+
 
     var isLoading by remember { mutableStateOf(true) }
     var attemptsWithTest by remember { mutableStateOf<List<AttemptWithTest>>(emptyList()) }
@@ -106,6 +110,7 @@ fun TestHistoryScreen(
             }
         } else {
             TestHistoryContent(
+                userStats = userStats,
                 testAttempts = attemptsWithTest,
                 onViewResult = { attemptId, testId ->
                     onViewTestResult(attemptId, testId)
@@ -117,6 +122,7 @@ fun TestHistoryScreen(
 
 @Composable
 private fun TestHistoryContent(
+    userStats: UserStats,
     testAttempts: List<AttemptWithTest>,
     onViewResult: (String, String) -> Unit
 ) {
@@ -125,32 +131,7 @@ private fun TestHistoryContent(
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        // Summary statistics
-        SectionHeader(text = "Your Progress")
-
-        val totalAttemptedQuestions = testAttempts.sumOf { it.attemptedQuestions }
-        val totalCorrectAnswers = testAttempts.sumOf { it.correctAnswers }
-
-        val accuracy = if (totalAttemptedQuestions > 0) {
-            totalCorrectAnswers.toFloat() / totalAttemptedQuestions.toFloat()
-        } else 0f
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            ProgressStat(
-                title = "Tests Taken",
-                value = testAttempts.size.toString(),
-                modifier = Modifier.weight(1f)
-            )
-
-            ProgressStat(
-                title = "Avg. Score",
-                value = "${(accuracy * 100).toInt()}%",
-                modifier = Modifier.weight(1f)
-            )
-        }
+        UserStatsSection(userStats)
 
         Spacer(modifier = Modifier.height(16.dp))
 
