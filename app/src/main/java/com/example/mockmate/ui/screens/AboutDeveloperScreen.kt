@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -44,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import com.example.mockmate.R
 import com.example.mockmate.ui.components.MockMateTopBar
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AboutDeveloperScreen(
     onNavigateBack: () -> Unit
@@ -70,6 +72,7 @@ fun AboutDeveloperScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AboutDeveloperCard() {
     val context = LocalContext.current

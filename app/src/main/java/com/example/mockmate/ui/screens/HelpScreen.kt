@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.mockmate.ui.components.MockMateTopBar
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HelpScreen(
     onNavigateBack: () -> Unit

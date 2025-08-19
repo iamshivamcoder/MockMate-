@@ -20,6 +20,7 @@ import com.example.mockmate.data.prefs.NotificationPreferences
 import com.example.mockmate.notifications.TestReminderReceiver
 import com.example.mockmate.ui.components.MockMateTopBar
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     onNavigateBack: () -> Unit,
