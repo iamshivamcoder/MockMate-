@@ -7,9 +7,10 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Column // Added import
+import androidx.compose.foundation.layout.Row // Added for streak display
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.padding // Added for streak display padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
@@ -101,9 +102,11 @@ fun MockMateTopBar(
                     ), label = "streak_icon_alpha"
                 )
 
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.clickable(enabled = onStreakClick != null) { onStreakClick?.invoke() }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .clickable(enabled = onStreakClick != null) { onStreakClick?.invoke() }
+                        .padding(horizontal = 4.dp) // Added padding for the streak display
                 ) {
                     Icon(
                         imageVector = Icons.Default.LocalFireDepartment,
@@ -111,13 +114,14 @@ fun MockMateTopBar(
                         tint = Color(0xFFFF4500).copy(alpha = iconAlpha),
                         modifier = Modifier.size(24.dp)
                     )
+                    Spacer(modifier = Modifier.width(4.dp)) // Spacer between icon and text
                     Text(
                         text = "$currentStreak",
                         style = MaterialTheme.typography.titleMedium,
                         color = Color(0xFFFF4500)
                     )
                 }
-                Spacer(modifier = Modifier.width(8.dp)) // Spacer after the streak Column
+                Spacer(modifier = Modifier.width(8.dp)) // Spacer after the streak Row
             }
 
             // Display import icon if onImportClick is provided
@@ -128,6 +132,7 @@ fun MockMateTopBar(
                         contentDescription = "Import Test"
                     )
                 }
+                // Consider adding a Spacer here if needed: Spacer(modifier = Modifier.width(4.dp))
             }
 
             if (showSettings) {
@@ -137,8 +142,15 @@ fun MockMateTopBar(
                         contentDescription = "Settings"
                     )
                 }
+                // Consider adding a Spacer here if needed: Spacer(modifier = Modifier.width(4.dp))
             }
+
             if (dropdownContent != null) {
+                // Add a Spacer before the dropdown if other icons are present and it's not the first action
+                val anyPreviousIcon = (currentStreak != null && currentStreak > 0) || onImportClick != null || showSettings
+                if (anyPreviousIcon) {
+                    Spacer(modifier = Modifier.width(4.dp))
+                }
                 IconButton(onClick = { showMenu = true }) {
                     Icon(
                         imageVector = Icons.Default.MoreVert,

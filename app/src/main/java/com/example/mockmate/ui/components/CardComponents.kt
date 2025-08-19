@@ -131,6 +131,7 @@ fun PracticeModeCard(
  * @param onClick Lambda to be invoked when the card is clicked.
  * @param onLongClick Optional lambda to be invoked on long click.
  * @param modifier Optional [Modifier] for this component.
+ * @param pulsateBadges Whether the difficulty badge should pulsate, determined by user preference.
  */
 @OptIn(ExperimentalFoundationApi::class) // Added for combinedClickable
 @Composable
@@ -138,7 +139,8 @@ fun TestCard(
     test: MockTest,
     onClick: () -> Unit,
     onLongClick: (() -> Unit)? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    pulsateBadges: Boolean = false // Added new parameter
 ) {
     Card(
         modifier = modifier
@@ -183,7 +185,10 @@ fun TestCard(
                     )
                 }
 
-                DifficultyBadge(difficulty = test.difficulty) // DifficultyBadge is in BadgeComponents.kt
+                DifficultyBadge(
+                    difficulty = test.difficulty,
+                    isPulsating = pulsateBadges // Changed from hardcoded value
+                ) // DifficultyBadge is in BadgeComponents.kt
             }
         }
     }

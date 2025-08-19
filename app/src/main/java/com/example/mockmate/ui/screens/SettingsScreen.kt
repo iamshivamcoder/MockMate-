@@ -16,10 +16,11 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.mockmate.data.SettingsRepository
 import com.example.mockmate.data.prefs.NotificationPreferences
 import com.example.mockmate.notifications.TestReminderReceiver
 import com.example.mockmate.ui.components.MockMateTopBar
-import androidx.compose.ui.input.nestedscroll.nestedScroll // Added import
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,11 +30,14 @@ fun SettingsScreen(
     onNavigateToHelp: () -> Unit,
 ) {
     val context = LocalContext.current
+    val settingsRepository = remember { SettingsRepository(context) } // Instantiate SettingsRepository
+    val appSettings by settingsRepository.settings.collectAsState() // Collect settings
+
     var notificationsEnabled by remember {
         mutableStateOf(NotificationPreferences.areNotificationsEnabled(context))
     }
     var showPermissionDialog by remember { mutableStateOf(false) }
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState()) // Added scrollBehavior
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
 
     if (showPermissionDialog) {
         AlertDialog(
@@ -44,15 +48,10 @@ fun SettingsScreen(
                 Button(
                     onClick = {
                         showPermissionDialog = false
-                        // Intent to open the specific settings page for "Schedule exact alarm"
                         val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
-                        // Optionally, you can specify the package to go directly to your app's settings
-                        // intent.data = Uri.parse("package:" + context.packageName)
                         try {
                             context.startActivity(intent)
-                        } catch (_: Exception) { // Parameter "e" is now replaced with "_"
-                            // Fallback if specific intent fails (e.g. for older devices or custom ROMs)
-                            // Open general app settings
+                        } catch (_: Exception) {
                             val fallbackIntent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
                             val uri = android.net.Uri.fromParts("package", context.packageName, null)
                             fallbackIntent.data = uri
@@ -72,13 +71,13 @@ fun SettingsScreen(
     }
 
     Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), // Added modifier
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             MockMateTopBar(
                 title = "Settings",
                 showBackButton = true,
                 onBackClick = onNavigateBack,
-                scrollBehavior = scrollBehavior // Passed scrollBehavior
+                scrollBehavior = scrollBehavior
             )
         }
     ) { paddingValues ->
@@ -103,7 +102,7 @@ fun SettingsScreen(
                     icon = Icons.Filled.Notifications,
                     title = "Daily Reminders",
                     subtitle = "Get 3 daily Hinglish motivation nudges",
-                    onClick = { // Also toggle via row click
+                    onClick = {
                         val newCheckedState = !notificationsEnabled
                         if (newCheckedState) {
                             val scheduledSuccessfully = TestReminderReceiver.scheduleTestReminder(context)
@@ -111,9 +110,8 @@ fun SettingsScreen(
                                 notificationsEnabled = true
                                 NotificationPreferences.setNotificationsEnabled(context, true)
                             } else {
-                                // scheduleTestReminder returned false, permission likely missing
-                                notificationsEnabled = false // Keep switch off
-                                NotificationPreferences.setNotificationsEnabled(context, false) // Ensure pref is also off
+                                notificationsEnabled = false
+                                NotificationPreferences.setNotificationsEnabled(context, false)
                                 showPermissionDialog = true
                             }
                         } else {
@@ -132,9 +130,8 @@ fun SettingsScreen(
                                         notificationsEnabled = true
                                         NotificationPreferences.setNotificationsEnabled(context, true)
                                     } else {
-                                        // scheduleTestReminder returned false, permission likely missing
-                                        notificationsEnabled = false // Revert switch visually
-                                        NotificationPreferences.setNotificationsEnabled(context, false) // Ensure pref is also off
+                                        notificationsEnabled = false
+                                        NotificationPreferences.setNotificationsEnabled(context, false)
                                         showPermissionDialog = true
                                     }
                                 } else {
@@ -147,6 +144,41 @@ fun SettingsScreen(
                     }
                 )
             }
+
+            item {
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            }
+
+            // Preferences Section
+            item {
+                Text(
+                    text = "Preferences",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            }
+
+            item {
+                SettingsItem(
+                    icon = Icons.Filled.ToggleOn, // Or Icons.Filled.Animation / Icons.Filled.Visibility
+                    title = "Pulsating Badges",
+                    subtitle = "Enable or disable badge animations",
+                    onClick = {
+                        settingsRepository.setPulsatingBadgesEnabled(!appSettings.pulsatingBadgesEnabled)
+                    },
+                    action = {
+                        Switch(
+                            checked = appSettings.pulsatingBadgesEnabled,
+                            onCheckedChange = { isChecked ->
+                                settingsRepository.setPulsatingBadgesEnabled(isChecked)
+                            }
+                        )
+                    }
+                )
+            }
+
 
             item {
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))

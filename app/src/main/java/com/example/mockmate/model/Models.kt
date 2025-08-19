@@ -90,7 +90,8 @@ data class AppSettings(
     val defaultTestDifficulty: TestDifficulty = TestDifficulty.MEDIUM,
     val showExplanations: Boolean = true,
     val currentAffairsUpdates: Boolean = false,
-    val optionalSubject: String = "Not Selected"
+    val optionalSubject: String = "Not Selected",
+    val pulsatingBadgesEnabled: Boolean = true // Added this line
 )
 
 data class AttemptWithTest(
@@ -103,5 +104,4 @@ data class AttemptWithTest(
     val totalQuestions: Int,
     val score: Int
 )
-
 

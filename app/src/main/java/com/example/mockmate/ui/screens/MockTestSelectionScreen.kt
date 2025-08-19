@@ -27,15 +27,19 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.mockmate.MockMateApplication
+import com.example.mockmate.data.SettingsRepository
 import com.example.mockmate.data.TestRepository
 import com.example.mockmate.model.MockTest
+import com.example.mockmate.model.AppSettings // Required for default settings
 import com.example.mockmate.ui.components.MockMateTopBar
-import com.example.mockmate.ui.components.SortControls // Import the new SortControls
+import com.example.mockmate.ui.components.SortControls
 import com.example.mockmate.ui.components.TestCard
-import com.example.mockmate.util.filterTests // Import new utility function
-import com.example.mockmate.util.sortTests // Import new utility function
+import com.example.mockmate.util.filterTests
+import com.example.mockmate.util.sortTests
 import kotlinx.coroutines.launch
 import java.util.Date
 import java.util.Locale
@@ -62,12 +66,15 @@ fun MockTestSelectionScreen(
     onNavigateBack: () -> Unit,
     onTestSelected: (String) -> Unit,
     onSettingsClick: () -> Unit,
-    repository: TestRepository = com.example.mockmate.MockMateApplication.getTestRepository()
+    repository: TestRepository = MockMateApplication.getTestRepository(),
+    settingsRepository: SettingsRepository = SettingsRepository(LocalContext.current) // Added settings repo
 ) {
     // Fetch raw MockTest objects
     val allRawMockTests by repository.mockTests.collectAsState(initial = emptyList())
     // Fetch all TestAttempt objects
     val allTestAttempts by repository.getAllTestAttempts().collectAsState(initial = emptyList())
+    // Fetch app settings
+    val appSettings by settingsRepository.settings.collectAsState(initial = AppSettings()) // Added
 
     var showDeleteDialog by remember { mutableStateOf(false) }
     var testToDelete by remember { mutableStateOf<MockTest?>(null) }
@@ -206,7 +213,8 @@ fun MockTestSelectionScreen(
                             onLongClick = {
                                 testToDelete = displayableTest.mockTest
                                 showDeleteDialog = true
-                            }
+                            },
+                            pulsateBadges = appSettings.pulsatingBadgesEnabled // Fixed this line
                         )
                     }
                 }

@@ -2,6 +2,7 @@ package com.example.mockmate.data
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.example.mockmate.data.prefs.NotificationPreferences // Added this import
 import com.example.mockmate.model.AppSettings
 import com.example.mockmate.model.TestDifficulty
 import com.google.gson.Gson
@@ -12,7 +13,7 @@ import kotlinx.coroutines.flow.asStateFlow
 /**
  * Repository that manages user settings and preferences
  */
-class SettingsRepository(context: Context) {
+class SettingsRepository(private val context: Context) { // Made context a property
     
     private val sharedPreferences: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     private val gson = Gson()
@@ -25,7 +26,7 @@ class SettingsRepository(context: Context) {
      */
     private fun loadSettings(): AppSettings {
         val darkMode = sharedPreferences.getBoolean(KEY_DARK_MODE, false)
-        val notificationsEnabled = sharedPreferences.getBoolean(KEY_NOTIFICATIONS_ENABLED, true)
+        val notificationsEnabled = NotificationPreferences.areNotificationsEnabled(context) // Using NotificationPreferences
         val reminderTime = sharedPreferences.getString(KEY_REMINDER_TIME, "08:00") ?: "08:00"
         val defaultDifficultyString = sharedPreferences.getString(KEY_DEFAULT_TEST_DIFFICULTY, TestDifficulty.MEDIUM.name) ?: TestDifficulty.MEDIUM.name
         val defaultTestDifficulty = try {
@@ -36,6 +37,7 @@ class SettingsRepository(context: Context) {
         val showExplanations = sharedPreferences.getBoolean(KEY_SHOW_EXPLANATIONS, true)
         val currentAffairsUpdates = sharedPreferences.getBoolean(KEY_CURRENT_AFFAIRS_UPDATES, false)
         val optionalSubject = sharedPreferences.getString(KEY_OPTIONAL_SUBJECT, "Not Selected") ?: "Not Selected"
+        val pulsatingBadgesEnabled = NotificationPreferences.arePulsatingBadgesEnabled(context) // Added this line
         
         return AppSettings(
             darkMode = darkMode,
@@ -44,18 +46,26 @@ class SettingsRepository(context: Context) {
             defaultTestDifficulty = defaultTestDifficulty,
             showExplanations = showExplanations,
             currentAffairsUpdates = currentAffairsUpdates,
-            optionalSubject = optionalSubject
+            optionalSubject = optionalSubject,
+            pulsatingBadgesEnabled = pulsatingBadgesEnabled // Added this line
         )
+    }
+
+    // Added this function to update pulsating badges setting
+    fun setPulsatingBadgesEnabled(enabled: Boolean) {
+        NotificationPreferences.setPulsatingBadgesEnabled(context, enabled)
+        _settings.value = loadSettings() // Reload settings to reflect changes
     }
 
     companion object {
         private const val PREFS_NAME = "mockmate_settings"
         private const val KEY_DARK_MODE = "dark_mode"
-        private const val KEY_NOTIFICATIONS_ENABLED = "notifications_enabled"
+        // KEY_NOTIFICATIONS_ENABLED is now in NotificationPreferences
         private const val KEY_REMINDER_TIME = "reminder_time"
         private const val KEY_DEFAULT_TEST_DIFFICULTY = "default_test_difficulty"
         private const val KEY_SHOW_EXPLANATIONS = "show_explanations"
         private const val KEY_CURRENT_AFFAIRS_UPDATES = "current_affairs_updates"
         private const val KEY_OPTIONAL_SUBJECT = "optional_subject"
+        // KEY_PULSATING_BADGES_ENABLED is now in NotificationPreferences
     }
 }

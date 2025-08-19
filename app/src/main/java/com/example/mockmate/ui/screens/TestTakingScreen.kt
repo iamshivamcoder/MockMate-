@@ -40,11 +40,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.mockmate.data.SettingsRepository
 import com.example.mockmate.data.TestRepository
+import com.example.mockmate.model.AppSettings // Required for default settings
 import com.example.mockmate.model.Question
+import com.example.mockmate.model.QuestionDifficulty // Added import
 import com.example.mockmate.model.QuestionStatus
 import com.example.mockmate.ui.components.MockMateTopBar
 import com.example.mockmate.ui.components.OptionItem
@@ -59,7 +63,8 @@ fun TestTakingScreen(
     testId: String,
     onNavigateBack: () -> Unit,
     onFinish: (attemptId: String) -> Unit,
-    repository: TestRepository
+    repository: TestRepository,
+    settingsRepository: SettingsRepository = SettingsRepository(LocalContext.current) // Added
 ) {
     val viewModel: TestTakingScreenViewModel = viewModel(
         factory = TestTakingScreenViewModel.provideFactory(repository, testId)
@@ -70,6 +75,7 @@ fun TestTakingScreen(
     val selectedOptions by viewModel.selectedOptions.collectAsState()
     val questionStatus by viewModel.questionStatus.collectAsState()
     val isSaving by viewModel.isSaving.collectAsState()
+    val appSettings by settingsRepository.settings.collectAsState(initial = AppSettings()) // Changed appSettings to settings
 
     // Use local mutable state for question index and error dialog
     var currentQuestionIndex by remember { mutableIntStateOf(0) }
@@ -151,7 +157,8 @@ fun TestTakingScreen(
                 if (optionIndex != -1) {
                     viewModel.updateQuestionStatus(currentQuestionIndex, QuestionStatus.ANSWERED)
                 }
-            }
+            },
+            pulsateBadges = appSettings.pulsatingBadgesEnabled // Fixed this line
         )
 
         // Navigation buttons
@@ -283,7 +290,8 @@ fun QuestionContent(
     modifier: Modifier = Modifier,
     question: Question,
     selectedOptionIndex: Int,
-    onOptionSelected: (Int) -> Unit
+    onOptionSelected: (Int) -> Unit,
+    pulsateBadges: Boolean // Added
 ) {
     Column(
         modifier = modifier
@@ -294,7 +302,10 @@ fun QuestionContent(
         Row(
             verticalAlignment = Alignment.CenterVertically
         ) {
-            QuestionDifficultyBadge(difficulty = question.difficulty)
+            QuestionDifficultyBadge(
+                difficulty = question.difficulty,
+                isPulsating = pulsateBadges // Changed
+            )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = "${question.subject} > ${question.topic}",
