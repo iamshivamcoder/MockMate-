@@ -477,7 +477,3 @@ fun formatTime(seconds: Long): String {
     val remainingSeconds = seconds % 60
     return "${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}"
 }
-
-// Removed unused function createTestAttempt
-
-// Removed unused function calculateTimeSpentOnQuestion
