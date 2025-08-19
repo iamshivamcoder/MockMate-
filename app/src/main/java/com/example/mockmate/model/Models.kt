@@ -93,5 +93,15 @@ data class AppSettings(
     val optionalSubject: String = "Not Selected"
 )
 
+data class AttemptWithTest(
+    val attemptId: String,
+    val testId: String,
+    val testName: String,
+    val date: Date,
+    val attemptedQuestions: Int,
+    val correctAnswers: Int,
+    val totalQuestions: Int,
+    val score: Int
+)
 
 

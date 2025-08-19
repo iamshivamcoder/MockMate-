@@ -1,32 +1,19 @@
 package com.example.mockmate.ui.screens
 
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Sort
-import androidx.compose.material.icons.filled.ArrowDownward
-import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
@@ -44,10 +31,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.mockmate.data.TestRepository
 import com.example.mockmate.model.MockTest
-import com.example.mockmate.model.TestAttempt
-import com.example.mockmate.model.TestDifficulty
 import com.example.mockmate.ui.components.MockMateTopBar
+import com.example.mockmate.ui.components.SortControls // Import the new SortControls
 import com.example.mockmate.ui.components.TestCard
+import com.example.mockmate.util.filterTests // Import new utility function
+import com.example.mockmate.util.sortTests // Import new utility function
 import kotlinx.coroutines.launch
 import java.util.Date
 import java.util.Locale
@@ -103,7 +91,6 @@ fun MockTestSelectionScreen(
     val pagerState = rememberPagerState(pageCount = { tabTitles.size })
     var currentSortCriteria by remember { mutableStateOf(SortCriteria.DATE) } // Default sort criteria
     var sortAscending by remember { mutableStateOf(false) } // Default to descending
-    var sortDropdownExpanded by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     fun getSortCriteriaDisplayName(criteria: SortCriteria): String {
@@ -131,9 +118,6 @@ fun MockTestSelectionScreen(
                     TextButton(
                         onClick = {
                             testToDelete?.let {
-                                // Call repository delete function here
-                                // repository.deleteMockTest(it.id) // Placeholder
-                                println("Deleting test: ${it.name} (ID: ${it.id})") // Actual deletion logic pending
                                 scope.launch { // Ensure deletion happens in a coroutine if repository function is suspend
                                     repository.deleteMockTestById(it.id) // Assumed suspend fun in repo
                                 }
@@ -146,9 +130,9 @@ fun MockTestSelectionScreen(
                     }
                 },
                 dismissButton = {
-                    TextButton(onClick = { 
+                    TextButton(onClick = {
                         showDeleteDialog = false
-                        testToDelete = null 
+                        testToDelete = null
                     }) {
                         Text("Cancel")
                     }
@@ -185,59 +169,17 @@ fun MockTestSelectionScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Sort Options Row
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.Sort,
-                    contentDescription = "Sort Options Icon",
-                    modifier = Modifier.padding(end = 8.dp)
-                )
-                ExposedDropdownMenuBox(
-                    expanded = sortDropdownExpanded,
-                    onExpandedChange = { sortDropdownExpanded = !sortDropdownExpanded },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    OutlinedTextField(
-                        value = getSortCriteriaDisplayName(currentSortCriteria),
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text("Sort by") },
-                        trailingIcon = {
-                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = sortDropdownExpanded)
-                        },
-                        modifier = Modifier
-                            .menuAnchor()
-                            .fillMaxWidth()
-                    )
-                    ExposedDropdownMenu(
-                        expanded = sortDropdownExpanded,
-                        onDismissRequest = { sortDropdownExpanded = false }
-                    ) {
-                        SortCriteria.entries.filterNot { it == SortCriteria.NONE }.forEach { selectionCriteria ->
-                            DropdownMenuItem(
-                                text = { Text(getSortCriteriaDisplayName(selectionCriteria)) },
-                                onClick = {
-                                    currentSortCriteria = selectionCriteria
-                                    sortDropdownExpanded = false
-                                }
-                            )
-                        }
-                    }
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                IconButton(onClick = { sortAscending = !sortAscending }) {
-                    Icon(
-                        imageVector = if (sortAscending) Icons.Filled.ArrowUpward else Icons.Filled.ArrowDownward,
-                        contentDescription = if (sortAscending) "Sort Ascending" else "Sort Descending"
-                    )
-                }
-            }
+            // Use the new SortControls Composable
+            SortControls(
+                currentSortCriteria = currentSortCriteria,
+                sortCriteriaOptions = SortCriteria.entries.filterNot { it == SortCriteria.NONE },
+                onSortCriteriaChange = { currentSortCriteria = it },
+                sortAscending = sortAscending,
+                onSortAscendingChange = { sortAscending = it },
+                getDisplayName = ::getSortCriteriaDisplayName,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+            
             Spacer(modifier = Modifier.height(8.dp))
 
             HorizontalPager(
@@ -245,35 +187,11 @@ fun MockTestSelectionScreen(
                 modifier = Modifier.fillMaxWidth().weight(1f)
             ) { page -> // page index
                 val difficultyFiltered = remember(allDisplayableTests, page) {
-                    when (page) {
-                        0 -> allDisplayableTests.filter { it.mockTest.difficulty == TestDifficulty.EASY }
-                        1 -> allDisplayableTests.filter { it.mockTest.difficulty == TestDifficulty.MEDIUM }
-                        2 -> allDisplayableTests.filter { it.mockTest.difficulty == TestDifficulty.HARD }
-                        else -> allDisplayableTests
-                    }
+                    filterTests(allDisplayableTests, page) // Use utility function
                 }
 
                 val filteredAndSortedTests = remember(difficultyFiltered, currentSortCriteria, sortAscending) {
-                    when (currentSortCriteria) {
-                        SortCriteria.MARKS -> {
-                            if (sortAscending) difficultyFiltered.sortedBy { it.latestScore }
-                            else difficultyFiltered.sortedByDescending { it.latestScore }
-                        }
-                        SortCriteria.DATE -> {
-                            if (sortAscending) difficultyFiltered.sortedBy { it.mockTest.creationDate }
-                            else difficultyFiltered.sortedByDescending { it.mockTest.creationDate }
-                        }
-                        SortCriteria.LAST_GIVEN -> {
-                            if (sortAscending) difficultyFiltered.sortedWith(compareBy(nullsLast()) { it.lastAttemptDate })
-                            else difficultyFiltered.sortedWith(compareByDescending(nullsFirst()) { it.lastAttemptDate })
-                        }
-                        SortCriteria.FORGETTING_CURVE -> {
-                            // Placeholder for forgetting curve logic - current fallback to DATE
-                            if (sortAscending) difficultyFiltered.sortedBy { it.mockTest.creationDate } 
-                            else difficultyFiltered.sortedByDescending { it.mockTest.creationDate }
-                        }
-                        SortCriteria.NONE -> difficultyFiltered
-                    }
+                    sortTests(difficultyFiltered, currentSortCriteria, sortAscending) // Use utility function
                 }
 
                 LazyColumn(
@@ -281,7 +199,7 @@ fun MockTestSelectionScreen(
                         .fillMaxSize()
                         .padding(horizontal = 16.dp)
                 ) {
-                    items(filteredAndSortedTests) { displayableTest ->
+                    items(filteredAndSortedTests, key = { it.mockTest.id }) { displayableTest -> // Added key for better performance
                         TestCard(
                             test = displayableTest.mockTest,
                             onClick = { onTestSelected(displayableTest.mockTest.id) },
