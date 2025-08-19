@@ -66,9 +66,9 @@ private val COLOR_GOOD = Color(0xFF2196F3) // Blue
 private val COLOR_PROGRESS = Color(0xFFFFC107) // Yellow
 private val COLOR_NEEDS_IMPROVEMENT = Color(0xFFF44336) // Red
 
-private const val FEEDBACK_EXCELLENT = "Excellent! You've mastered this material."
+private const val FEEDBACK_EXCELLENT = "Excellent! You\'ve mastered this material."
 private const val FEEDBACK_GOOD = "Good job! You have a solid understanding of the material."
-private const val FEEDBACK_PROGRESS = "You're making progress, but should review some concepts."
+private const val FEEDBACK_PROGRESS = "You\'re making progress, but should review some concepts."
 private const val FEEDBACK_NEEDS_IMPROVEMENT = "You need to focus on improving your understanding of this material."
 
 
@@ -321,14 +321,14 @@ private fun ResultContent(
         SectionHeader(text = "Subject-wise Performance")
 
         subjectPerformance.forEach { (subject, performance) ->
-            val (totalInSubject, attempted, correct) = performance // Renamed 'total' to 'totalInSubject'
+            val (_, attempted, correct) = performance // Renamed 'total' to 'totalInSubject'
             val subjectAccuracy = if (attempted > 0) correct.toFloat() / attempted else 0f
 
             SubjectPerformanceCard(
                 subject = subject,
                 accuracy = subjectAccuracy,
                 attempted = attempted,
-                totalInSubject = totalInSubject, // Pass renamed 'totalInSubject'
+                // totalInSubject = totalInSubject, // Pass renamed 'totalInSubject'
                 correct = correct
             )
 
@@ -585,7 +585,7 @@ fun SubjectPerformanceCard(
     subject: String,
     accuracy: Float,
     attempted: Int,
-    totalInSubject: Int, // Renamed 'total' to 'totalInSubject'
+    // totalInSubject: Int, // Renamed 'total' to 'totalInSubject' - NOW REMOVED
     correct: Int
 ) {
     Card(

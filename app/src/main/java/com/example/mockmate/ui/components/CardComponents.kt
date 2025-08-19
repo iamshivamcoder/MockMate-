@@ -39,43 +39,6 @@ import com.example.mockmate.model.UserStats
 import com.example.mockmate.ui.theme.extendedColorScheme
 
 /**
- * A card component to display a statistic with a title and value.
- *
- * @param title The title of the statistic.
- * @param value The value of the statistic.
- * @param modifier Optional [Modifier] for this component.
- */
-@Composable
-fun StatCard(title: String, value: String, modifier: Modifier = Modifier) {
-    Card(
-        modifier = modifier
-            .padding(8.dp)
-            .fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = value,
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-        }
-    }
-}
-
-/**
  * A card component to represent a practice mode.
  *
  * @param mode The [PracticeMode] to display.
@@ -84,7 +47,7 @@ fun StatCard(title: String, value: String, modifier: Modifier = Modifier) {
  * @param onClick Lambda to be invoked when the card is clicked.
  * @param modifier Optional [Modifier] for this component.
  */
-@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PracticeModeCard(
     mode: PracticeMode,
@@ -169,7 +132,7 @@ fun PracticeModeCard(
  * @param onLongClick Optional lambda to be invoked on long click.
  * @param modifier Optional [Modifier] for this component.
  */
-@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class) // Added for combinedClickable
+@OptIn(ExperimentalFoundationApi::class) // Added for combinedClickable
 @Composable
 fun TestCard(
     test: MockTest,

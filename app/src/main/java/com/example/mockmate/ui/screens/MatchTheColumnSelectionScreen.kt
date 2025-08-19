@@ -12,9 +12,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
-import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -108,7 +108,7 @@ fun MatchTheColumnSelectionScreen(
     }
 
     fun getSortCriteriaDisplayName(criteria: SortCriteria): String {
-        return criteria.name.replace('_', ' ').toLowerCase(Locale.getDefault())
+        return criteria.name.replace('_', ' ').lowercase(Locale.getDefault())
             .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
     }
 
@@ -165,7 +165,7 @@ fun MatchTheColumnSelectionScreen(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Icon(
-                    imageVector = Icons.Filled.Sort,
+                    imageVector = Icons.AutoMirrored.Filled.Sort,
                     contentDescription = "Sort Options Icon",
                     modifier = Modifier.padding(end = 8.dp)
                 )
@@ -190,7 +190,7 @@ fun MatchTheColumnSelectionScreen(
                         expanded = sortDropdownExpanded,
                         onDismissRequest = { sortDropdownExpanded = false }
                     ) {
-                        SortCriteria.values().filterNot { it == SortCriteria.NONE }.forEach { selectionCriteria ->
+                        SortCriteria.entries.filterNot { it == SortCriteria.NONE }.forEach { selectionCriteria ->
                             DropdownMenuItem(
                                 text = { Text(getSortCriteriaDisplayName(selectionCriteria)) },
                                 onClick = {
