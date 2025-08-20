@@ -39,11 +39,13 @@ class TestResultViewModel(
             try {
                 val test = testRepository.getTestById(testId)
                 val attempt = testRepository.getTestAttemptById(attemptId)
-                _uiState.update {
-                    it.copy(isLoading = false, mockTest = test, testAttempt = attempt, error = null)
-                }
+
                 if (test == null || attempt == null) {
                      _uiState.update { it.copy(isLoading = false, error = "Test or Attempt not found.") }
+                } else {
+                    _uiState.update {
+                        it.copy(isLoading = false, mockTest = test, testAttempt = attempt, error = null)
+                    }
                 }
             } catch (e: Exception) {
                 _uiState.update {

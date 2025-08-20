@@ -1,8 +1,6 @@
 package com.example.mockmate.ui.screens
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -10,15 +8,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.automirrored.filled.ListAlt
-import androidx.compose.material.icons.filled.Info 
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -26,7 +18,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.mockmate.ui.components.ExpandableContentCard
 import com.example.mockmate.ui.components.MockMateTopBar
+import com.example.mockmate.ui.components.rememberExpandableCardState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -88,41 +82,65 @@ fun HelpScreen(
                 modifier = Modifier.padding(bottom = 16.dp)
             )
 
-            FAQItem(
-                icon = Icons.AutoMirrored.Filled.HelpOutline,
-                question = "How do I import my own test data?",
-                answer = "You can import tests by creating a JSON file with your questions, options, correct answers, and other details. The specific format is described in the README.md file of this project. From the Dashboard, tap 'Import Data' and select your JSON file."
-            )
+            val importOwnTestState = rememberExpandableCardState(key = "importOwnTest")
+            ExpandableContentCard(
+                leadingIcon = Icons.AutoMirrored.Filled.HelpOutline,
+                title = "How do I import my own test data?",
+                initiallyExpanded = importOwnTestState.value,
+                onExpandedChange = { importOwnTestState.value = it }
+            ) {
+                Text("You can import tests by creating a JSON file with your questions, options, correct answers, and other details. The specific format is described in the README.md file of this project. From the Dashboard, tap 'Import Data' and select your JSON file.")
+            }
 
-            FAQItem(
-                icon = Icons.AutoMirrored.Filled.HelpOutline,
-                question = "Can I take tests offline?",
-                answer = "Yes, once tests are loaded into the app (either pre-defined or imported), you can take them offline. An internet connection is primarily needed for initial data sync, updates, or if future cloud features are implemented."
-            )
+            val offlineTestState = rememberExpandableCardState(key = "offlineTest")
+            ExpandableContentCard(
+                leadingIcon = Icons.AutoMirrored.Filled.HelpOutline,
+                title = "Can I take tests offline?",
+                initiallyExpanded = offlineTestState.value,
+                onExpandedChange = { offlineTestState.value = it }
+            ) {
+                Text("Yes, once tests are loaded into the app (either pre-defined or imported), you can take them offline. An internet connection is primarily needed for initial data sync, updates, or if future cloud features are implemented.")
+            }
 
-            FAQItem(
-                icon = Icons.AutoMirrored.Filled.HelpOutline,
-                question = "How is my performance calculated?",
-                answer = "Performance is calculated based on the number of correct answers, incorrect answers (considering negative marking if enabled), and the time taken. You'll see a detailed breakdown after each test, including subject-wise scores."
-            )
+            val performanceCalculationState = rememberExpandableCardState(key = "performanceCalculation")
+            ExpandableContentCard(
+                leadingIcon = Icons.AutoMirrored.Filled.HelpOutline,
+                title = "How is my performance calculated?",
+                initiallyExpanded = performanceCalculationState.value,
+                onExpandedChange = { performanceCalculationState.value = it }
+            ) {
+                Text("Performance is calculated based on the number of correct answers, incorrect answers (considering negative marking if enabled), and the time taken. You\'ll see a detailed breakdown after each test, including subject-wise scores.")
+            }
 
-            FAQItem(
-                icon = Icons.AutoMirrored.Filled.HelpOutline,
-                question = "Is there negative marking?",
-                answer = "Yes, mock tests can have negative marking, similar to the actual UPSC exams. The value for negative marking (e.g., 0.33 for 1/3rd deduction) is defined within the test data."
-            )
+            val negativeMarkingState = rememberExpandableCardState(key = "negativeMarking")
+            ExpandableContentCard(
+                leadingIcon = Icons.AutoMirrored.Filled.HelpOutline,
+                title = "Is there negative marking?",
+                initiallyExpanded = negativeMarkingState.value,
+                onExpandedChange = { negativeMarkingState.value = it }
+            ) {
+                Text("Yes, mock tests can have negative marking, similar to the actual UPSC exams. The value for negative marking (e.g., 0.33 for 1/3rd deduction) is defined within the test data.")
+            }
             
-            FAQItem(
-                icon = Icons.AutoMirrored.Filled.HelpOutline,
-                question = "Where can I find the JSON format for importing tests?",
-                answer = "The JSON format details are available in the README.md file located in the root directory of the MockMate project."
-            )
+            val jsonFormatState = rememberExpandableCardState(key = "jsonFormat")
+            ExpandableContentCard(
+                leadingIcon = Icons.AutoMirrored.Filled.HelpOutline,
+                title = "Where can I find the JSON format for importing tests?",
+                initiallyExpanded = jsonFormatState.value,
+                onExpandedChange = { jsonFormatState.value = it }
+            ) {
+                Text("The JSON format details are available in the README.md file located in the root directory of the MockMate project.")
+            }
 
-             FAQItem(
-                icon = Icons.AutoMirrored.Filled.HelpOutline,
-                question = "How can I contribute to MockMate development?",
-                answer = "Please refer to the 'Project Vision' section in the README.md file. For specific contribution guidelines (branching, PRs, etc.), please consult with the project maintainers."
-            )
+            val contributionState = rememberExpandableCardState(key = "contribution")
+             ExpandableContentCard(
+                leadingIcon = Icons.AutoMirrored.Filled.HelpOutline,
+                title = "How can I contribute to MockMate development?",
+                initiallyExpanded = contributionState.value,
+                onExpandedChange = { contributionState.value = it }
+            ) {
+                Text("Please refer to the 'Project Vision' section in the README.md file. For specific contribution guidelines (branching, PRs, etc.), please consult with the project maintainers.")
+            }
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
@@ -163,65 +181,6 @@ fun HelpSection(icon: ImageVector, title: String, content: String) {
                 lineHeight = 22.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-        }
-    }
-}
-
-@Composable
-fun FAQItem(icon: ImageVector, question: String, answer: String) {
-    var isExpanded by remember { mutableStateOf(false) }
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 16.dp),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .clickable { isExpanded = !isExpanded }
-                .padding(16.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = question, // Content description for icon
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = question, // Removed "Q:" prefix
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.weight(1f) // Allow question to take available space
-                )
-                Spacer(modifier = Modifier.width(8.dp)) // Space before expand icon
-                Icon(
-                    imageVector = if (isExpanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
-                    contentDescription = if (isExpanded) "Collapse" else "Expand",
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
-            AnimatedVisibility(visible = isExpanded) {
-                Column { // Wrap answer in a column for proper spacing if needed in future
-                    Spacer(modifier = Modifier.height(8.dp)) // Adjusted spacer
-                    Text(
-                        text = answer, // Removed "A:" prefix
-                        style = MaterialTheme.typography.bodyMedium,
-                        lineHeight = 20.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
         }
     }
 }

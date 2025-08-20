@@ -17,24 +17,20 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Flag
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator // Added for loading
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -48,14 +44,16 @@ import com.example.mockmate.data.SettingsRepository
 import com.example.mockmate.data.TestRepository
 import com.example.mockmate.model.AppSettings // Required for default settings
 import com.example.mockmate.model.Question
-import com.example.mockmate.model.QuestionDifficulty // Added import
-import com.example.mockmate.model.QuestionStatus
+import com.example.mockmate.model.QuestionDifficulty
+import com.example.mockmate.model.QuestionStatus // Ensure this is imported
 import com.example.mockmate.ui.components.MockMateTopBar
 import com.example.mockmate.ui.components.OptionItem
 import com.example.mockmate.ui.components.QuestionDifficultyBadge
+import com.example.mockmate.ui.components.TestProgressHeader // Import the extracted component
 import com.example.mockmate.ui.viewmodels.TestTakingScreenViewModel
-import kotlinx.coroutines.delay
-import kotlin.time.Duration.Companion.seconds
+import com.example.mockmate.ui.components.FinishTestDialog
+import com.example.mockmate.ui.components.ErrorAlertDialog
+import com.example.mockmate.ui.components.BatteryOptimizationDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,33 +62,40 @@ fun TestTakingScreen(
     onNavigateBack: () -> Unit,
     onFinish: (attemptId: String) -> Unit,
     repository: TestRepository,
-    settingsRepository: SettingsRepository = SettingsRepository(LocalContext.current) // Added
+    settingsRepository: SettingsRepository = SettingsRepository(LocalContext.current)
 ) {
     val viewModel: TestTakingScreenViewModel = viewModel(
         factory = TestTakingScreenViewModel.provideFactory(repository, testId)
     )
 
-    val mockTest by viewModel.mockTest.collectAsState()
-    var timeRemaining by remember { mutableLongStateOf(0L) }
-    val selectedOptions by viewModel.selectedOptions.collectAsState()
-    val questionStatus by viewModel.questionStatus.collectAsState()
-    val isSaving by viewModel.isSaving.collectAsState()
-    val appSettings by settingsRepository.settings.collectAsState(initial = AppSettings()) // Changed appSettings to settings
+    val uiState by viewModel.uiState.collectAsState()
+    val appSettings by settingsRepository.settings.collectAsState(initial = AppSettings())
 
-    // Use local mutable state for question index and error dialog
-    var currentQuestionIndex by remember { mutableIntStateOf(0) }
     var showFinishDialog by remember { mutableStateOf(false) }
     val questionStartTimes = remember { mutableMapOf<Int, Long>() }
-    var previousQuestionIndex by remember { mutableIntStateOf(0) }
+    var previousQuestionIndex by remember(uiState.currentQuestionIndex) { mutableStateOf(uiState.currentQuestionIndex) }
 
-    // Sync ViewModel time with local state
-    val vmTimeRemaining by viewModel.timeRemaining.collectAsState()
-    LaunchedEffect(vmTimeRemaining) {
-        timeRemaining = vmTimeRemaining
+
+    LaunchedEffect(uiState.timeRemaining, uiState.mockTest) {
+        if (uiState.timeRemaining <= 0 && uiState.mockTest != null) {
+            showFinishDialog = true
+        }
     }
 
-    if (mockTest == null) {
-        // Test not found or loading
+    if (uiState.isLoading) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            CircularProgressIndicator()
+            Spacer(modifier = Modifier.height(16.dp))
+            Text("Loading Test...")
+        }
+        return
+    }
+
+    if (uiState.mockTest == null) {
         Column(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -99,15 +104,18 @@ fun TestTakingScreen(
                 alignment = Alignment.CenterVertically
             )
         ) {
-            Text("Test not found")
+            uiState.errorMessage?.let { ErrorAlertDialog(onDismiss = { viewModel.clearError() }, errorMessage = it) } 
+                ?: Text("Test not found or failed to load.")
             Button(onClick = onNavigateBack) {
                 Text("Go Back")
             }
         }
         return
     }
+    
+    val currentQuestionIndex = uiState.currentQuestionIndex
+    val mockTest = uiState.mockTest!!
 
-    // Track time when switching questions
     LaunchedEffect(currentQuestionIndex) {
         if (currentQuestionIndex != previousQuestionIndex) {
             questionStartTimes[previousQuestionIndex]?.let { startTime ->
@@ -118,55 +126,57 @@ fun TestTakingScreen(
             previousQuestionIndex = currentQuestionIndex
         }
     }
-
-    // Timer effect
-    LaunchedEffect(key1 = mockTest) {
-        // mockTest is guaranteed to be non-null here due to the check above
-        while (timeRemaining > 0) {
-            delay(1.seconds)
-            timeRemaining--
-            viewModel.updateTimeRemaining(timeRemaining)
-            if (timeRemaining <= 0) {
-                showFinishDialog = true
-            }
+    LaunchedEffect(Unit) {
+        if (!questionStartTimes.containsKey(currentQuestionIndex)) {
+            questionStartTimes[currentQuestionIndex] = System.currentTimeMillis()
         }
     }
 
-    val currentQuestion = mockTest!!.questions[currentQuestionIndex]
+    if (currentQuestionIndex < 0 || currentQuestionIndex >= mockTest.questions.size) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text("Error: Invalid question index.")
+            Button(onClick = onNavigateBack) {
+                Text("Go Back")
+            }
+        }
+        return
+    }
+    val currentQuestion = mockTest.questions[currentQuestionIndex]
 
     Column(modifier = Modifier.fillMaxSize()) {
         MockMateTopBar(
-            title = mockTest!!.name,
+            title = mockTest.name,
             onBackClick = { showFinishDialog = true }
         )
 
-        // Timer and progress
         TestProgressHeader(
             currentQuestion = currentQuestionIndex + 1,
-            totalQuestions = mockTest!!.questions.size,
-            timeRemaining = timeRemaining
+            totalQuestions = mockTest.questions.size,
+            timeRemaining = uiState.timeRemaining
         )
 
-        // Question content
         QuestionContent(
             modifier = Modifier.weight(1f),
             question = currentQuestion,
-            selectedOptionIndex = selectedOptions[currentQuestionIndex],
+            selectedOptionIndex = uiState.selectedOptions.getOrElse(currentQuestionIndex) { -1 },
             onOptionSelected = { optionIndex ->
                 viewModel.updateSelectedOption(currentQuestionIndex, optionIndex)
                 if (optionIndex != -1) {
                     viewModel.updateQuestionStatus(currentQuestionIndex, QuestionStatus.ANSWERED)
                 }
             },
-            pulsateBadges = appSettings.pulsatingBadgesEnabled // Fixed this line
+            pulsateBadges = appSettings.pulsatingBadgesEnabled
         )
 
-        // Navigation buttons
         TestNavigationFooter(
             currentQuestionIndex = currentQuestionIndex,
-            totalQuestions = mockTest!!.questions.size,
-            onPreviousClick = { if (currentQuestionIndex > 0) currentQuestionIndex-- },
-            onNextClick = { if (currentQuestionIndex < mockTest!!.questions.size - 1) currentQuestionIndex++ },
+            totalQuestions = mockTest.questions.size,
+            onPreviousClick = { viewModel.moveToPreviousQuestion() },
+            onNextClick = { viewModel.moveToNextQuestion() },
             onFinishClick = { showFinishDialog = true },
             onBookmarkClick = {
                 viewModel.toggleBookmark(currentQuestionIndex)
@@ -174,22 +184,21 @@ fun TestTakingScreen(
             onMarkForReviewClick = {
                 viewModel.toggleMarkForReview(currentQuestionIndex)
             },
-            isBookmarked = questionStatus[currentQuestionIndex] == QuestionStatus.BOOKMARKED,
-            isMarkedForReview = questionStatus[currentQuestionIndex] == QuestionStatus.MARKED_FOR_REVIEW
+            isBookmarked = uiState.questionStatus.getOrElse(currentQuestionIndex) { QuestionStatus.UNATTEMPTED } == QuestionStatus.BOOKMARKED,
+            isMarkedForReview = uiState.questionStatus.getOrElse(currentQuestionIndex) { QuestionStatus.UNATTEMPTED } == QuestionStatus.MARKED_FOR_REVIEW
         )
     }
 
-    // Handle test completion
     if (showFinishDialog) {
-        // Update time spent on current question before finishing
         questionStartTimes[currentQuestionIndex]?.let { startTime ->
             val timeSpent = ((System.currentTimeMillis() - startTime) / 1000).toInt()
             viewModel.updateQuestionTimeSpent(currentQuestionIndex, timeSpent)
+            questionStartTimes.remove(currentQuestionIndex)
         }
 
-        val attemptedCount = selectedOptions.count { it != -1 }
+        val attemptedCount = uiState.selectedOptions.count { it != -1 }
 
-        if (!isSaving) {
+        if (!uiState.isSaving) {
             FinishTestDialog(
                 onDismiss = { showFinishDialog = false },
                 onConfirm = {
@@ -198,92 +207,45 @@ fun TestTakingScreen(
                     }
                 },
                 attemptedQuestions = attemptedCount,
-                totalQuestions = mockTest!!.questions.size
+                totalQuestions = mockTest.questions.size
             )
         }
     }
 
-    // Show error dialog if there's an error
-    val errorMsg by viewModel.errorMessage.collectAsState()
-    errorMsg?.let { message ->
-        // Hide loading dialog if error occurs
-        // isSaving is a val, so don't try to reassign it
+    uiState.errorMessage?.let { message ->
         android.util.Log.e("TestTakingScreen", "Error dialog shown: $message")
-        AlertDialog(
-            onDismissRequest = {
-                viewModel.clearError()
-                showFinishDialog = false // Also dismiss finish dialog
-            },
-            title = { Text("Error") },
-            text = { Text(message) },
-            confirmButton = {
-                Button(onClick = {
-                    viewModel.clearError()
-                    showFinishDialog = false // Reset finish dialog state
-                }) {
-                    Text("OK")
-                }
-            }
+        ErrorAlertDialog(
+            onDismiss = { viewModel.clearError() },
+            errorMessage = message
         )
     }
 
-    // MIUI/Android battery optimization warning
-    val showBatteryDialog = remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) {
-        // Removed empty if block that previously checked for xiaomi/miui
-    }
+    val showBatteryDialog = remember { mutableStateOf(false) } // Keep this state local to TestTakingScreen for now
+
     if (showBatteryDialog.value) {
-        AlertDialog(
-            onDismissRequest = { showBatteryDialog.value = false },
-            title = { Text("Battery Optimization Warning") },
-            text = { Text("To ensure smooth operation, please disable battery optimization for this app in your device settings. Otherwise, the app may be killed in the background and you may experience stuck loading screens or lost progress.") },
-            confirmButton = {
-                Button(onClick = { showBatteryDialog.value = false }) { Text("OK") }
-            }
-        )
+        BatteryOptimizationDialog(onDismiss = { showBatteryDialog.value = false })
     }
-
-    // Debug: Log when composable is recomposed
-    android.util.Log.d("TestTakingScreen", "Recomposed. isSaving=$isSaving, errorMessage=$errorMsg")
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@androidx.compose.ui.tooling.preview.Preview
 @Composable
-fun TestProgressHeader(
-    currentQuestion: Int,
-    totalQuestions: Int,
-    timeRemaining: Long
-) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Question $currentQuestion of $totalQuestions",
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium
-            )
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            Text(
-                text = formatTime(timeRemaining),
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Bold,
-                color = if (timeRemaining < 60) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
-            )
-        }
-
-        LinearProgressIndicator(
-            modifier = Modifier.fillMaxWidth(),
-            progress = { currentQuestion.toFloat() / totalQuestions },
-            color = MaterialTheme.colorScheme.primary,
-            trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-        )
-    }
+fun TestTakingScreenPreview() {
+    val context = LocalContext.current
+    TestTakingScreen(
+        testId = "sampleTestId",
+        onNavigateBack = {},
+        onFinish = {},
+        repository = com.example.mockmate.data.InMemoryTestRepository(),
+        settingsRepository = SettingsRepository(context)
+    )
 }
+
+// TestProgressHeader and its Preview have been moved to ProgressComponents.kt
+// QuestionContent and its Preview remain here for now, or could be moved similarly.
+// TestNavigationFooter and its Preview remain here for now, or could be moved similarly.
+// FinishTestDialog and its Preview have been removed.
+// formatTime has been moved to ProgressComponents.kt
 
 @Composable
 fun QuestionContent(
@@ -291,20 +253,19 @@ fun QuestionContent(
     question: Question,
     selectedOptionIndex: Int,
     onOptionSelected: (Int) -> Unit,
-    pulsateBadges: Boolean // Added
+    pulsateBadges: Boolean
 ) {
     Column(
         modifier = modifier
             .padding(16.dp)
             .verticalScroll(rememberScrollState())
     ) {
-        // Question difficulty badge
         Row(
             verticalAlignment = Alignment.CenterVertically
         ) {
             QuestionDifficultyBadge(
                 difficulty = question.difficulty,
-                isPulsating = pulsateBadges // Changed
+                isPulsating = pulsateBadges
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
@@ -316,7 +277,6 @@ fun QuestionContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Question text
         Card(
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
@@ -333,7 +293,6 @@ fun QuestionContent(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Options
         Text(
             text = "Select an answer:",
             style = MaterialTheme.typography.bodyLarge,
@@ -349,6 +308,26 @@ fun QuestionContent(
             )
         }
     }
+}
+
+@androidx.compose.ui.tooling.preview.Preview
+@Composable
+fun QuestionContentPreview() {
+    val sampleQuestion = Question(
+        text = "What is the capital of France?",
+        options = listOf("Berlin", "Madrid", "Paris", "Rome"),
+        correctOptionIndex = 2,
+        explanation = "Paris is the capital of France.",
+        difficulty = QuestionDifficulty.EASY,
+        subject = "Geography",
+        topic = "World Capitals"
+    )
+    QuestionContent(
+        question = sampleQuestion,
+        selectedOptionIndex = -1,
+        onOptionSelected = {},
+        pulsateBadges = true
+    )
 }
 
 @Composable
@@ -369,7 +348,6 @@ fun TestNavigationFooter(
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Action buttons
         Row(
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -392,7 +370,6 @@ fun TestNavigationFooter(
 
         Spacer(modifier = Modifier.weight(1f))
 
-        // Navigation buttons
         Row(
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -437,54 +414,19 @@ fun TestNavigationFooter(
     }
 }
 
+@androidx.compose.ui.tooling.preview.Preview
 @Composable
-fun FinishTestDialog(
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit,
-    attemptedQuestions: Int,
-    totalQuestions: Int
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Finish Test?") },
-        text = {
-            Column {
-                Text("You have answered $attemptedQuestions out of $totalQuestions questions.")
-
-                if (attemptedQuestions < totalQuestions) {
-                    Text(
-                        text = "There are ${totalQuestions - attemptedQuestions} unanswered questions.",
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
-                }
-
-                Text(
-                    text = "Are you sure you want to finish this test?",
-                    modifier = Modifier.padding(top = 16.dp)
-                )
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = onConfirm,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                )
-            ) {
-                Text("Yes, Finish")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Continue Test")
-            }
-        }
+fun TestNavigationFooterPreview() {
+    TestNavigationFooter(
+        currentQuestionIndex = 0,
+        totalQuestions = 10,
+        onPreviousClick = {},
+        onNextClick = {},
+        onFinishClick = {},
+        onBookmarkClick = {},
+        onMarkForReviewClick = {},
+        isBookmarked = false,
+        isMarkedForReview = true
     )
 }
 
-fun formatTime(seconds: Long): String {
-    val minutes = seconds / 60
-    val remainingSeconds = seconds % 60
-    return "${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}"
-}

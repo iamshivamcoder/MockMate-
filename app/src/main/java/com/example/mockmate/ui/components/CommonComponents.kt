@@ -15,7 +15,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
@@ -70,27 +69,6 @@ fun OptionItem(
     }
 }
 
-/**
- * A linear progress bar.
- *
- * @param progress The current progress, a float between 0.0 and 1.0.
- * @param modifier Optional [Modifier] for this component.
- */
-@Composable
-fun ProgressBar(
-    progress: Float,
-    modifier: Modifier = Modifier
-) {
-    LinearProgressIndicator(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(8.dp)
-            .clip(RoundedCornerShape(4.dp)),
-        progress = { progress }, // Directly use lambda for progress
-        color = MaterialTheme.colorScheme.primary,
-        trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-    )
-}
 
 /**
  * A simple text header for sections.

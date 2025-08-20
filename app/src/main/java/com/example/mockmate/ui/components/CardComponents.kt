@@ -1,5 +1,6 @@
 package com.example.mockmate.ui.components
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -28,8 +29,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-// import androidx.compose.ui.graphics.Brush // Reverted
-// import androidx.compose.ui.graphics.Color // Reverted
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -139,7 +138,7 @@ fun TestCard(
     test: MockTest,
     onClick: () -> Unit,
     onLongClick: (() -> Unit)? = null,
-    modifier: Modifier = Modifier,
+    @SuppressLint("ModifierParameter") modifier: Modifier = Modifier,
     pulsateBadges: Boolean = false // Added new parameter
 ) {
     Card(
