@@ -1,117 +1,118 @@
 package com.example.mockmate.ui.components
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.mockmate.ui.theme.MockMateTheme
 
 @Composable
 fun FinishTestDialog(
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
     attemptedQuestions: Int,
-    totalQuestions: Int
+    totalQuestions: Int,
+    icon: ImageVector? = null // Added icon parameter
 ) {
     AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Finish Test?") },
-        text = {
-            Column {
-                Text("You have answered $attemptedQuestions out of $totalQuestions questions.")
-
-                if (attemptedQuestions < totalQuestions) {
-                    Text(
-                        text = "There are ${totalQuestions - attemptedQuestions} unanswered questions.",
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
-                }
-
-                Text(
-                    text = "Are you sure you want to finish this test?",
-                    modifier = Modifier.padding(top = 16.dp)
-                )
-            }
+        shape = RoundedCornerShape(16.dp),
+        icon = icon?.let { // Conditionally display icon
+            { Icon(it, contentDescription = "Dialog Icon") }
         },
+        onDismissRequest = onDismiss,
+        title = { Text("Finish Test?", style = MaterialTheme.typography.headlineSmall, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+        text = { Text("You have attempted $attemptedQuestions out of $totalQuestions questions. Are you sure you want to finish?", style = MaterialTheme.typography.bodyMedium, maxLines = 3, overflow = TextOverflow.Ellipsis) },
         confirmButton = {
-            Button(
-                onClick = onConfirm,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                )
-            ) {
-                Text("Yes, Finish")
+            TextButton(onClick = onConfirm) {
+                Text("Finish", style = MaterialTheme.typography.labelLarge)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Continue Test")
+                Text("Cancel", style = MaterialTheme.typography.labelLarge)
             }
         }
     )
 }
 
-@Preview
+@Preview(showBackground = true)
 @Composable
 fun FinishTestDialogPreview() {
-    FinishTestDialog(
-        onDismiss = {},
-        onConfirm = {},
-        attemptedQuestions = 7,
-        totalQuestions = 10
-    )
+    MockMateTheme {
+        FinishTestDialog(onDismiss = {}, onConfirm = {}, attemptedQuestions = 5, totalQuestions = 10)
+    }
 }
 
 @Composable
 fun ErrorAlertDialog(
     onDismiss: () -> Unit,
-    errorMessage: String
+    errorMessage: String,
+    title: String = "Error",
+    icon: ImageVector = Icons.Filled.Warning
 ) {
     AlertDialog(
+        shape = RoundedCornerShape(16.dp),
+        icon = { Icon(icon, contentDescription = "Error Icon", tint = MaterialTheme.colorScheme.error) },
+        title = { Text(text = "⚠️ " + title, style = MaterialTheme.typography.headlineSmall, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+        text = { Text(text = errorMessage, style = MaterialTheme.typography.bodyMedium, maxLines = 5, overflow = TextOverflow.Ellipsis) },
         onDismissRequest = onDismiss,
-        title = { Text("Error") },
-        text = { Text(errorMessage) },
         confirmButton = {
-            Button(onClick = onDismiss) {
-                Text("OK")
+            TextButton(onClick = onDismiss) {
+                Text("OK", style = MaterialTheme.typography.labelLarge)
             }
         }
     )
 }
 
-@Preview
+@Preview(showBackground = true)
 @Composable
 fun ErrorAlertDialogPreview() {
-    ErrorAlertDialog(
-        onDismiss = {},
-        errorMessage = "Something went terribly wrong!"
-    )
+    MockMateTheme {
+        ErrorAlertDialog(onDismiss = {}, errorMessage = "This is a sample error message.")
+    }
 }
 
 @Composable
-fun BatteryOptimizationDialog(
-    onDismiss: () -> Unit
+fun StreakInfoDialog(
+    onDismiss: () -> Unit,
+    icon: ImageVector = Icons.Filled.Info // Added icon parameter
 ) {
     AlertDialog(
+        shape = RoundedCornerShape(16.dp),
         onDismissRequest = onDismiss,
-        title = { Text("Battery Optimization Warning") },
-        text = { Text("To ensure smooth operation, please disable battery optimization for this app in your device settings. Otherwise, the app may be killed in the background and you may experience stuck loading screens or lost progress.") },
+        icon = { Icon(icon, contentDescription = "Streak Info", tint = MaterialTheme.colorScheme.primary) }, // Use the icon parameter
+        title = { Text("🔥 Daily Streaks", style = MaterialTheme.typography.headlineSmall, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+        text = {
+            Text(
+                "Maintain your daily streak by completing at least one question each day. " +
+                        "Streaks help you stay motivated and build a consistent learning habit!",
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 5,
+                overflow = TextOverflow.Ellipsis
+            )
+        },
         confirmButton = {
-            Button(onClick = onDismiss) { Text("OK") }
+            TextButton(onClick = onDismiss) {
+                Text("Got it!", style = MaterialTheme.typography.labelLarge)
+            }
         }
     )
 }
 
-@Preview
+@Preview(showBackground = true)
 @Composable
-fun BatteryOptimizationDialogPreview() {
-    BatteryOptimizationDialog(onDismiss = {})
+fun StreakInfoDialogPreview() {
+    MockMateTheme {
+        StreakInfoDialog(onDismiss = {}) // Uses default icon
+    }
 }

@@ -129,7 +129,9 @@ fun AppNavHost(
                     onPracticeClick = { navController.safeNavigate(Routes.PRACTICE_MODE_SELECTION) },
                     onHistoryClick = { navController.safeNavigate(Routes.TEST_HISTORY) },
                     onImportClick = { navController.safeNavigate(Routes.TEST_IMPORT) },
-                    onSettingsClick = { navController.safeNavigate(Routes.SETTINGS) }
+                    onSettingsClick = { navController.safeNavigate(Routes.SETTINGS) },
+                    onAnalyticsClick = TODO(),
+                    repository = TODO()
                 )
             }
 

@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material3.DropdownMenuItem
@@ -63,7 +64,7 @@ fun <T> SortControls(
                     val rotation by animateFloatAsState(if (expanded) 180f else 0f)
                     Icon(
                         Icons.Filled.ArrowDropDown,
-                        contentDescription = "Expand",
+                        contentDescription = if (expanded) "Collapse" else "Expand",
                         modifier = Modifier.rotate(rotation)
                     )
                 },
@@ -98,11 +99,9 @@ fun <T> SortControls(
             enabled = isEnabled
         ) {
             trailingSortIcon?.invoke() ?: run {
-                val rotation by animateFloatAsState(if (sortAscending) 0f else 180f)
                 Icon(
-                    imageVector = Icons.Filled.ArrowUpward,
+                    imageVector = if (sortAscending) Icons.Filled.ArrowUpward else Icons.Filled.ArrowDownward,
                     contentDescription = if (sortAscending) "Ascending" else "Descending",
-                    modifier = Modifier.rotate(rotation),
                     tint = MaterialTheme.colorScheme.primary
                 )
             }

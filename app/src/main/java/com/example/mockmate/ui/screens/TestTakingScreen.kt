@@ -53,7 +53,6 @@ import com.example.mockmate.ui.components.TestProgressHeader // Import the extra
 import com.example.mockmate.ui.viewmodels.TestTakingScreenViewModel
 import com.example.mockmate.ui.components.FinishTestDialog
 import com.example.mockmate.ui.components.ErrorAlertDialog
-import com.example.mockmate.ui.components.BatteryOptimizationDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -218,12 +217,6 @@ fun TestTakingScreen(
             onDismiss = { viewModel.clearError() },
             errorMessage = message
         )
-    }
-
-    val showBatteryDialog = remember { mutableStateOf(false) } // Keep this state local to TestTakingScreen for now
-
-    if (showBatteryDialog.value) {
-        BatteryOptimizationDialog(onDismiss = { showBatteryDialog.value = false })
     }
 }
 
