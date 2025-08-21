@@ -103,7 +103,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     
     // Gson for JSON handling
-    implementation("com.google.code.gson:gson:2.10.1")
+    // implementation("com.google.code.gson:gson:2.10.1") // Removed duplicate
     
     // Security for encrypted preferences
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
@@ -115,6 +115,11 @@ dependencies {
     implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("com.google.android.material:material:1.11.0")
+
+    // Vico Charting Library
+    implementation("com.patrykandpatrick.vico:compose:1.13.1")
+    implementation("com.patrykandpatrick.vico:compose-m3:1.13.1")
+    implementation("com.patrykandpatrick.vico:core:1.13.1")
     
     // Debug dependencies
     debugImplementation("androidx.compose.ui:ui-tooling")

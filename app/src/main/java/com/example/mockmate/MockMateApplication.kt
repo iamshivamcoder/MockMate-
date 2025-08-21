@@ -33,7 +33,7 @@ class MockMateApplication : Application() {
         try {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    testRepository.initializeIfEmpty()
+                    // testRepository.initializeIfEmpty() // Commented out to prevent sample data loading
                 } catch (e: Exception) {
                     // Log and handle initialization errors
                     android.util.Log.e("MockMateApp", "Repository initialization error: ${e.message}", e)

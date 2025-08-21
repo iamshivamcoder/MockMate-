@@ -20,8 +20,11 @@ import androidx.navigation.navArgument
 import com.example.mockmate.MockMateApplication
 import com.example.mockmate.data.TestRepository
 import com.example.mockmate.model.QuestionType
+import com.example.mockmate.model.TestAttempt
+import com.example.mockmate.model.UserStats
 import com.example.mockmate.ui.components.AppBottomNavigationBar
 import com.example.mockmate.ui.screens.AboutDeveloperScreen
+import com.example.mockmate.ui.screens.AnalyticsScreen
 import com.example.mockmate.ui.screens.DashboardScreen
 import com.example.mockmate.ui.screens.HelpScreen
 import com.example.mockmate.ui.screens.MatchTheColumnScreen
@@ -35,6 +38,11 @@ import com.example.mockmate.ui.screens.TestResultScreen
 import com.example.mockmate.ui.screens.TestTakingScreen
 import com.example.mockmate.ui.util.ComposeStabilityUtils
 import kotlinx.coroutines.launch
+import java.util.Date
+
+// Import for collectAsState
+import androidx.compose.runtime.collectAsState
+// Import for UserStats.default() is no longer needed due to the object renaming
 
 object Routes {
     const val DASHBOARD = "dashboard"
@@ -50,6 +58,7 @@ object Routes {
     const val MATCH_THE_COLUMN_TAKING = "match_the_column_taking/{testId}"
     const val ABOUT_DEVELOPER = "about_developer"
     const val HELP_AND_FAQ = "help_and_faq"
+    const val ANALYTICS_SCREEN = "analytics_screen" // New route
 
     fun testTakingRoute(testId: String) = "test_taking/$testId"
     fun testResultRoute(attemptId: String, testId: String) = "test_result/$attemptId/$testId"
@@ -65,6 +74,7 @@ sealed class Screen(val route: String) {
     object PracticeModeSelection : Screen(Routes.PRACTICE_MODE_SELECTION)
     object TestHistory : Screen(Routes.TEST_HISTORY)
     object Settings : Screen(Routes.SETTINGS)
+    object Analytics : Screen(Routes.ANALYTICS_SCREEN) // New screen object
     // Add other screens here if needed for typed navigation
 }
 
@@ -130,8 +140,18 @@ fun AppNavHost(
                     onHistoryClick = { navController.safeNavigate(Routes.TEST_HISTORY) },
                     onImportClick = { navController.safeNavigate(Routes.TEST_IMPORT) },
                     onSettingsClick = { navController.safeNavigate(Routes.SETTINGS) },
-                    onAnalyticsClick = TODO(),
-                    repository = TODO()
+                    onAnalyticsClick = { navController.safeNavigate(Routes.ANALYTICS_SCREEN) }, // Updated
+                    repository = stableRepository
+                )
+            }
+
+            composable(Routes.ANALYTICS_SCREEN) { // New destination
+                val userStats by stableRepository.userStats.collectAsState(initial = UserStatsDefaults.default()) // Provide a default UserStats
+                val testAttempts by stableRepository.getAllTestAttempts().collectAsState(initial = emptyList())
+
+                AnalyticsScreen(
+                    userStats = userStats,
+                    testAttempts = testAttempts
                 )
             }
 
@@ -303,4 +323,15 @@ fun AppNavHost(
             }
         }
     }
+}
+
+// Added a default UserStats object for previewing and initial state
+object UserStatsDefaults {
+    fun default() = UserStats(
+        questionsAnswered = 0,
+        correctAnswers = 0,
+        streak = 0,
+        lastPracticeDate = Date(0), // Use epoch for a sensible default
+        subjectPerformance = emptyMap()
+    )
 }

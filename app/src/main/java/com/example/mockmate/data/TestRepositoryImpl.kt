@@ -23,9 +23,6 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
@@ -47,8 +44,7 @@ class TestRepositoryImpl(
     private val userStatsDao by lazy { database.userStatsDao() }
     private val gson = Gson()
     
-    private val _testAttempts = MutableStateFlow<MutableList<TestAttempt>>(mutableListOf())
-    private val testAttempts: StateFlow<List<TestAttempt>> = _testAttempts.asStateFlow()
+    // Removed _testAttempts and testAttempts StateFlow
     
     override val mockTests: Flow<List<MockTest>> = testDao.getAllTests()
         .map { testEntities ->
@@ -78,17 +74,10 @@ class TestRepositoryImpl(
     override suspend fun getTestAttemptById(id: String): TestAttempt? {
         return withContext(Dispatchers.IO) {
             try {
-                // First check in-memory cache
-                val cachedAttempt = _testAttempts.value.find { it.id == id }
-                if (cachedAttempt != null) {
-                    return@withContext cachedAttempt
-                }
-
-                // Query from database
+                // Query directly from database
                 val attemptEntity = testAttemptDao.getTestAttemptById(id) ?: return@withContext null
                 val userAnswerEntities = testAttemptDao.getUserAnswersForAttempt(id)
 
-                // Convert entities to domain model without complex calculations
                 val userAnswers = userAnswerEntities.associate { entity ->
                     entity.questionId to UserAnswer(
                         questionId = entity.questionId,
@@ -97,16 +86,7 @@ class TestRepositoryImpl(
                         status = QuestionStatus.valueOf(entity.status)
                     )
                 }
-
-                val testAttempt = attemptEntity.asDomainObject().copy(userAnswers = userAnswers)
-
-                // Add to in-memory cache
-                val currentList = _testAttempts.value.toMutableList()
-                currentList.removeIf { it.id == id } // Remove if exists
-                currentList.add(testAttempt)
-                _testAttempts.value = currentList
-
-                testAttempt
+                attemptEntity.asDomainObject().copy(userAnswers = userAnswers)
             } catch (e: Exception) {
                 Log.e("TestRepositoryImpl", "Error retrieving test attempt $id: ${e.message}", e)
                 null
@@ -115,45 +95,32 @@ class TestRepositoryImpl(
     }
 
     override fun getAllTestAttempts(): Flow<List<TestAttempt>> {
-        return testAttempts
-    }
-
-    private suspend fun loadTestAttemptsFromDatabase() {
-        try {
-            val attemptEntities = testAttemptDao.getAllTestAttempts().firstOrNull() ?: emptyList()
-            val testAttempts = attemptEntities.mapNotNull { entity ->
+        return testAttemptDao.getAllTestAttempts().map { attemptEntities ->
+            attemptEntities.mapNotNull { entity ->
                 try {
                     val userAnswerEntities = testAttemptDao.getUserAnswersForAttempt(entity.id)
                     val userAnswers = userAnswerEntities.associate { answerEntity ->
                         answerEntity.questionId to UserAnswer(
                             questionId = answerEntity.questionId,
                             selectedOptionIndex = answerEntity.selectedOptionIndex,
-                            timeSpent = answerEntity.timeSpent,
+                            timeSpent = answerEntity.timeSpent, // Assuming timeSpent is available in UserAnswerEntity or can be defaulted
                             status = QuestionStatus.valueOf(answerEntity.status)
                         )
                     }
-
                     entity.asDomainObject().copy(userAnswers = userAnswers)
                 } catch (e: Exception) {
                     Log.e(
                         "TestRepositoryImpl",
-                        "Error loading test attempt ${entity.id}: ${e.message}",
+                        "Error mapping test attempt entity ${entity.id} for getAllTestAttempts: ${e.message}",
                         e
                     )
-                    null
+                    null // Skip this attempt if there's an error mapping it
                 }
             }
-
-            _testAttempts.value = testAttempts.toMutableList()
-            Log.d("TestRepositoryImpl", "Loaded ${testAttempts.size} test attempts from database")
-        } catch (e: Exception) {
-            Log.e(
-                "TestRepositoryImpl",
-                "Error loading test attempts from database: ${e.message}",
-                e
-            )
         }
     }
+    
+    // Removed loadTestAttemptsFromDatabase()
     
     override suspend fun saveTest(test: MockTest) {
         withContext(Dispatchers.IO) {
@@ -167,10 +134,7 @@ class TestRepositoryImpl(
                 )
             }
             
-            // First save the questions
             questionDao.insertQuestions(questionEntities)
-            
-            // Then save the test with question references
             testDao.insertTestWithQuestions(testEntity, crossRefs)
         }
     }
@@ -180,21 +144,16 @@ class TestRepositoryImpl(
             try {
                 Log.d("TestRepositoryImpl", "Starting to save test attempt: ${attempt.id}")
 
-                // Validate the attempt data first
                 if (attempt.testId.isBlank()) {
                     throw IllegalArgumentException("Test ID cannot be empty")
                 }
 
-                // Verify test exists
                 val testExists = testDao.getTestById(attempt.testId) != null
                 if (!testExists) {
                     throw IllegalArgumentException("Test with ID ${attempt.testId} does not exist")
                 }
 
-                // Create the test attempt entity
                 val testAttemptEntity = attempt.asEntity()
-
-                // Create user answer entities
                 val userAnswerEntities = attempt.userAnswers.mapNotNull { (questionId, answer) ->
                     try {
                         com.example.mockmate.data.database.entities.UserAnswerEntity(
@@ -215,7 +174,6 @@ class TestRepositoryImpl(
 
                 Log.d("TestRepositoryImpl", "Saving ${userAnswerEntities.size} user answers")
 
-                // Save everything in a single transaction with better error handling
                 database.withTransaction {
                     try {
                         testAttemptDao.insertTestAttemptWithAnswers(
@@ -229,22 +187,16 @@ class TestRepositoryImpl(
                     }
                 }
 
-                // Update in-memory list only after successful database save
-                val currentList = _testAttempts.value.toMutableList()
-                currentList.removeIf { it.id == attempt.id } // Remove if exists
-                currentList.add(attempt)
-                _testAttempts.value = currentList
+                // Removed in-memory list update
 
-                Log.d("TestRepositoryImpl", "Updated in-memory cache")
+                Log.d("TestRepositoryImpl", "In-memory cache update removed")
 
-                // Update stats for completed tests
                 if (attempt.isCompleted) {
                     try {
                         updateStats(attempt)
                         Log.d("TestRepositoryImpl", "Updated user stats")
                     } catch (e: Exception) {
                         Log.w("TestRepositoryImpl", "Failed to update stats, but test was saved", e)
-                        // Don't fail the entire operation if stats update fails
                     }
                 }
 
@@ -266,46 +218,28 @@ class TestRepositoryImpl(
     override suspend fun deleteTestAttempt(attemptId: String) {
         withContext(Dispatchers.IO) {
             testAttemptDao.deleteAttemptAndAnswers(attemptId)
-            // Also remove from the in-memory cache
-            val currentList = _testAttempts.value.toMutableList()
-            currentList.removeIf { it.id == attemptId }
-            _testAttempts.value = currentList
+            // Removed in-memory cache update
         }
     }
 
     override suspend fun updateTestAttemptCustomName(attemptId: String, customName: String) {
         withContext(Dispatchers.IO) {
             testAttemptDao.updateCustomName(attemptId, customName)
-            // Also update the in-memory cache
-            val currentList = _testAttempts.value.toMutableList()
-            val index = currentList.indexOfFirst { it.id == attemptId }
-            if (index != -1) {
-                val updatedAttempt = currentList[index].copy(customName = customName)
-                currentList[index] = updatedAttempt
-                _testAttempts.value = currentList
-            }
+            // Removed in-memory cache update
         }
     }
 
     override suspend fun initializeIfEmpty() {
         withContext(Dispatchers.IO) {
-            // Check if we already have questions and tests
             val questionCount = questionDao.getQuestionCount()
             if (questionCount == 0) {
-                // Generate sample UPSC questions and tests
                 val sampleTests = generateSampleTests()
-                
-                // Save each test and its questions
                 sampleTests.forEach { test ->
                     saveTest(test)
                 }
-
-                // Initialize user stats using the correct DAO method
                 userStatsDao.insertUserStats(UserStatsEntity())
             }
-
-            // Always load existing test attempts from database
-            loadTestAttemptsFromDatabase()
+            // Removed call to loadTestAttemptsFromDatabase()
         }
     }
 
@@ -313,22 +247,11 @@ class TestRepositoryImpl(
         withContext(Dispatchers.IO) {
             try {
                 database.withTransaction {
-                    // Step 1: Delete all test attempts associated with this test
                     testAttemptDao.deleteAttemptsByTestId(testId)
-
-                    // Step 2: Delete all TestQuestionCrossRef entries for this test
                     testDao.deleteCrossRefsByTestId(testId)
-
-                    // Step 3: Delete the test entity itself
                     testDao.deleteTestEntityById(testId)
                 }
-
-                // Step 4: Update the in-memory cache of test attempts
-                val currentAttempts = _testAttempts.value.toMutableList()
-                val removed = currentAttempts.removeAll { it.testId == testId }
-                if (removed) {
-                    _testAttempts.value = currentAttempts
-                }
+                // Removed in-memory cache update for test attempts
                 Log.d("TestRepositoryImpl", "Successfully deleted test $testId and its associated data.")
             } catch (e: Exception) {
                 Log.e("TestRepositoryImpl", "Error deleting test $testId: ${e.message}", e)
@@ -338,7 +261,6 @@ class TestRepositoryImpl(
     }
     
     private suspend fun updateStats(attempt: TestAttempt) {
-        // Get the test and questions
         val test = testDao.getTestById(attempt.testId)
         Log.d("TestRepositoryImpl", "Loaded test: ${test?.name}")
         val questions = testDao.getQuestionsForTest(attempt.testId)
@@ -354,13 +276,11 @@ class TestRepositoryImpl(
             return
         }
 
-        // Get previous attempts for this test
         val previousAttempts = testAttemptDao.getTestAttemptsByTestId(attempt.testId)
             .firstOrNull()
             ?.filter { it.id != attempt.id && it.isCompleted }
             ?: emptyList()
 
-        // Track which questions were previously answered
         val previouslyAnsweredQuestions = mutableSetOf<String>()
         previousAttempts.forEach { prevAttempt ->
             val prevAnswers = testAttemptDao.getUserAnswersForAttempt(prevAttempt.id)
@@ -371,10 +291,8 @@ class TestRepositoryImpl(
             }
         }
 
-        // Map of question IDs to their correct answers
         val correctAnswers = questions.associate { it.id to it.correctOptionIndex }
         
-        // Count only new answered and correct questions in current attempt
         var correctCount = 0
         var answeredCount = 0
         attempt.userAnswers.forEach { (questionId, answer) ->
@@ -390,19 +308,16 @@ class TestRepositoryImpl(
         Log.d("TestRepositoryImpl", "New unique answered questions: $answeredCount")
         Log.d("TestRepositoryImpl", "New unique correct answers: $correctCount")
 
-        // Update user stats only for new unique questions
         if (answeredCount > 0) {
             userStatsDao.incrementQuestionsAnswered(answeredCount)
             userStatsDao.incrementCorrectAnswers(correctCount)
         }
 
-        // Update streak
         val today = Date()
         val stats = userStatsDao.getUserStats().firstOrNull() ?: UserStatsEntity()
         val lastPracticeTimestamp = stats.lastPracticeDate?.time
 
         if (lastPracticeTimestamp == null) {
-            // First practice ever or stats reset
             userStatsDao.resetStreak(today.time)
             Log.d("TestRepositoryImpl", "Streak reset to 1 (first practice).")
         } else {
@@ -414,7 +329,6 @@ class TestRepositoryImpl(
                             calLastPractice.get(Calendar.DAY_OF_MONTH) == calToday.get(Calendar.DAY_OF_MONTH)
 
             if (!isSameDay) {
-                // It's a new day
                 val calNextDayAfterLastPractice = Calendar.getInstance().apply { timeInMillis = lastPracticeTimestamp }
                 calNextDayAfterLastPractice.add(Calendar.DAY_OF_YEAR, 1)
 
@@ -426,20 +340,15 @@ class TestRepositoryImpl(
                     userStatsDao.incrementStreak(today.time)
                     Log.d("TestRepositoryImpl", "Streak incremented.")
                 } else {
-                    // Missed a day (or more)
                     userStatsDao.resetStreak(today.time)
                     Log.d("TestRepositoryImpl", "Streak reset to 1 (missed a day).")
                 }
             } else {
                 Log.d("TestRepositoryImpl", "Same day practice, streak maintained, no change in lastPracticeDate from here.")
-                // If it's the same day, we don't necessarily update lastPracticeDate here.
-                // resetStreak and incrementStreak already update it.
-                // If no streak change occurs, lastPracticeDate remains from the earlier practice today.
             }
         }
     }
     
-    // Helper functions to convert between models and entities
     private fun questionModelToEntity(question: Question): QuestionEntity {
         return QuestionEntity(
             id = question.id,
@@ -525,7 +434,6 @@ class TestRepositoryImpl(
         )
     }
     
-    // Sample data generation for initial setup
     private fun generateSampleTests(): List<MockTest> {
         return listOf(
             MockTest(
@@ -560,23 +468,20 @@ class TestRepositoryImpl(
                     listOf("Article 14", "Article 19", "Article 21", "Article 32"),
                 "Who is the constitutional head of the Indian state?" to 
                     listOf("President", "Prime Minister", "Chief Justice", "Speaker of Lok Sabha"),
-                // Add more relevant questions
             )
             "Economics" -> listOf(
                 "Which of the following is NOT a function of the RBI?" to 
                     listOf("Fixing MSP for agricultural products", "Monetary policy regulation", "Foreign exchange management", "Issuing currency"),
                 "NITI Aayog replaced which planning body in India?" to 
                     listOf("Planning Commission", "Finance Commission", "Economic Advisory Council", "National Development Council"),
-                // Add more relevant questions
             )
             "History" -> listOf(
                 "Who was the first Governor-General of independent India?" to 
                     listOf("C. Rajagopalachari", "Lord Mountbatten", "Dr. Rajendra Prasad", "Lord Wavell"),
                 "The Revolt of 1857 started from which place?" to 
                     listOf("Meerut", "Delhi", "Kanpur", "Lucknow"),
-                // Add more relevant questions
             )
-            else -> listOf( // Default case
+            else -> listOf( 
                 "Sample question about $subject $topic?" to 
                     listOf("Option A", "Option B", "Option C", "Option D")
             )
@@ -614,8 +519,5 @@ class TestRepositoryImpl(
     companion object {
         @Volatile
         private var INSTANCE: TestRepositoryImpl? = null
-
-        // This helper function is no longer needed here as the logic is within updateStats
-        // private fun inSameDay(timestamp1: Long?, timestamp2: Long): Boolean { ... }
     }
 }

@@ -1,14 +1,13 @@
 package com.example.mockmate.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -16,74 +15,63 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.mockmate.model.SubjectPerformance
+import com.example.mockmate.model.TestAttempt
 import com.example.mockmate.model.UserStats
+import com.example.mockmate.ui.components.AccuracyTrendChart
+import com.example.mockmate.ui.components.AvgTimeSpentChart
+import com.example.mockmate.ui.components.ChartPlaceholder // Assuming this might be the actual implementation for some
+import com.example.mockmate.ui.components.DifficultyBreakdownChart
+import com.example.mockmate.ui.components.EngagementTimelineChart
+import com.example.mockmate.ui.components.OverallAccuracyChart
+import com.example.mockmate.ui.components.PerQuestionAnalysisChart
+import com.example.mockmate.ui.components.StreakTrackerChart
+import com.example.mockmate.ui.components.SubjectDifficultyMatrixChart
+import com.example.mockmate.ui.components.SubjectWiseAccuracyChart
+import com.example.mockmate.ui.components.TestAttemptsCounterChart
+import com.example.mockmate.ui.components.TestScoresOverTimeChart
+import com.example.mockmate.ui.components.TopicDrilldownChart
 import com.example.mockmate.ui.theme.MockMateTheme
 import java.util.Date
 
 @Composable
-fun OverallAccuracyChart(userStats: UserStats) {
-    Card(
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        modifier = Modifier.padding(16.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text("Overall Accuracy", style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(8.dp))
-            // Placeholder for Pie/Donut Chart
-            Text(
-                text = "Chart: Display a pie/donut chart here.",
-                style = MaterialTheme.typography.bodySmall
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            val accuracy = if (userStats.questionsAnswered > 0) {
-                (userStats.correctAnswers.toFloat() / userStats.questionsAnswered.toFloat()) * 100
-            } else {
-                0f
-            }
-            Text(
-                text = "Correct: ${userStats.correctAnswers}",
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Text(
-                text = "Incorrect: ${userStats.questionsAnswered - userStats.correctAnswers}",
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Text(
-                text = "Total Answered: ${userStats.questionsAnswered}",
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Text(
-                text = "Accuracy: %.2f%%".format(accuracy),
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "(Note: Implement a charting library for a visual pie/donut chart)",
-                style = MaterialTheme.typography.labelSmall
-            )
-        }
-    }
-}
-
-@Composable
 fun AnalyticsScreen(
-    userStats: UserStats, // Added UserStats as a parameter
-    onNavigateBack: () -> Unit
+    userStats: UserStats,
+    testAttempts: List<TestAttempt>,
+    /* onNavigateBack: () -> Unit */ // Commented out as it's not directly used here
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
+            .padding(horizontal = 16.dp)
+            .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
-        Text("Analytics Screen", style = MaterialTheme.typography.headlineSmall)
-        Spacer(modifier = Modifier.height(16.dp))
+        Text("Analytics Screen", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(vertical = 16.dp))
+
         OverallAccuracyChart(userStats = userStats)
-        // TODO: Add more charts here based on the list
+        SubjectWiseAccuracyChart(userStats = userStats)
+        TopicDrilldownChart(userStats = userStats)
+
+        Text("Progress Over Time", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 16.dp, bottom = 8.dp))
+        TestScoresOverTimeChart(testAttempts = testAttempts)
+        AccuracyTrendChart()
+        EngagementTimelineChart()
+
+        Text("Time Management Insights", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 16.dp, bottom = 8.dp))
+        AvgTimeSpentChart()
+        PerQuestionAnalysisChart()
+
+        Text("Engagement & Habits", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 16.dp, bottom = 8.dp))
+        StreakTrackerChart(userStats = userStats)
+        TestAttemptsCounterChart()
+
+        Text("Comparative Analytics", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 16.dp, bottom = 8.dp))
+        DifficultyBreakdownChart()
+        SubjectDifficultyMatrixChart()
+
+        Spacer(modifier = Modifier.height(16.dp)) // Add some spacing at the end
     }
 }
 
@@ -91,14 +79,26 @@ fun AnalyticsScreen(
 @Composable
 fun AnalyticsScreenPreview() {
     MockMateTheme {
-        // Preview with sample data
         val sampleUserStats = UserStats(
             questionsAnswered = 100,
             correctAnswers = 75,
             streak = 5,
             lastPracticeDate = Date(),
-            subjectPerformance = emptyMap()
+            subjectPerformance = mapOf(
+                "Math" to SubjectPerformance("Math", 50, 30, 60f),
+                "Science" to SubjectPerformance("Science", 30, 25, 83.33f),
+                "History" to SubjectPerformance("History", 20, 10, 50f)
+            )
         )
-        AnalyticsScreen(userStats = sampleUserStats, onNavigateBack = {})
+        val sampleTestAttempts = listOf(
+            TestAttempt(id = "1", testId = "t1", startTime = Date(System.currentTimeMillis() - 86400000L * 2), score = 70f, isCompleted = true),
+            TestAttempt(id = "2", testId = "t2", startTime = Date(System.currentTimeMillis() - 86400000L * 1), score = 85f, isCompleted = true),
+            TestAttempt(id = "3", testId = "t3", startTime = Date(), score = 90f, isCompleted = true)
+        )
+        AnalyticsScreen(
+            userStats = sampleUserStats,
+            testAttempts = sampleTestAttempts,
+            // onNavigateBack = {} // Commented out for preview as well
+        )
     }
 }
