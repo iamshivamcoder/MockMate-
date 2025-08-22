@@ -20,7 +20,6 @@ import com.example.mockmate.model.TestAttempt
 import com.example.mockmate.model.UserStats
 import com.example.mockmate.ui.components.AccuracyTrendChart
 import com.example.mockmate.ui.components.AvgTimeSpentChart
-import com.example.mockmate.ui.components.ChartPlaceholder // Assuming this might be the actual implementation for some
 import com.example.mockmate.ui.components.DifficultyBreakdownChart
 import com.example.mockmate.ui.components.EngagementTimelineChart
 import com.example.mockmate.ui.components.OverallAccuracyChart
@@ -56,20 +55,20 @@ fun AnalyticsScreen(
 
         Text("Progress Over Time", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 16.dp, bottom = 8.dp))
         TestScoresOverTimeChart(testAttempts = testAttempts)
-        AccuracyTrendChart()
-        EngagementTimelineChart()
+        AccuracyTrendChart(testAttempts = testAttempts)
+        EngagementTimelineChart(testAttempts = testAttempts)
 
         Text("Time Management Insights", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 16.dp, bottom = 8.dp))
-        AvgTimeSpentChart()
-        PerQuestionAnalysisChart()
+        AvgTimeSpentChart(userStats = userStats)
+        PerQuestionAnalysisChart(testAttempts = testAttempts)
 
         Text("Engagement & Habits", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 16.dp, bottom = 8.dp))
         StreakTrackerChart(userStats = userStats)
-        TestAttemptsCounterChart()
+        TestAttemptsCounterChart(testAttempts = testAttempts)
 
         Text("Comparative Analytics", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 16.dp, bottom = 8.dp))
-        DifficultyBreakdownChart()
-        SubjectDifficultyMatrixChart()
+        DifficultyBreakdownChart(userStats = userStats)
+        SubjectDifficultyMatrixChart(userStats = userStats)
 
         Spacer(modifier = Modifier.height(16.dp)) // Add some spacing at the end
     }

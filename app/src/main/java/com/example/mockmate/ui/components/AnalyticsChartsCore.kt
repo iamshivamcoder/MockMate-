@@ -180,7 +180,6 @@ fun SubjectWiseAccuracyChart(userStats: UserStats) {
 
 @Composable
 fun TestScoresOverTimeChart(testAttempts: List<TestAttempt>) {
-    // Sort attempts by date, oldest to newest
     val sortedAttempts = remember(testAttempts) {
         testAttempts.sortedBy { it.startTime.time }
     }
@@ -241,27 +240,135 @@ fun TestScoresOverTimeChart(testAttempts: List<TestAttempt>) {
     }
 }
 
-
 @Composable
 fun TopicDrilldownChart(userStats: UserStats) {
-    ChartPlaceholder(
-        title = "Topic Drilldown (Expandable Bar/Tree Map)",
-        description = "Tap a subject → see accuracy for each topic."
-    )
+    Card(
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        modifier = Modifier
+            .padding(vertical = 8.dp)
+            .fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text("Topic Drilldown", style = MaterialTheme.typography.titleMedium)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Data from ${userStats.subjectPerformance.size} subjects.",
+                style = MaterialTheme.typography.bodySmall
+            )
+            Text(
+                text = "(Placeholder: Visual chart for topic drilldown needed)",
+                style = MaterialTheme.typography.labelSmall
+            )
+        }
+    }
 }
 
 @Composable
-fun AccuracyTrendChart(/* userStats: UserStats */) { // Should take List<TestAttempt> or similar
-    ChartPlaceholder(
-        title = "Accuracy Trend (Smoothed Line Graph)",
-        description = "Moving average of accuracy across sessions."
-    )
+fun AccuracyTrendChart(testAttempts: List<TestAttempt>) {
+    Card(
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        modifier = Modifier
+            .padding(vertical = 8.dp)
+            .fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text("Accuracy Trend", style = MaterialTheme.typography.titleMedium)
+            Spacer(modifier = Modifier.height(8.dp))
+            if (testAttempts.isNotEmpty()) {
+                val avgScore = testAttempts.map { it.score }.average()
+                Text(
+                    text = "Average score over ${testAttempts.size} attempts: %.2f%%".format(avgScore),
+                    style = MaterialTheme.typography.bodySmall
+                )
+            } else {
+                Text(
+                    text = "No test attempts to show trend.",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+            Text(
+                text = "(Placeholder: Visual chart for accuracy trend needed)",
+                style = MaterialTheme.typography.labelSmall
+            )
+        }
+    }
 }
 
 @Composable
-fun EngagementTimelineChart(/* userStats: UserStats */) { // Might need daily activity data
-    ChartPlaceholder(
-        title = "Engagement Timeline (Calendar Heatmap)",
-        description = "Streaks highlighted per day (similar to GitHub contribution graph)."
-    )
+fun EngagementTimelineChart(testAttempts: List<TestAttempt>) {
+    val dateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
+    Card(
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        modifier = Modifier
+            .padding(vertical = 8.dp)
+            .fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text("Engagement Timeline", style = MaterialTheme.typography.titleMedium)
+            Spacer(modifier = Modifier.height(8.dp))
+            if (testAttempts.isNotEmpty()) {
+                val firstAttemptDate = testAttempts.minOfOrNull { it.startTime }?.let { dateFormat.format(it) } ?: "N/A"
+                val lastAttemptDate = testAttempts.maxOfOrNull { it.startTime }?.let { dateFormat.format(it) } ?: "N/A"
+                Text(
+                    text = "${testAttempts.size} attempts recorded.",
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Text(
+                    text = "Activity from: $firstAttemptDate to $lastAttemptDate",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            } else {
+                Text(
+                    text = "No engagement data available.",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+            Text(
+                text = "(Placeholder: Visual calendar heatmap for engagement needed)",
+                style = MaterialTheme.typography.labelSmall
+            )
+        }
+    }
+}
+
+@Composable
+fun PerQuestionAnalysisChart(testAttempts: List<TestAttempt>) {
+     Card(
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        modifier = Modifier
+            .padding(vertical = 8.dp)
+            .fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text("Per Question Analysis", style = MaterialTheme.typography.titleMedium)
+            Spacer(modifier = Modifier.height(8.dp))
+             if (testAttempts.isNotEmpty()) {
+                Text(
+                    text = "Analysis based on ${testAttempts.size} attempts.",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            } else {
+                Text(
+                    text = "No attempts available for question analysis.",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+            Text(
+                text = "(Placeholder: Detailed per-question chart needed)",
+                style = MaterialTheme.typography.labelSmall
+            )
+        }
+    }
 }
