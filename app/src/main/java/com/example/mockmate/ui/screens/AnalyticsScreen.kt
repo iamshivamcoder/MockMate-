@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import android.util.Log
 import com.example.mockmate.model.SubjectPerformance
 import com.example.mockmate.model.TestAttempt
 import com.example.mockmate.model.UserStats
@@ -39,6 +40,13 @@ fun AnalyticsScreen(
     testAttempts: List<TestAttempt>,
     /* onNavigateBack: () -> Unit */ // Commented out as it's not directly used here
 ) {
+    // Debug logging
+    Log.d("AnalyticsScreen", "UserStats received: questionsAnswered=${userStats.questionsAnswered}, correctAnswers=${userStats.correctAnswers}, streak=${userStats.streak}")
+    Log.d("AnalyticsScreen", "SubjectPerformance size: ${userStats.subjectPerformance.size}")
+    Log.d("AnalyticsScreen", "TestAttempts received: ${testAttempts.size} attempts")
+    testAttempts.forEach { attempt ->
+        Log.d("AnalyticsScreen", "Attempt ${attempt.id}: testId=${attempt.testId}, score=${attempt.score}, completed=${attempt.isCompleted}")
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()

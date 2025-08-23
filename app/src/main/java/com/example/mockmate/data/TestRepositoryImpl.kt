@@ -56,7 +56,9 @@ class TestRepositoryImpl(
     
     override val userStats: Flow<UserStats> = userStatsDao.getUserStats()
         .map { userStatsEntity ->
-            userStatsEntity?.let { entityToUserStats(it) } ?: UserStats()
+            val userStats = userStatsEntity?.let { entityToUserStats(it) } ?: UserStats()
+            Log.d("TestRepositoryImpl", "UserStats loaded: questionsAnswered=${userStats.questionsAnswered}, correctAnswers=${userStats.correctAnswers}, streak=${userStats.streak}, subjectPerformance=${userStats.subjectPerformance.size}")
+            userStats
         }
     
     override fun getTestsByDifficulty(difficulty: TestDifficulty): Flow<List<MockTest>> {
@@ -96,7 +98,8 @@ class TestRepositoryImpl(
 
     override fun getAllTestAttempts(): Flow<List<TestAttempt>> {
         return testAttemptDao.getAllTestAttempts().map { attemptEntities ->
-            attemptEntities.mapNotNull { entity ->
+            Log.d("TestRepositoryImpl", "Loading ${attemptEntities.size} test attempts from database")
+            val testAttempts = attemptEntities.mapNotNull { entity ->
                 try {
                     val userAnswerEntities = testAttemptDao.getUserAnswersForAttempt(entity.id)
                     val userAnswers = userAnswerEntities.associate { answerEntity ->
@@ -107,7 +110,9 @@ class TestRepositoryImpl(
                             status = QuestionStatus.valueOf(answerEntity.status)
                         )
                     }
-                    entity.asDomainObject().copy(userAnswers = userAnswers)
+                    val testAttempt = entity.asDomainObject().copy(userAnswers = userAnswers)
+                    Log.d("TestRepositoryImpl", "Mapped test attempt: ${testAttempt.id}, score=${testAttempt.score}, answers=${testAttempt.userAnswers.size}")
+                    testAttempt
                 } catch (e: Exception) {
                     Log.e(
                         "TestRepositoryImpl",
@@ -117,6 +122,8 @@ class TestRepositoryImpl(
                     null // Skip this attempt if there's an error mapping it
                 }
             }
+            Log.d("TestRepositoryImpl", "Successfully mapped ${testAttempts.size} test attempts")
+            testAttempts
         }
     }
     
@@ -231,15 +238,97 @@ class TestRepositoryImpl(
 
     override suspend fun initializeIfEmpty() {
         withContext(Dispatchers.IO) {
-            val questionCount = questionDao.getQuestionCount()
-            if (questionCount == 0) {
-                val sampleTests = generateSampleTests()
-                sampleTests.forEach { test ->
-                    saveTest(test)
+            try {
+                val questionCount = questionDao.getQuestionCount()
+                Log.d("TestRepositoryImpl", "Question count in database: $questionCount")
+
+                if (questionCount == 0) {
+                    Log.d("TestRepositoryImpl", "Database is empty, initializing with sample data")
+                    val sampleTests = generateSampleTests()
+                    Log.d("TestRepositoryImpl", "Generated ${sampleTests.size} sample tests")
+
+                    sampleTests.forEach { test ->
+                        saveTest(test)
+                    }
+                    userStatsDao.insertUserStats(UserStatsEntity())
+                    Log.d("TestRepositoryImpl", "Sample data initialization completed")
+                } else {
+                    Log.d("TestRepositoryImpl", "Database already contains data, skipping initialization")
                 }
-                userStatsDao.insertUserStats(UserStatsEntity())
+
+                // Verify data after initialization
+                val finalQuestionCount = questionDao.getQuestionCount()
+                val testCount = testDao.getTestCount()
+                val testAttemptCount = testAttemptDao.getTestAttemptCount()
+                Log.d("TestRepositoryImpl", "Final verification - Questions: $finalQuestionCount, Tests: $testCount, TestAttempts: $testAttemptCount")
+
+                // Generate sample test attempts if needed for analytics
+                if (testAttemptCount == 0 && testCount > 0) {
+                    Log.d("TestRepositoryImpl", "No test attempts found, generating sample attempts for analytics")
+                    generateSampleTestAttempts()
+                }
+
+            } catch (e: Exception) {
+                Log.e("TestRepositoryImpl", "Error during initialization: ${e.message}", e)
+                throw e
             }
-            // Removed call to loadTestAttemptsFromDatabase()
+        }
+    }
+
+    private suspend fun generateSampleTestAttempts() {
+        try {
+            val tests = testDao.getAllTests().firstOrNull()
+            if (tests.isNullOrEmpty()) {
+                Log.d("TestRepositoryImpl", "No tests available to generate attempts")
+                return
+            }
+
+            Log.d("TestRepositoryImpl", "Generating sample test attempts for ${tests.size} tests")
+
+            // Generate 2-3 attempts per test with different scores
+            val sampleScores = listOf(65f, 75f, 85f, 90f, 95f)
+            val calendar = java.util.Calendar.getInstance()
+
+            tests.take(3).forEachIndexed { testIndex, testEntity ->
+                val mockTest = testEntityToModel(testEntity, testDao.getQuestionsForTest(testEntity.id))
+
+                sampleScores.forEachIndexed { scoreIndex, score ->
+                    // Create attempt with some time variation
+                    calendar.time = Date()
+                    calendar.add(java.util.Calendar.DAY_OF_MONTH, -(testIndex * 7 + scoreIndex * 2))
+
+                    val attempt = TestAttempt(
+                        id = UUID.randomUUID().toString(),
+                        testId = mockTest.id,
+                        startTime = calendar.time,
+                        endTime = Date(calendar.timeInMillis + 1800000), // 30 minutes later
+                        userAnswers = mockTest.questions.mapIndexed { questionIndex, question ->
+                            val isCorrect = when {
+                                score >= 90 -> questionIndex < (mockTest.questions.size * 0.9).toInt()
+                                score >= 80 -> questionIndex < (mockTest.questions.size * 0.8).toInt()
+                                score >= 70 -> questionIndex < (mockTest.questions.size * 0.7).toInt()
+                                else -> questionIndex < (mockTest.questions.size * 0.6).toInt()
+                            }
+                            question.id to UserAnswer(
+                                questionId = question.id,
+                                selectedOptionIndex = if (isCorrect) question.correctOptionIndex else (question.correctOptionIndex?.plus(1))?.rem(4),
+                                timeSpent = 45 + (questionIndex * 5), // Increasing time per question
+                                status = QuestionStatus.ANSWERED
+                            )
+                        }.toMap(),
+                        isCompleted = true,
+                        score = score
+                    )
+
+                    saveTestAttempt(attempt)
+                    Log.d("TestRepositoryImpl", "Generated sample attempt: ${attempt.id} for test ${mockTest.name} with score $score")
+                }
+            }
+
+            Log.d("TestRepositoryImpl", "Sample test attempts generation completed")
+
+        } catch (e: Exception) {
+            Log.e("TestRepositoryImpl", "Error generating sample test attempts: ${e.message}", e)
         }
     }
 

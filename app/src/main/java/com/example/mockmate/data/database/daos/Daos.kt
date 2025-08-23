@@ -26,6 +26,9 @@ interface TestDao {
     @Query("SELECT * FROM tests WHERE difficulty = :difficulty")
     fun getTestsByDifficulty(difficulty: String): Flow<List<TestEntity>>
 
+    @Query("SELECT COUNT(*) FROM tests")
+    suspend fun getTestCount(): Int
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTest(test: TestEntity)
 
@@ -151,6 +154,9 @@ interface TestAttemptDao {
 
     @Query("SELECT * FROM test_attempts WHERE testId = :testId")
     fun getTestAttemptsByTestId(testId: String): Flow<List<TestAttemptEntity>>
+
+    @Query("SELECT COUNT(*) FROM test_attempts")
+    suspend fun getTestAttemptCount(): Int
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTestAttempt(attempt: TestAttemptEntity)

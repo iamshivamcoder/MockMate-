@@ -149,6 +149,14 @@ fun AppNavHost(
                 val userStats by stableRepository.userStats.collectAsState(initial = UserStatsDefaults.default()) // Provide a default UserStats
                 val testAttempts by stableRepository.getAllTestAttempts().collectAsState(initial = emptyList())
 
+                // Enhanced debugging for analytics data
+                Log.d("Navigation", "Analytics Screen - Collected userStats: questionsAnswered=${userStats.questionsAnswered}, correctAnswers=${userStats.correctAnswers}, streak=${userStats.streak}")
+                Log.d("Navigation", "Analytics Screen - Collected testAttempts: ${testAttempts.size} attempts")
+                Log.d("Navigation", "Analytics Screen - Subject performance: ${userStats.subjectPerformance.size} subjects")
+                testAttempts.forEach { attempt ->
+                    Log.d("Navigation", "Analytics Screen - Attempt ${attempt.id}: score=${attempt.score}, completed=${attempt.isCompleted}, answers=${attempt.userAnswers.size}")
+                }
+
                 AnalyticsScreen(
                     userStats = userStats,
                     testAttempts = testAttempts

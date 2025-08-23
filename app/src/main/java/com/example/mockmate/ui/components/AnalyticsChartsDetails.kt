@@ -25,10 +25,9 @@ import com.patrykandpatrick.vico.core.entry.entryOf
 
 @Composable
 fun AvgTimeSpentChart(userStats: UserStats) {
-    // Example implementation: Display total questions answered over total subjects as a proxy
-    val avgQuestions = if (userStats.subjectPerformance.isNotEmpty()) {
-        userStats.questionsAnswered.toFloat() / userStats.subjectPerformance.size
-    } else 0f
+    // Debug logging
+    android.util.Log.d("AvgTimeSpentChart", "UserStats received: questionsAnswered=${userStats.questionsAnswered}, subjectPerformance=${userStats.subjectPerformance.size}")
+
     Card(
         modifier = Modifier
             .padding(vertical = 8.dp)
@@ -36,9 +35,43 @@ fun AvgTimeSpentChart(userStats: UserStats) {
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("Avg Time Spent vs Recommended", style = MaterialTheme.typography.titleMedium)
+            Text("📊 Time Management Insights", style = MaterialTheme.typography.titleMedium)
             Spacer(modifier = Modifier.height(8.dp))
-            Text("Avg. answered per subject: %.2f".format(avgQuestions), style = MaterialTheme.typography.bodySmall)
+
+            if (userStats.questionsAnswered == 0) {
+                // No data state
+                Text(
+                    text = "Start small today. Even 15 mins counts. ⏱️",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "💡 Complete practice tests to see your time management insights",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            } else {
+                // Show basic stats since we don't have actual time tracking yet
+                val avgQuestions = if (userStats.subjectPerformance.isNotEmpty()) {
+                    userStats.questionsAnswered.toFloat() / userStats.subjectPerformance.size
+                } else 0f
+
+                val accuracy = if (userStats.questionsAnswered > 0) {
+                    (userStats.correctAnswers.toFloat() / userStats.questionsAnswered.toFloat()) * 100
+                } else 0f
+
+                Text("Questions answered: ${userStats.questionsAnswered}", style = MaterialTheme.typography.bodyMedium)
+                Text("Avg. per subject: %.1f".format(avgQuestions), style = MaterialTheme.typography.bodyMedium)
+                Text("Current accuracy: %.1f%%".format(accuracy), style = MaterialTheme.typography.bodyMedium)
+
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "📈 Focus on quality over speed - accuracy matters more than time!",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.secondary
+                )
+            }
         }
     }
 }
