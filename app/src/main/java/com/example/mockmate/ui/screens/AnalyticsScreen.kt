@@ -21,12 +21,12 @@ import com.example.mockmate.model.TestAttempt
 import com.example.mockmate.model.UserStats
 import com.example.mockmate.ui.components.AccuracyTrendChart
 import com.example.mockmate.ui.components.AvgTimeSpentChart
-import com.example.mockmate.ui.components.DifficultyBreakdownChart
+// import com.example.mockmate.ui.components.DifficultyBreakdownChart // Removed as per request
 import com.example.mockmate.ui.components.EngagementTimelineChart
 import com.example.mockmate.ui.components.OverallAccuracyChart
 import com.example.mockmate.ui.components.PerQuestionAnalysisChart
 import com.example.mockmate.ui.components.StreakTrackerChart
-import com.example.mockmate.ui.components.SubjectDifficultyMatrixChart
+// import com.example.mockmate.ui.components.SubjectDifficultyMatrixChart // Removed as per request
 import com.example.mockmate.ui.components.SubjectWiseAccuracyChart
 import com.example.mockmate.ui.components.TestAttemptsCounterChart
 import com.example.mockmate.ui.components.TestScoresOverTimeChart
@@ -74,9 +74,10 @@ fun AnalyticsScreen(
         StreakTrackerChart(userStats = userStats)
         TestAttemptsCounterChart(testAttempts = testAttempts)
 
-        Text("Comparative Analytics", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 16.dp, bottom = 8.dp))
-        DifficultyBreakdownChart(userStats = userStats)
-        SubjectDifficultyMatrixChart(userStats = userStats)
+        // Removed Comparative Analytics section as per request
+        // Text("Comparative Analytics", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 16.dp, bottom = 8.dp))
+        // DifficultyBreakdownChart(userStats = userStats)
+        // SubjectDifficultyMatrixChart(userStats = userStats)
 
         Spacer(modifier = Modifier.height(16.dp)) // Add some spacing at the end
     }
