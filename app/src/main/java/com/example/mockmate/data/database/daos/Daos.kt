@@ -118,7 +118,8 @@ interface UserStatsDao {
 
     @Query("""
         UPDATE user_stats
-        SET streak = streak + 1,
+        SET currentStreak = currentStreak + 1,
+            longestStreak = MAX(longestStreak, currentStreak + 1),
             lastPracticeDate = :date
         WHERE id = 1
     """)
@@ -126,7 +127,8 @@ interface UserStatsDao {
 
     @Query("""
         UPDATE user_stats
-        SET streak = 1,
+        SET currentStreak = 1,
+            longestStreak = MAX(longestStreak, 1),
             lastPracticeDate = :date
         WHERE id = 1
     """)

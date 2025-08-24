@@ -80,7 +80,7 @@ fun TestHistoryScreen(
 ) {
     val testAttemptsFlow = repository.getAllTestAttempts()
     val testAttemptsList by testAttemptsFlow.collectAsState(initial = emptyList())
-    val userStats by repository.userStats.collectAsState(initial = UserStats(questionsAnswered = 0, correctAnswers = 0, streak = 0))
+    val userStats by repository.userStats.collectAsState(initial = UserStats(questionsAnswered = 0, correctAnswers = 0, currentStreak = 0, longestStreak = 0))
 
     var isLoading by remember { mutableStateOf(true) }
     var attemptsWithTest by remember { mutableStateOf<List<AttemptWithTest>>(emptyList()) }

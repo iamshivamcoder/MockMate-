@@ -5,10 +5,12 @@ import com.example.mockmate.api.GeminiApiService
 import com.example.mockmate.data.SettingsRepository
 import com.example.mockmate.data.TestRepository
 import com.example.mockmate.service.AIQuestionGenerator
+import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
+@HiltAndroidApp
 class MockMateApplication : Application() {
     
     // Repositories

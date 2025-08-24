@@ -89,7 +89,8 @@ class InMemoryTestRepository : TestRepository {
         UserStats(
             questionsAnswered = 120,
             correctAnswers = 95,
-            streak = 7
+            currentStreak = 7, // Changed from streak
+            longestStreak = 7 // Assuming longestStreak should also be initialized
         )
     )
     
@@ -162,10 +163,12 @@ class InMemoryTestRepository : TestRepository {
                     .find { it.id == questionId }
                 question?.correctOptionIndex == answer.selectedOptionIndex
             }
-
+            // Streak update logic should be added here if needed
             _userStats.value = currentStats.copy(
                 questionsAnswered = currentStats.questionsAnswered + attempt.userAnswers.size,
                 correctAnswers = currentStats.correctAnswers + correctAnswers
+                // currentStreak = ..., // Requires logic based on lastPracticeDate
+                // longestStreak = ... // Requires logic based on lastPracticeDate and currentStreak
             )
         } catch (e: Exception) {
             android.util.Log.e("TestRepository", "Error saving test attempt: ${e.message}", e)

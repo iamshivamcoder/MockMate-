@@ -225,7 +225,7 @@ fun UserStatsSection(userStats: UserStats) {
             )
             StatColumn(
                 title = "Current Streak",
-                value = "${userStats.streak} days",
+                value = "${userStats.currentStreak} days",
                 modifier = Modifier.weight(1f)
             )
         }

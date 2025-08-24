@@ -1,7 +1,11 @@
 package com.example.mockmate.ui.components
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -9,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -18,23 +23,21 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.mockmate.model.SubjectPerformance
 import com.example.mockmate.model.TestAttempt
 import com.example.mockmate.model.UserStats
-import com.patrykandpatrick.vico.compose.axis.horizontal.rememberBottomAxis
-import com.patrykandpatrick.vico.compose.axis.vertical.rememberStartAxis
-import com.patrykandpatrick.vico.compose.chart.Chart
-import com.patrykandpatrick.vico.compose.chart.column.columnChart
-import com.patrykandpatrick.vico.compose.chart.line.lineChart
-import com.patrykandpatrick.vico.compose.style.currentChartStyle
-import com.patrykandpatrick.vico.core.axis.AxisPosition
-import com.patrykandpatrick.vico.core.axis.formatter.AxisValueFormatter
-import com.patrykandpatrick.vico.core.component.shape.LineComponent
-import com.patrykandpatrick.vico.core.component.shape.Shapes
-import com.patrykandpatrick.vico.core.entry.ChartEntryModelProducer
-import com.patrykandpatrick.vico.core.entry.entryOf
 import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
+import kotlin.math.min
 
 @Composable
 fun ChartPlaceholder(title: String, description: String) {
@@ -75,96 +78,69 @@ fun OverallAccuracyChart(userStats: UserStats) {
             modifier = Modifier.padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("Overall Accuracy (Pie/Donut Chart)", style = MaterialTheme.typography.titleMedium)
+            Text("Overall Accuracy", style = MaterialTheme.typography.titleMedium)
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "Correct vs Incorrect across all attempts.",
                 style = MaterialTheme.typography.bodySmall
             )
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // Debug logging for data validation
-            android.util.Log.d("OverallAccuracyChart", "Received userStats: questionsAnswered=${userStats.questionsAnswered}, correctAnswers=${userStats.correctAnswers}")
-            android.util.Log.d("OverallAccuracyChart", "Calculated accuracy: ${if (userStats.questionsAnswered > 0) "%.2f".format((userStats.correctAnswers.toFloat() / userStats.questionsAnswered.toFloat()) * 100) else "No data"}")
+            if (userStats.questionsAnswered > 0) {
+                val correctPercentage = (userStats.correctAnswers.toFloat() / userStats.questionsAnswered.toFloat()) * 100
+                val incorrectPercentage = 100 - correctPercentage
+
+                NativeOverallAccuracyPieChart(
+                    correctPercentage = correctPercentage,
+                    incorrectPercentage = incorrectPercentage,
+                    modifier = Modifier
+                        .size(200.dp) // Adjust size as needed
+                        .padding(8.dp)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                // Legend
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(12.dp)
+                            .background(colorScheme.primary, CircleShape)
+                    )
+                    Text(" Correct (%.1f%%)".format(correctPercentage), style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(start = 4.dp))
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Box(
+                        modifier = Modifier
+                            .size(12.dp)
+                            .background(colorScheme.error, CircleShape)
+                    )
+                    Text(" Incorrect (%.1f%%)".format(incorrectPercentage), style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(start = 4.dp))
+                }
+
+            } else {
+                Text(
+                    text = "📊 No overall accuracy data available.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "💡 Complete tests to see your accuracy.",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+
             Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Total Answered: ${userStats.questionsAnswered}",
+                style = MaterialTheme.typography.bodyMedium
+            )
             val accuracy = if (userStats.questionsAnswered > 0) {
                 (userStats.correctAnswers.toFloat() / userStats.questionsAnswered.toFloat()) * 100
             } else {
                 0f
             }
-            // Pie chart visualization
-            if (userStats.questionsAnswered > 0) {
-                val correctPercentage = (userStats.correctAnswers.toFloat() / userStats.questionsAnswered.toFloat()) * 100
-                val incorrectPercentage = 100 - correctPercentage
-
-                Text("🥧 Accuracy Breakdown:", style = MaterialTheme.typography.titleSmall)
-                Text("✅ Correct: %.1f%%".format(correctPercentage), style = MaterialTheme.typography.bodyMedium)
-                Text("❌ Incorrect: %.1f%%".format(incorrectPercentage), style = MaterialTheme.typography.bodyMedium)
-
-                // Enhanced visual progress bar
-                androidx.compose.foundation.layout.Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(32.dp)
-                        .background(
-                            color = MaterialTheme.colorScheme.surfaceVariant,
-                            shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
-                        )
-                ) {
-                    androidx.compose.foundation.layout.Box(
-                        modifier = Modifier
-                            .fillMaxWidth(correctPercentage / 100f)
-                            .height(32.dp)
-                            .background(
-                                brush = androidx.compose.ui.graphics.Brush.horizontalGradient(
-                                    colors = listOf(
-                                        MaterialTheme.colorScheme.primary,
-                                        MaterialTheme.colorScheme.primaryContainer
-                                    )
-                                ),
-                                shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
-                            )
-                    )
-                }
-
-                // Legend
-                androidx.compose.foundation.layout.Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.Center
-                ) {
-                    // Correct indicator
-                    androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically) {
-                        androidx.compose.foundation.layout.Box(
-                            modifier = Modifier
-                                .size(12.dp)
-                                .background(
-                                    color = colorScheme.primary,
-                                    shape = androidx.compose.foundation.shape.CircleShape
-                                )
-                        )
-                        Text(" Correct ", style = MaterialTheme.typography.labelSmall)
-                    }
-
-                    androidx.compose.foundation.layout.Spacer(modifier = Modifier.width(16.dp))
-
-                    // Incorrect indicator
-                    androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically) {
-                        androidx.compose.foundation.layout.Box(
-                            modifier = Modifier
-                                .size(12.dp)
-                                .background(
-                                    color = colorScheme.error,
-                                    shape = androidx.compose.foundation.shape.CircleShape
-                                )
-                        )
-                        Text(" Incorrect ", style = MaterialTheme.typography.labelSmall)
-                    }
-                }
-            }
-
-            Text(
-                text = "Total Answered: ${userStats.questionsAnswered}",
-                style = MaterialTheme.typography.bodyMedium
-            )
             Text(
                 text = "Accuracy: ${if (userStats.questionsAnswered > 0) "%.2f%%".format(accuracy) else "No data"}",
                 style = MaterialTheme.typography.bodyMedium
@@ -174,41 +150,57 @@ fun OverallAccuracyChart(userStats: UserStats) {
 }
 
 @Composable
-fun SubjectWiseAccuracyChart(userStats: UserStats) {
-    val subjectPerformanceList = userStats.subjectPerformance.values.toList()
+fun NativeOverallAccuracyPieChart(
+    correctPercentage: Float,
+    incorrectPercentage: Float,
+    modifier: Modifier = Modifier
+) {
+    val correctColor = colorScheme.primary
+    val incorrectColor = colorScheme.error
+    val backgroundIndicatorColor = colorScheme.surfaceVariant
 
-    // Debug logging for subject performance
-    android.util.Log.d("SubjectWiseAccuracyChart", "Subject performance list size: ${subjectPerformanceList.size}")
-    subjectPerformanceList.forEach { perf ->
-        android.util.Log.d("SubjectWiseAccuracyChart", "Subject: ${perf.subject}, Accuracy: ${perf.accuracy}%, Questions: ${perf.questionsAttempted}, Correct: ${perf.correctAnswers}")
-    }
+    Canvas(modifier = modifier) {
+        val diameter = min(size.width, size.height)
+        val strokeWidth = diameter * 0.2f // Adjust for donut thickness
+        val radius = (diameter - strokeWidth) / 2
+        val topLeft = Offset((size.width - diameter) / 2 + strokeWidth/2, (size.height - diameter) / 2 + strokeWidth/2)
+        val arcSize = Size(diameter - strokeWidth, diameter- strokeWidth)
 
-    val chartEntryModelProducer = remember(subjectPerformanceList) {
-        ChartEntryModelProducer(
-            subjectPerformanceList.mapIndexed { index, subjectPerf ->
-                entryOf(index.toFloat(), subjectPerf.accuracy.toFloat())
-            }
+        // Background indicator (full circle)
+        drawArc(
+            color = backgroundIndicatorColor,
+            startAngle = 0f,
+            sweepAngle = 360f,
+            useCenter = false,
+            topLeft = topLeft,
+            size = arcSize,
+            style = Stroke(width = strokeWidth)
+        )
+
+        // Correct slice
+        drawArc(
+            color = correctColor,
+            startAngle = -90f, // Start from the top
+            sweepAngle = (correctPercentage / 100f) * 360f,
+            useCenter = false,
+            topLeft = topLeft,
+            size = arcSize,
+            style = Stroke(width = strokeWidth)
         )
     }
+}
 
-    val bottomAxisValueFormatter = AxisValueFormatter<AxisPosition.Horizontal.Bottom> { value, _ ->
-        subjectPerformanceList.getOrNull(value.toInt())?.subject ?: ""
-    }
-    
-    val columnColors = listOf(
-        colorScheme.primary,
-        colorScheme.secondary,
-        colorScheme.tertiary,
-        colorScheme.primaryContainer,
-        colorScheme.secondaryContainer
-    )
+
+@Composable
+fun SubjectWiseAccuracyChart(userStats: UserStats) {
+    val subjectPerformanceList = userStats.subjectPerformance.values.toList()
 
     Card(
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
         modifier = Modifier
             .padding(vertical = 8.dp)
             .fillMaxWidth()
-            .height(280.dp), // Increased height for better visibility
+            .height(300.dp), 
         colors = CardDefaults.cardColors(
             containerColor = colorScheme.surface
         )
@@ -241,29 +233,9 @@ fun SubjectWiseAccuracyChart(userStats: UserStats) {
                     )
                 }
             } else {
-                Chart(
-                    chart = columnChart( // Use the direct import
-                         columns = currentChartStyle.columnChart.columns.mapIndexed { index, lineComponent ->
-                            LineComponent(
-                                color = columnColors[index % columnColors.size].hashCode(),
-                                thicknessDp = lineComponent.thicknessDp,
-                                shape = Shapes.roundedCornerShape(allPercent = 40),
-                                dynamicShader = null,
-                                margins = lineComponent.margins
-                            )
-                        }
-                    ),
-                    chartModelProducer = chartEntryModelProducer,
-                    startAxis = rememberStartAxis(
-                        title = "Accuracy (%)",
-                        valueFormatter = { value, _ -> "%.0f".format(value) }
-                    ),
-                    bottomAxis = rememberBottomAxis(
-                        title = "Subject",
-                        valueFormatter = bottomAxisValueFormatter,
-                        guideline = null
-                    ),
-                    modifier = Modifier.fillMaxSize()
+                NativeSubjectWiseBarChart(
+                    subjectPerformance = subjectPerformanceList,
+                    modifier = Modifier.fillMaxSize().padding(top = 16.dp)
                 )
             }
         }
@@ -271,28 +243,162 @@ fun SubjectWiseAccuracyChart(userStats: UserStats) {
 }
 
 @Composable
-fun TestScoresOverTimeChart(testAttempts: List<TestAttempt>) {
-    val sortedAttempts = remember(testAttempts) {
-        testAttempts.sortedBy { it.startTime.time }
+fun NativeSubjectWiseBarChart(
+    subjectPerformance: List<SubjectPerformance>,
+    modifier: Modifier = Modifier
+) {
+    val barColor = colorScheme.primary
+    val axisColor = colorScheme.onSurface.copy(alpha = 0.6f)
+    val textColor = colorScheme.onSurface
+
+    val density = LocalDensity.current
+    val labelTextSizePx = with(density) { 10.sp.toPx() }
+    val titleTextSizePx = with(density) { 12.sp.toPx() }
+
+    val textPaint = remember {
+        android.graphics.Paint().apply {
+            this.color = textColor.hashCode() // Use this.color to avoid ambiguity
+            textAlign = android.graphics.Paint.Align.CENTER
+            textSize = labelTextSizePx
+        }
+    }
+    val titlePaint = remember {
+        android.graphics.Paint().apply {
+            this.color = textColor.hashCode() // Use this.color to avoid ambiguity
+            textAlign = android.graphics.Paint.Align.CENTER
+            textSize = titleTextSizePx
+            isFakeBoldText = true
+        }
     }
 
-    // Debug logging for test attempts
-    android.util.Log.d("TestScoresOverTimeChart", "Test attempts list size: ${testAttempts.size}")
-    sortedAttempts.forEach { attempt ->
-        android.util.Log.d("TestScoresOverTimeChart", "Attempt ${attempt.id}: score=${attempt.score}, startTime=${attempt.startTime}, completed=${attempt.isCompleted}")
+
+    if (subjectPerformance.isEmpty()) {
+        Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("No data for bar chart", style = MaterialTheme.typography.bodyMedium)
+        }
+        return
     }
 
-    val chartEntryModelProducer = remember(sortedAttempts) {
-        ChartEntryModelProducer(
-            sortedAttempts.mapIndexed { index, attempt ->
-                entryOf(index.toFloat(), attempt.score) // Using score as Y value
-            }
+    Canvas(modifier = modifier) {
+        val chartPadding = 40.dp.toPx() // For labels and titles
+        val yAxisLabelAreaWidth = 40.dp.toPx() 
+        val xAxisLabelAreaHeight = 40.dp.toPx() 
+        
+        // Adjust chart area for titles
+        val yTitleAreaWidth = titleTextSizePx + 8.dp.toPx() // Space for Y-axis title
+        val xTitleAreaHeight = titleTextSizePx + 8.dp.toPx() // Space for X-axis title
+
+        val chartWidth = size.width - yAxisLabelAreaWidth - chartPadding / 2 - yTitleAreaWidth
+        val chartHeight = size.height - xAxisLabelAreaHeight - chartPadding / 2 - xTitleAreaHeight
+        
+        val effectiveCanvasLeftPadding = yTitleAreaWidth + yAxisLabelAreaWidth
+
+
+        val barCount = subjectPerformance.size
+        val barWidthRatio = 0.6f 
+        val totalSpacingRatio = 1 - barWidthRatio
+        val barPlusSpacingWidth = chartWidth / barCount
+        val barWidth = barPlusSpacingWidth * barWidthRatio
+        val spacing = barPlusSpacingWidth * (totalSpacingRatio / 2)
+
+
+        // Draw Y-axis line
+        drawLine(
+            color = axisColor,
+            start = Offset(effectiveCanvasLeftPadding, chartPadding / 2),
+            end = Offset(effectiveCanvasLeftPadding, chartHeight + chartPadding / 2),
+            strokeWidth = 1.dp.toPx()
+        )
+
+        // Draw X-axis line
+        drawLine(
+            color = axisColor,
+            start = Offset(effectiveCanvasLeftPadding, chartHeight + chartPadding / 2),
+            end = Offset(effectiveCanvasLeftPadding + chartWidth, chartHeight + chartPadding / 2),
+            strokeWidth = 1.dp.toPx()
+        )
+        
+        // Y-axis labels and grid lines
+        val maxAccuracy = 100f
+        val numYLabels = 5
+        for (i in 0..numYLabels) {
+            val value = maxAccuracy * i / numYLabels
+            val yPos = chartHeight + chartPadding / 2 - (value / maxAccuracy) * chartHeight
+            
+            drawContext.canvas.nativeCanvas.drawText(
+                "${value.toInt()}%",
+                effectiveCanvasLeftPadding - 8.dp.toPx(), // Position left of Y-axis line
+                yPos + textPaint.textSize / 3, 
+                textPaint.apply { textAlign = android.graphics.Paint.Align.RIGHT}
+            )
+            // Optional: Draw horizontal grid lines
+            drawLine(
+                color = axisColor.copy(alpha = 0.3f),
+                start = Offset(effectiveCanvasLeftPadding, yPos),
+                end = Offset(effectiveCanvasLeftPadding + chartWidth, yPos),
+                strokeWidth = 0.5.dp.toPx()
+            )
+        }
+
+
+        // Draw bars and X-axis labels
+        subjectPerformance.forEachIndexed { index, perf ->
+            val barHeight = (perf.accuracy.toFloat() / maxAccuracy) * chartHeight
+            val barX = effectiveCanvasLeftPadding + spacing + index * barPlusSpacingWidth
+            val barY = chartHeight + chartPadding/2 - barHeight
+
+            drawRect(
+                color = barColor,
+                topLeft = Offset(barX, barY),
+                size = Size(barWidth, barHeight)
+            )
+
+            // X-axis labels (subject names)
+            val labelText = perf.subject.take(10) + if(perf.subject.length > 10) "..." else "" 
+            val labelX = barX + barWidth / 2
+            val labelY = chartHeight + chartPadding/2 + 10.dp.toPx() + textPaint.textSize
+            
+            drawContext.canvas.nativeCanvas.save()
+            drawContext.canvas.nativeCanvas.rotate(-45f, labelX, labelY - textPaint.textSize / 2) // Rotate around text center
+            drawContext.canvas.nativeCanvas.drawText(
+                labelText,
+                labelX,
+                labelY,
+                textPaint.apply { textAlign = android.graphics.Paint.Align.RIGHT } // Align right for rotated text on X-axis
+            )
+            drawContext.canvas.nativeCanvas.restore()
+        }
+
+        // Axis Titles
+        // Y-Axis Title ("Accuracy (%)")
+        val yTitleX = yTitleAreaWidth / 2f 
+        val yTitleY = chartPadding / 2 + chartHeight / 2
+        drawContext.canvas.nativeCanvas.save()
+        drawContext.canvas.nativeCanvas.rotate(-90f, yTitleX, yTitleY)
+        drawContext.canvas.nativeCanvas.drawText(
+            "Accuracy (%)",
+            yTitleX,
+            yTitleY + titlePaint.textSize / 3f, // Center text vertically
+            titlePaint // textAlign is already Center from initialization
+        )
+        drawContext.canvas.nativeCanvas.restore()
+
+        // X-Axis Title ("Subjects")
+        val xTitleX = effectiveCanvasLeftPadding + chartWidth / 2
+        val xTitleY = chartHeight + chartPadding/2 + xAxisLabelAreaHeight - xTitleAreaHeight / 2f + titlePaint.textSize/2 // Center in allocated space
+        drawContext.canvas.nativeCanvas.drawText(
+            "Subjects",
+            xTitleX,
+            xTitleY,
+            titlePaint // textAlign is already Center
         )
     }
+}
 
-    val dateFormat = SimpleDateFormat("MMM dd", Locale.getDefault())
-    val bottomAxisValueFormatter = AxisValueFormatter<AxisPosition.Horizontal.Bottom> { value, _ ->
-        sortedAttempts.getOrNull(value.toInt())?.startTime?.let { dateFormat.format(it) } ?: ""
+@Composable
+fun TestScoresOverTimeChart(testAttempts: List<TestAttempt>) {
+    val sortedAttempts = remember(testAttempts) {
+        testAttempts.filter { it.isCompleted }.sortedBy { it.startTime.time }
     }
 
     Card(
@@ -300,7 +406,7 @@ fun TestScoresOverTimeChart(testAttempts: List<TestAttempt>) {
         modifier = Modifier
             .padding(vertical = 8.dp)
             .fillMaxWidth()
-            .height(280.dp),
+            .height(300.dp),
         colors = CardDefaults.cardColors(
             containerColor = colorScheme.surface
         )
@@ -315,7 +421,7 @@ fun TestScoresOverTimeChart(testAttempts: List<TestAttempt>) {
                 color = colorScheme.primary
             )
             Spacer(modifier = Modifier.height(8.dp))
-            if (sortedAttempts.isEmpty()) {
+            if (sortedAttempts.isEmpty()) { // Changed from < 2 to isEmpty for consistency with placeholder
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.padding(16.dp)
@@ -325,28 +431,23 @@ fun TestScoresOverTimeChart(testAttempts: List<TestAttempt>) {
                         style = MaterialTheme.typography.bodyMedium,
                         color = colorScheme.onSurface
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "💡 Take practice tests to track your progress over time",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = colorScheme.onSurfaceVariant
-                    )
                 }
+            } else if (sortedAttempts.size < 2) {
+                 Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Text(
+                        text = "📈 Need at least 2 test attempts to show trend.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = colorScheme.onSurface
+                    )
+                 }
             }
             else {
-                Chart(
-                    chart = lineChart(), // Using a simple line chart
-                    chartModelProducer = chartEntryModelProducer,
-                    startAxis = rememberStartAxis(
-                        title = "Score (%)", // Assuming score is a percentage
-                        valueFormatter = { value, _ -> "%.0f".format(value) }
-                    ),
-                    bottomAxis = rememberBottomAxis(
-                        title = "Date",
-                        valueFormatter = bottomAxisValueFormatter,
-                        guideline = null
-                    ),
-                    modifier = Modifier.fillMaxSize()
+                 NativeTestScoresLineChart(
+                    testAttempts = sortedAttempts,
+                    modifier = Modifier.fillMaxSize().padding(top = 16.dp)
                 )
             }
         }
@@ -354,284 +455,173 @@ fun TestScoresOverTimeChart(testAttempts: List<TestAttempt>) {
 }
 
 @Composable
-fun TopicDrilldownChart(userStats: UserStats) {
-    Card(
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        modifier = Modifier
-            .padding(vertical = 8.dp)
-            .fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text("Topic Drilldown", style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Data from ${userStats.subjectPerformance.size} subjects.",
-                style = MaterialTheme.typography.bodySmall
+fun NativeTestScoresLineChart(
+    testAttempts: List<TestAttempt>,
+    modifier: Modifier = Modifier
+) {
+    val lineColor = colorScheme.primary
+    val pointColor = colorScheme.secondary
+    val axisColor = colorScheme.onSurface.copy(alpha = 0.6f)
+    val textColor = colorScheme.onSurface
+
+    val density = LocalDensity.current
+    val labelTextSizePx = with(density) { 10.sp.toPx() }
+    val titleTextSizePx = with(density) { 12.sp.toPx() }
+
+
+    val textPaint = remember {
+        android.graphics.Paint().apply {
+            this.color = textColor.hashCode()
+            textAlign = android.graphics.Paint.Align.CENTER
+            textSize = labelTextSizePx
+        }
+    }
+     val titlePaint = remember {
+        android.graphics.Paint().apply {
+            this.color = textColor.hashCode()
+            textAlign = android.graphics.Paint.Align.CENTER
+            textSize = titleTextSizePx
+            isFakeBoldText = true
+        }
+    }
+
+    // No need for a separate isEmpty check here as TestScoresOverTimeChart handles it.
+    // The size < 2 check is for drawing a line, which is appropriate here.
+    if (testAttempts.size < 2) { 
+        Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            // This message is now less likely to be seen due to checks in TestScoresOverTimeChart
+            Text("Need at least 2 test attempts for a line chart", style = MaterialTheme.typography.bodyMedium)
+        }
+        return
+    }
+
+    val dateFormat = remember { SimpleDateFormat("MMM dd", Locale.getDefault()) }
+
+    Canvas(modifier = modifier) {
+        val chartPadding = 40.dp.toPx()
+        val yAxisLabelAreaWidth = 40.dp.toPx()
+        val xAxisLabelAreaHeight = 40.dp.toPx()
+        
+        // Adjust chart area for titles
+        val yTitleAreaWidth = titleTextSizePx + 8.dp.toPx() 
+        val xTitleAreaHeight = titleTextSizePx + 8.dp.toPx()
+
+        val chartWidth = size.width - yAxisLabelAreaWidth - chartPadding / 2 - yTitleAreaWidth
+        val chartHeight = size.height - xAxisLabelAreaHeight - chartPadding / 2 - xTitleAreaHeight
+        
+        val effectiveCanvasLeftPadding = yTitleAreaWidth + yAxisLabelAreaWidth
+
+
+        val maxScore = 100f 
+
+        // Draw Y-axis line
+        drawLine(
+            color = axisColor,
+            start = Offset(effectiveCanvasLeftPadding, chartPadding / 2),
+            end = Offset(effectiveCanvasLeftPadding, chartHeight + chartPadding / 2),
+            strokeWidth = 1.dp.toPx()
+        )
+
+        // Draw X-axis line
+        drawLine(
+            color = axisColor,
+            start = Offset(effectiveCanvasLeftPadding, chartHeight + chartPadding / 2),
+            end = Offset(effectiveCanvasLeftPadding + chartWidth, chartHeight + chartPadding / 2),
+            strokeWidth = 1.dp.toPx()
+        )
+
+        // Y-axis labels and grid lines
+        val numYLabels = 5
+        for (i in 0..numYLabels) {
+            val value = maxScore * i / numYLabels
+            val yPos = chartHeight + chartPadding / 2 - (value / maxScore) * chartHeight
+            drawContext.canvas.nativeCanvas.drawText(
+                "${value.toInt()}%",
+                effectiveCanvasLeftPadding - 8.dp.toPx(),
+                yPos + textPaint.textSize / 3,
+                textPaint.apply { textAlign = android.graphics.Paint.Align.RIGHT }
             )
-            Text(
-                text = "(Placeholder: Visual chart for topic drilldown needed)",
-                style = MaterialTheme.typography.labelSmall
+             drawLine(
+                color = axisColor.copy(alpha = 0.3f),
+                start = Offset(effectiveCanvasLeftPadding, yPos),
+                end = Offset(effectiveCanvasLeftPadding + chartWidth, yPos),
+                strokeWidth = 0.5.dp.toPx()
             )
         }
-    }
-}
 
-@Composable
-fun AccuracyTrendChart(testAttempts: List<TestAttempt>) {
-    val sortedAttempts = remember(testAttempts) {
-        testAttempts.sortedBy { it.startTime.time }
-    }
+        // Prepare points for line chart
+        val points = testAttempts.mapIndexed { index, attempt ->
+            // Ensure testAttempts.size - 1 is not zero if testAttempts.size is 1 (though guarded by size < 2 check)
+            val xDenominator = if (testAttempts.size > 1) (testAttempts.size - 1).toFloat() else 1f
+            val x = effectiveCanvasLeftPadding + (index.toFloat() / xDenominator) * chartWidth
+            val y = chartHeight + chartPadding / 2 - (attempt.score.toFloat() / maxScore) * chartHeight
+            Offset(x, y)
+        }
 
-    Card(
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-        modifier = Modifier
-            .padding(vertical = 8.dp)
-            .fillMaxWidth()
-            .height(280.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = colorScheme.surface
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text("📈 Accuracy Trend", style = MaterialTheme.typography.titleMedium, color = colorScheme.primary)
-            Spacer(modifier = Modifier.height(8.dp))
-
-            if (sortedAttempts.isEmpty()) {
-                Text(
-                    text = "No test attempts to show trend.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                )
+        // Draw line
+        val path = Path()
+        points.forEachIndexed { index, point ->
+            if (index == 0) {
+                path.moveTo(point.x, point.y)
             } else {
-                val chartEntryModelProducer = remember(sortedAttempts) {
-                    ChartEntryModelProducer(
-                        sortedAttempts.mapIndexed { index, attempt ->
-                            entryOf(index.toFloat(), attempt.score.toFloat())
-                        }
-                    )
-                }
-
-                val dateFormat = SimpleDateFormat("MMM dd", Locale.getDefault())
-                val bottomAxisValueFormatter = AxisValueFormatter<AxisPosition.Horizontal.Bottom> { value, _ ->
-                    sortedAttempts.getOrNull(value.toInt())?.startTime?.let { dateFormat.format(it) } ?: ""
-                }
-
-                Chart(
-                    chart = lineChart(),
-                    chartModelProducer = chartEntryModelProducer,
-                    startAxis = rememberStartAxis(
-                        title = "Score (%)",
-                        valueFormatter = { value, _ -> "%.0f".format(value) }
-                    ),
-                    bottomAxis = rememberBottomAxis(
-                        title = "Test Attempts",
-                        valueFormatter = bottomAxisValueFormatter,
-                        guideline = null
-                    ),
-                    modifier = Modifier.fillMaxSize()
-                )
-
-                val avgScore = sortedAttempts.map { it.score }.average()
-                Text(
-                    text = "Average: %.1f%% over ${sortedAttempts.size} attempts".format(avgScore),
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(top = 8.dp)
-                )
+                path.lineTo(point.x, point.y)
             }
         }
-    }
-}
-
-@Composable
-fun EngagementTimelineChart(testAttempts: List<TestAttempt>) {
-    val sortedAttempts = remember(testAttempts) {
-        testAttempts.sortedBy { it.startTime.time }
-    }
-
-    Card(
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-        modifier = Modifier
-            .padding(vertical = 8.dp)
-            .fillMaxWidth()
-            .height(250.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = colorScheme.surface
+        drawPath(
+            path = path,
+            color = lineColor,
+            style = Stroke(width = 2.dp.toPx())
         )
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text("📅 Engagement Timeline", style = MaterialTheme.typography.titleMedium, color = colorScheme.primary)
-            Spacer(modifier = Modifier.height(8.dp))
 
-            if (sortedAttempts.isEmpty()) {
-                Text(
-                    text = "No engagement data available.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
+        // Draw points and X-axis labels
+        points.forEachIndexed { index, point ->
+            drawCircle(
+                color = pointColor,
+                radius = 4.dp.toPx(),
+                center = point
+            )
+
+            val xLabelPointsCountThreshold = 5 
+            val xLabelModuloFactor = (testAttempts.size / xLabelPointsCountThreshold).coerceAtLeast(1)
+
+            if (testAttempts.size <= xLabelPointsCountThreshold || index % xLabelModuloFactor == 0) {
+                 val dateLabel = dateFormat.format(Date(testAttempts[index].startTime.time))
+                 val labelX = point.x
+                 val labelY = chartHeight + chartPadding / 2 + 10.dp.toPx() + textPaint.textSize
+                 
+                 drawContext.canvas.nativeCanvas.save()
+                 drawContext.canvas.nativeCanvas.rotate(-45f, labelX, labelY - textPaint.textSize/2) 
+                 drawContext.canvas.nativeCanvas.drawText(
+                    dateLabel,
+                    labelX,
+                    labelY,
+                    textPaint.apply { textAlign = android.graphics.Paint.Align.RIGHT } // Align right for rotated labels
                 )
-            } else {
-                // Create timeline data - attempts per day
-                val attemptsByDay = sortedAttempts.groupBy { attempt ->
-                    val cal = java.util.Calendar.getInstance().apply {
-                        time = attempt.startTime
-                        set(java.util.Calendar.HOUR_OF_DAY, 0)
-                        set(java.util.Calendar.MINUTE, 0)
-                        set(java.util.Calendar.SECOND, 0)
-                        set(java.util.Calendar.MILLISECOND, 0)
-                    }
-                    cal.timeInMillis
-                }
-
-                val timelineEntries = attemptsByDay.entries.sortedBy { it.key }.takeLast(7) // Last 7 days
-
-                val chartEntryModelProducer = remember(timelineEntries) {
-                    ChartEntryModelProducer(
-                        timelineEntries.mapIndexed { index, entry ->
-                            entryOf(index.toFloat(), entry.value.size.toFloat())
-                        }
-                    )
-                }
-
-                val dateFormat = SimpleDateFormat("MMM dd", Locale.getDefault())
-                val bottomAxisValueFormatter = AxisValueFormatter<AxisPosition.Horizontal.Bottom> { value, _ ->
-                    timelineEntries.getOrNull(value.toInt())?.key?.let {
-                        dateFormat.format(java.util.Date(it))
-                    } ?: ""
-                }
-
-                Chart(
-                    chart = columnChart(
-                        columns = listOf(
-                            com.patrykandpatrick.vico.core.component.shape.LineComponent(
-                                color = colorScheme.secondary.hashCode(),
-                                thicknessDp = 8f,
-                                shape = Shapes.roundedCornerShape(allPercent = 20)
-                            )
-                        )
-                    ),
-                    chartModelProducer = chartEntryModelProducer,
-                    startAxis = rememberStartAxis(
-                        title = "Tests",
-                        valueFormatter = { value, _ -> "%.0f".format(value) }
-                    ),
-                    bottomAxis = rememberBottomAxis(
-                        title = "Date",
-                        valueFormatter = bottomAxisValueFormatter,
-                        guideline = null
-                    ),
-                    modifier = Modifier.fillMaxSize()
-                )
-
-                val totalAttempts = testAttempts.size
-                val firstAttemptDate = sortedAttempts.firstOrNull()?.startTime?.let { dateFormat.format(it) } ?: "N/A"
-                val lastAttemptDate = sortedAttempts.lastOrNull()?.startTime?.let { dateFormat.format(it) } ?: "N/A"
-
-                Text(
-                    text = "$totalAttempts tests ($firstAttemptDate - $lastAttemptDate)",
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(top = 8.dp)
-                )
+                drawContext.canvas.nativeCanvas.restore()
             }
         }
-    }
-}
-
-@Composable
-fun PerQuestionAnalysisChart(testAttempts: List<TestAttempt>) {
-    Card(
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-        modifier = Modifier
-            .padding(vertical = 8.dp)
-            .fillMaxWidth()
-            .height(250.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = colorScheme.surface
+         // Axis Titles
+        // Y-Axis Title ("Score (%)")
+        val yTitleX = yTitleAreaWidth / 2f
+        val yTitleY = chartPadding / 2 + chartHeight / 2
+        drawContext.canvas.nativeCanvas.save()
+        drawContext.canvas.nativeCanvas.rotate(-90f, yTitleX, yTitleY)
+        drawContext.canvas.nativeCanvas.drawText(
+            "Score (%)",
+            yTitleX,
+            yTitleY + titlePaint.textSize / 3f,
+            titlePaint
         )
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text("📊 Per Question Analysis", style = MaterialTheme.typography.titleMedium, color = colorScheme.primary)
-            Spacer(modifier = Modifier.height(8.dp))
+        drawContext.canvas.nativeCanvas.restore()
 
-            if (testAttempts.isEmpty()) {
-                Text(
-                    text = "No attempts available for question analysis.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                )
-            } else {
-                // Analyze score distribution
-                val scores = testAttempts.map { it.score }
-                val avgScore = scores.average()
-                val minScore = scores.minOrNull() ?: 0f
-                val maxScore = scores.maxOrNull() ?: 0f
-
-                // Create score distribution buckets
-                val scoreRanges = listOf(0f, 25f, 50f, 75f, 100f)
-                val distribution = mutableListOf<Int>()
-                for (i in 0 until scoreRanges.size - 1) {
-                    val count = scores.count { it >= scoreRanges[i] && it < scoreRanges[i + 1] }
-                    distribution.add(count)
-                }
-
-                val chartEntryModelProducer = remember(distribution) {
-                    ChartEntryModelProducer(
-                        distribution.mapIndexed { index, count ->
-                            entryOf(index.toFloat(), count.toFloat())
-                        }
-                    )
-                }
-
-                val bottomAxisValueFormatter = AxisValueFormatter<AxisPosition.Horizontal.Bottom> { value, _ ->
-                    when (value.toInt()) {
-                        0 -> "0-25%"
-                        1 -> "25-50%"
-                        2 -> "50-75%"
-                        3 -> "75-100%"
-                        else -> ""
-                    }
-                }
-
-                Chart(
-                    chart = columnChart(
-                        columns = listOf(
-                            com.patrykandpatrick.vico.core.component.shape.LineComponent(
-                                color = colorScheme.tertiary.hashCode(),
-                                thicknessDp = 8f,
-                                shape = Shapes.roundedCornerShape(allPercent = 20)
-                            )
-                        )
-                    ),
-                    chartModelProducer = chartEntryModelProducer,
-                    startAxis = rememberStartAxis(
-                        title = "Tests",
-                        valueFormatter = { value, _ -> "%.0f".format(value) }
-                    ),
-                    bottomAxis = rememberBottomAxis(
-                        title = "Score Range",
-                        valueFormatter = bottomAxisValueFormatter,
-                        guideline = null
-                    ),
-                    modifier = Modifier.fillMaxSize()
-                )
-
-                // Summary statistics
-                Text(
-                    text = "📈 Avg: %.1f%% | 📉 Min: %.1f%% | 📈 Max: %.1f%%".format(avgScore, minScore, maxScore),
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(top = 8.dp)
-                )
-            }
-        }
+        // X-Axis Title ("Date")
+        val xTitleX = effectiveCanvasLeftPadding + chartWidth / 2
+        val xTitleY = chartHeight + chartPadding/2 + xAxisLabelAreaHeight - xTitleAreaHeight/2f + titlePaint.textSize/2
+        drawContext.canvas.nativeCanvas.drawText(
+            "Date",
+            xTitleX,
+            xTitleY,
+            titlePaint
+        )
     }
 }

@@ -62,7 +62,8 @@ data class TestAttempt(
 data class UserStats(
     val questionsAnswered: Int = 0,
     val correctAnswers: Int = 0,
-    val streak: Int = 0,
+    val currentStreak: Int = 0,
+    val longestStreak: Int = 0,
     val lastPracticeDate: Date? = null,
     val subjectPerformance: Map<String, SubjectPerformance> = mapOf()
 )
@@ -104,4 +105,3 @@ data class AttemptWithTest(
     val totalQuestions: Int,
     val score: Int
 )
-

@@ -150,7 +150,7 @@ fun AppNavHost(
                 val testAttempts by stableRepository.getAllTestAttempts().collectAsState(initial = emptyList())
 
                 // Enhanced debugging for analytics data
-                Log.d("Navigation", "Analytics Screen - Collected userStats: questionsAnswered=${userStats.questionsAnswered}, correctAnswers=${userStats.correctAnswers}, streak=${userStats.streak}")
+                Log.d("Navigation", "Analytics Screen - Collected userStats: questionsAnswered=${userStats.questionsAnswered}, correctAnswers=${userStats.correctAnswers}, currentStreak=${userStats.currentStreak}")
                 Log.d("Navigation", "Analytics Screen - Collected testAttempts: ${testAttempts.size} attempts")
                 Log.d("Navigation", "Analytics Screen - Subject performance: ${userStats.subjectPerformance.size} subjects")
                 testAttempts.forEach { attempt ->
@@ -338,7 +338,8 @@ object UserStatsDefaults {
     fun default() = UserStats(
         questionsAnswered = 0,
         correctAnswers = 0,
-        streak = 0,
+        currentStreak = 0,
+        longestStreak = 0,
         lastPracticeDate = Date(0), // Use epoch for a sensible default
         subjectPerformance = emptyMap()
     )

@@ -57,7 +57,7 @@ class TestRepositoryImpl(
     override val userStats: Flow<UserStats> = userStatsDao.getUserStats()
         .map { userStatsEntity ->
             val userStats = userStatsEntity?.let { entityToUserStats(it) } ?: UserStats()
-            Log.d("TestRepositoryImpl", "UserStats loaded: questionsAnswered=${userStats.questionsAnswered}, correctAnswers=${userStats.correctAnswers}, streak=${userStats.streak}, subjectPerformance=${userStats.subjectPerformance.size}")
+            Log.d("TestRepositoryImpl", "UserStats loaded: questionsAnswered=${userStats.questionsAnswered}, correctAnswers=${userStats.correctAnswers}, currentStreak=${userStats.currentStreak}, longestStreak=${userStats.longestStreak}, subjectPerformance=${userStats.subjectPerformance.size}")
             userStats
         }
     
@@ -517,7 +517,8 @@ class TestRepositoryImpl(
         return UserStats(
             questionsAnswered = entity.questionsAnswered,
             correctAnswers = entity.correctAnswers,
-            streak = entity.streak,
+            currentStreak = entity.currentStreak, // Changed from streak
+            longestStreak = entity.longestStreak, // Added longestStreak
             lastPracticeDate = entity.lastPracticeDate,
             subjectPerformance = subjectPerformanceMap
         )
