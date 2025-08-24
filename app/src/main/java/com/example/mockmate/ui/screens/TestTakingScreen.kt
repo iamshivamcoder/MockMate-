@@ -31,6 +31,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -72,7 +73,7 @@ fun TestTakingScreen(
 
     var showFinishDialog by remember { mutableStateOf(false) }
     val questionStartTimes = remember { mutableMapOf<Int, Long>() }
-    var previousQuestionIndex by remember(uiState.currentQuestionIndex) { mutableStateOf(uiState.currentQuestionIndex) }
+    var previousQuestionIndex by remember(uiState.currentQuestionIndex) { mutableIntStateOf(uiState.currentQuestionIndex) }
 
 
     LaunchedEffect(uiState.timeRemaining, uiState.mockTest) {
