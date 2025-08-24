@@ -38,10 +38,10 @@ import com.example.mockmate.ui.components.AvgTimeSpentChart
 import com.example.mockmate.ui.components.EngagementTimelineChart
 import com.example.mockmate.ui.components.PerQuestionAnalysisChart
 import com.example.mockmate.ui.components.StreakTrackerChart
-import com.example.mockmate.ui.components.SubjectWiseAccuracyChart
+// import com.example.mockmate.ui.components.SubjectWiseAccuracyChart // Removed
 import com.example.mockmate.ui.components.TestAttemptsCounterChart
 import com.example.mockmate.ui.components.TestScoresOverTimeChart
-import com.example.mockmate.ui.components.TopicDrilldownChart
+// import com.example.mockmate.ui.components.TopicDrilldownChart // Removed
 import com.example.mockmate.ui.theme.MockMateTheme
 import java.util.Date
 
@@ -143,8 +143,8 @@ fun AnalyticsScreen(
         Text("Analytics Screen", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(vertical = 16.dp))
 
         KotlinOverallAccuracyChart(userStats = userStats) // Added new Kotlin based chart
-        SubjectWiseAccuracyChart(userStats = userStats)
-        TopicDrilldownChart(userStats = userStats)
+        // SubjectWiseAccuracyChart(userStats = userStats) // Removed
+        // TopicDrilldownChart(userStats = userStats) // Removed
 
         Text("Progress Over Time", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 16.dp, bottom = 8.dp))
         TestScoresOverTimeChart(testAttempts = testAttempts)
