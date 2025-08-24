@@ -12,7 +12,7 @@ import com.example.mockmate.model.TestDifficulty
 import com.example.mockmate.model.UserStats
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import java.util.UUID
+// Removed UUID import as it's no longer used here
 
 internal fun questionModelToEntity(gson: Gson, question: Question): QuestionEntity {
     return QuestionEntity(
@@ -101,84 +101,6 @@ internal fun entityToUserStats(gson: Gson, entity: UserStatsEntity): UserStats {
     )
 }
 
-internal fun generateSampleQuestions(count: Int, subject: String, topic: String): List<Question> {
-    val questions = mutableListOf<Question>()
-    val questionPairs = when (subject) {
-        "Indian Polity" -> listOf(
-            "Which article of the Indian Constitution deals with the Right to Equality?" to
-                listOf("Article 14", "Article 19", "Article 21", "Article 32"),
-            "Who is the constitutional head of the Indian state?" to
-                listOf("President", "Prime Minister", "Chief Justice", "Speaker of Lok Sabha"),
-        )
-        "Economics" -> listOf(
-            "Which of the following is NOT a function of the RBI?" to
-                listOf("Fixing MSP for agricultural products", "Monetary policy regulation", "Foreign exchange management", "Issuing currency"),
-            "NITI Aayog replaced which planning body in India?" to
-                listOf("Planning Commission", "Finance Commission", "Economic Advisory Council", "National Development Council"),
-        )
-        "History" -> listOf(
-            "Who was the first Governor-General of independent India?" to
-                listOf("C. Rajagopalachari", "Lord Mountbatten", "Dr. Rajendra Prasad", "Lord Wavell"),
-            "The Revolt of 1857 started from which place?" to
-                listOf("Meerut", "Delhi", "Kanpur", "Lucknow"),
-        )
-        else -> listOf(
-            "Sample question about $subject $topic?" to
-                listOf("Option A", "Option B", "Option C", "Option D")
-        )
-    }
+// generateSampleQuestions was moved to SampleData.kt
 
-    for (i in 0 until count) {
-        val pairIndex = i % questionPairs.size
-        val (questionText, options) = questionPairs[pairIndex]
-
-        questions.add(
-            Question(
-                id = UUID.randomUUID().toString(),
-                text = questionText,
-                options = options,
-                correctOptionIndex = 0,
-                explanation = "This is the explanation for this question about $subject.",
-                difficulty = when (i % 3) {
-                    0 -> QuestionDifficulty.EASY
-                    1 -> QuestionDifficulty.MEDIUM
-                    else -> QuestionDifficulty.HARD
-                },
-                type = QuestionType.MULTIPLE_CHOICE,
-                subject = subject,
-                topic = topic,
-                timeRecommended = 60,
-                leftColumn = null,
-                rightColumn = null,
-                answers = null
-            )
-        )
-    }
-    return questions
-}
-
-internal fun generateSampleTests(): List<MockTest> {
-    return listOf(
-        MockTest(
-            id = UUID.randomUUID().toString(),
-            name = "Basic Indian Polity",
-            difficulty = TestDifficulty.EASY,
-            questions = generateSampleQuestions(10, "Indian Polity", "Constitution"),
-            timeLimit = 30
-        ),
-        MockTest(
-            id = UUID.randomUUID().toString(),
-            name = "Indian Economy & Current Affairs",
-            difficulty = TestDifficulty.MEDIUM,
-            questions = generateSampleQuestions(20, "Economics", "National Economy"),
-            timeLimit = 60
-        ),
-        MockTest(
-            id = UUID.randomUUID().toString(),
-            name = "Modern Indian History & Geography",
-            difficulty = TestDifficulty.HARD,
-            questions = generateSampleQuestions(30, "History", "Modern India"),
-            timeLimit = 90
-        )
-    )
-}
+// generateSampleTests was moved to SampleData.kt

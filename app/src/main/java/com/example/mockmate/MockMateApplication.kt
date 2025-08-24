@@ -9,6 +9,7 @@ import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import com.example.mockmate.BuildConfig // Added import
 
 @HiltAndroidApp
 class MockMateApplication : Application() {
@@ -35,8 +36,10 @@ class MockMateApplication : Application() {
         try {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    testRepository.initializeIfEmpty() // Enable sample data loading for debugging
-                    android.util.Log.d("MockMateApp", "Repository initialized with sample data")
+                    if (BuildConfig.SAMPLE_DATA_ENABLED) { // Added condition
+                        testRepository.initializeIfEmpty() // Enable sample data loading for debugging
+                        android.util.Log.d("MockMateApp", "Repository initialized with sample data")
+                    }
                 } catch (e: Exception) {
                     // Log and handle initialization errors
                     android.util.Log.e("MockMateApp", "Repository initialization error: ${e.message}", e)

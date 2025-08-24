@@ -43,29 +43,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.mockmate.data.MatchItem // Added import
+import com.example.mockmate.data.generateSampleMatchItemsA // Added import
+import com.example.mockmate.data.generateSampleMatchItemsB // Added import
 
-data class MatchItem(val id: String, val text: String, val matchId: String)
 data class MatchedPair(val itemA: MatchItem, val itemB: MatchItem) {
     val isCorrect: Boolean
         get() = itemA.matchId == itemB.id
 }
 
-// Placeholder data - replace with actual data source
-val sampleItemsA = listOf(
-    MatchItem("a1", "Apple", "b1"),
-    MatchItem("a2", "Banana", "b2"),
-    MatchItem("a3", "Cherry", "b3"),
-    MatchItem("a4", "Date", "b4")
-)
-
-val sampleItemsB = listOf(
-    MatchItem("b1", "A fruit that is red or green", "a1"),
-    MatchItem("b2", "A long yellow fruit", "a2"),
-    MatchItem("b3", "A small red fruit", "a3"),
-    MatchItem("b4", "A sweet brown fruit", "a4"),
-    MatchItem("b5", "A citrus fruit", "") // Extra item
-).shuffled()
-
+// Sample data moved to SampleData.kt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -73,8 +60,8 @@ fun MatchTheColumnScreen(
     onNavigateBack: () -> Unit,
     testId: String? = null // Added testId parameter
 ) {
-    var columnAItems by remember { mutableStateOf(sampleItemsA) }
-    var columnBItems by remember { mutableStateOf(sampleItemsB) }
+    var columnAItems by remember { mutableStateOf(generateSampleMatchItemsA()) } // Use function from SampleData.kt
+    var columnBItems by remember { mutableStateOf(generateSampleMatchItemsB()) } // Use function from SampleData.kt
 
     var selectedAItemId by remember { mutableStateOf<String?>(null) }
     var selectedBItemId by remember { mutableStateOf<String?>(null) }

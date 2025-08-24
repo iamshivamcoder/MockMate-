@@ -43,9 +43,11 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            buildConfigField("boolean", "SAMPLE_DATA_ENABLED", "false")
         }
         debug {
             isDebuggable = true
+            buildConfigField("boolean", "SAMPLE_DATA_ENABLED", "true")
         }
     }
     compileOptions {
@@ -54,6 +56,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     composeOptions {

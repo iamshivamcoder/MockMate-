@@ -54,6 +54,7 @@ import com.example.mockmate.ui.components.TestProgressHeader // Import the extra
 import com.example.mockmate.ui.viewmodels.TestTakingScreenViewModel
 import com.example.mockmate.ui.components.FinishTestDialog
 import com.example.mockmate.ui.components.ErrorAlertDialog
+import com.example.mockmate.data.generateSampleQuestionPreview // Added import
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -307,17 +308,8 @@ fun QuestionContent(
 @androidx.compose.ui.tooling.preview.Preview
 @Composable
 fun QuestionContentPreview() {
-    val sampleQuestion = Question(
-        text = "What is the capital of France?",
-        options = listOf("Berlin", "Madrid", "Paris", "Rome"),
-        correctOptionIndex = 2,
-        explanation = "Paris is the capital of France.",
-        difficulty = QuestionDifficulty.EASY,
-        subject = "Geography",
-        topic = "World Capitals"
-    )
     QuestionContent(
-        question = sampleQuestion,
+        question = generateSampleQuestionPreview(), // Use function from SampleData.kt
         selectedOptionIndex = -1,
         onOptionSelected = {},
         pulsateBadges = true

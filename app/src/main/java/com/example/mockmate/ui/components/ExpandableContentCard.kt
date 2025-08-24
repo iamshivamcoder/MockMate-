@@ -46,6 +46,7 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.mockmate.data.getSampleCardTitle // Added import
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -193,7 +194,7 @@ fun rememberExpandableCardState(
 @Composable
 fun ExpandableContentCardPreview() {
     ExpandableContentCard(
-        title = "Sample Title",
+        title = getSampleCardTitle(), // Updated to use SampleData
         leadingIcon = Icons.Filled.KeyboardArrowDown,
     ) {
         Text("This is the expandable content of the card.")

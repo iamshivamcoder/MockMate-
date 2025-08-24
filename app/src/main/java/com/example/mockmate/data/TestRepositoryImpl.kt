@@ -1,6 +1,7 @@
 package com.example.mockmate.data
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.util.Log
 import androidx.room.withTransaction
 import com.example.mockmate.data.database.AppDatabase
@@ -14,6 +15,8 @@ import com.example.mockmate.model.TestAttempt
 import com.example.mockmate.model.TestDifficulty
 import com.example.mockmate.model.UserAnswer
 import com.example.mockmate.model.UserStats
+// Import for generateSampleTests from SampleData.kt
+import com.example.mockmate.data.generateSampleTests
 import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -37,6 +40,14 @@ class TestRepositoryImpl(
     private val testAttemptDao by lazy { database.testAttemptDao() }
     private val userStatsDao by lazy { database.userStatsDao() }
     private val gson = Gson()
+
+    private val prefs: SharedPreferences by lazy {
+        context.getSharedPreferences("mockmate_prefs", Context.MODE_PRIVATE)
+    }
+
+    companion object {
+        private const val SAMPLE_DATA_LOADED_ONCE_KEY = "sample_data_loaded_once"
+    }
     
     override val mockTests: Flow<List<MockTest>> = testDao.getAllTests()
         .map { testEntities ->
@@ -224,36 +235,50 @@ class TestRepositoryImpl(
     override suspend fun initializeIfEmpty() {
         withContext(Dispatchers.IO) {
             try {
+                val sampleDataLoadedOnce = prefs.getBoolean(SAMPLE_DATA_LOADED_ONCE_KEY, false)
                 val questionCount = questionDao.getQuestionCount()
-                Log.d("TestRepositoryImpl", "Question count in database: $questionCount")
+                Log.d("TestRepositoryImpl", "Question count in database: $questionCount. Sample data loaded once: $sampleDataLoadedOnce")
 
-                if (questionCount == 0) {
-                    Log.d("TestRepositoryImpl", "Database is empty, initializing with sample data")
+                if (!sampleDataLoadedOnce && questionCount == 0) {
+                    Log.d("TestRepositoryImpl", "Database is empty and sample data not loaded before, initializing with sample data")
+                    // Use the imported generateSampleTests
                     val sampleTests = generateSampleTests()
                     Log.d("TestRepositoryImpl", "Generated ${sampleTests.size} sample tests")
 
                     sampleTests.forEach { test ->
                         saveTest(test)
                     }
-                    userStatsDao.insertUserStats(UserStatsEntity())
-                    Log.d("TestRepositoryImpl", "Sample data initialization completed")
-                } else {
-                    Log.d("TestRepositoryImpl", "Database already contains data, skipping initialization")
+                    userStatsDao.insertUserStats(UserStatsEntity()) // Initialize user stats
+                    Log.d("TestRepositoryImpl", "Sample tests and user stats loaded.")
+
+                    // Generate sample attempts only if sample tests were successfully loaded and no attempts exist
+                    val newlyCreatedTestCount = testDao.getTestCount()
+                    val existingAttemptCount = testAttemptDao.getTestAttemptCount()
+
+                    if (existingAttemptCount == 0 && newlyCreatedTestCount > 0) {
+                        Log.d("TestRepositoryImpl", "Initial sample data loaded. Generating sample test attempts.")
+                        generateSampleTestAttempts()
+                    }
+                    
+                    with(prefs.edit()) {
+                        putBoolean(SAMPLE_DATA_LOADED_ONCE_KEY, true)
+                        apply()
+                    }
+                    Log.d("TestRepositoryImpl", "Sample data initialization completed and flag set.")
+                } else if (sampleDataLoadedOnce) {
+                    Log.d("TestRepositoryImpl", "Sample data already loaded once, skipping initialization.")
+                } else { // !sampleDataLoadedOnce is false (so it IS loaded once) OR questionCount != 0 (DB not empty)
+                    Log.d("TestRepositoryImpl", "Database already contains data ($questionCount questions) or sample data already marked as loaded, skipping initialization.")
                 }
 
                 val finalQuestionCount = questionDao.getQuestionCount()
-                val testCount = testDao.getTestCount()
-                val testAttemptCount = testAttemptDao.getTestAttemptCount()
-                Log.d("TestRepositoryImpl", "Final verification - Questions: $finalQuestionCount, Tests: $testCount, TestAttempts: $testAttemptCount")
-
-                if (testAttemptCount == 0 && testCount > 0) {
-                    Log.d("TestRepositoryImpl", "No test attempts found, generating sample attempts for analytics")
-                    generateSampleTestAttempts()
-                }
+                val finalTestCount = testDao.getTestCount()
+                val finalTestAttemptCount = testAttemptDao.getTestAttemptCount()
+                Log.d("TestRepositoryImpl", "Final verification - Questions: $finalQuestionCount, Tests: $finalTestCount, TestAttempts: $finalTestAttemptCount")
 
             } catch (e: Exception) {
                 Log.e("TestRepositoryImpl", "Error during initialization: ${e.message}", e)
-                throw e
+                throw e // Re-throw to make it visible, or handle more gracefully
             }
         }
     }
@@ -262,7 +287,7 @@ class TestRepositoryImpl(
         try {
             val tests = testDao.getAllTests().firstOrNull()
             if (tests.isNullOrEmpty()) {
-                Log.d("TestRepositoryImpl", "No tests available to generate attempts")
+                Log.d("TestRepositoryImpl", "No tests available to generate attempts for generateSampleTestAttempts")
                 return
             }
 
@@ -418,5 +443,4 @@ class TestRepositoryImpl(
         }
     }
     
-    companion object
 }

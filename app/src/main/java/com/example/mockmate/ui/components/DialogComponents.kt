@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.mockmate.data.getSampleErrorMessage // Corrected import
 import com.example.mockmate.ui.theme.MockMateTheme
 
 @Composable
@@ -78,7 +79,7 @@ fun ErrorAlertDialog(
 @Composable
 fun ErrorAlertDialogPreview() {
     MockMateTheme {
-        ErrorAlertDialog(onDismiss = {}, errorMessage = "This is a sample error message.")
+        ErrorAlertDialog(onDismiss = {}, errorMessage = getSampleErrorMessage()) // Direct call
     }
 }
 

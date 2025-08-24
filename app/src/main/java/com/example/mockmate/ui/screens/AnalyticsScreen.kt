@@ -44,6 +44,8 @@ import com.example.mockmate.ui.components.TestScoresOverTimeChart
 // import com.example.mockmate.ui.components.TopicDrilldownChart // Removed
 import com.example.mockmate.ui.theme.MockMateTheme
 import java.util.Date
+import com.example.mockmate.data.generateSampleTestAttemptsPreview // Added import
+import com.example.mockmate.data.generateSampleUserStats // Added import
 
 // import com.google.gson.Gson // Removed Gson import
 
@@ -172,26 +174,9 @@ fun AnalyticsScreen(
 @Composable
 fun AnalyticsScreenPreview() {
     MockMateTheme {
-        val sampleUserStats = UserStats(
-            questionsAnswered = 100,
-            correctAnswers = 75,
-            currentStreak = 5,
-            longestStreak = 5,
-            lastPracticeDate = Date(),
-            subjectPerformance = mapOf(
-                "Math" to SubjectPerformance("Math", 50, 30, 60f),
-                "Science" to SubjectPerformance("Science", 30, 25, 83.33f),
-                "History" to SubjectPerformance("History", 20, 10, 50f)
-            )
-        )
-        val sampleTestAttempts = listOf(
-            TestAttempt(id = "1", testId = "t1", startTime = Date(System.currentTimeMillis() - 86400000L * 2), score = 70f, isCompleted = true),
-            TestAttempt(id = "2", testId = "t2", startTime = Date(System.currentTimeMillis() - 86400000L * 1), score = 85f, isCompleted = true),
-            TestAttempt(id = "3", testId = "t3", startTime = Date(), score = 90f, isCompleted = true)
-        )
         AnalyticsScreen(
-            userStats = sampleUserStats,
-            testAttempts = sampleTestAttempts,
+            userStats = generateSampleUserStats(), // Use function from SampleData.kt
+            testAttempts = generateSampleTestAttemptsPreview(), // Use function from SampleData.kt
             // onNavigateBack = {} // Commented out for preview as well
         )
     }
