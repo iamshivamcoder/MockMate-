@@ -5,10 +5,10 @@ import android.content.SharedPreferences
 import android.util.Log
 import androidx.room.withTransaction
 import com.shivams.mockmate.data.database.AppDatabase
-import com.shivams.mockmate.data.database.entities.TestQuestionCrossRef
-import com.shivams.mockmate.data.database.entities.UserStatsEntity
-import com.shivams.mockmate.data.database.mappers.asDomainObject
-import com.shivams.mockmate.data.database.mappers.asEntity
+import com.shivams.mockmate.data.database.TestQuestionCrossRef
+import com.shivams.mockmate.data.database.UserStatsEntity
+import com.shivams.mockmate.data.database.asDomainObject
+import com.shivams.mockmate.data.database.asEntity
 import com.shivams.mockmate.model.MockTest
 import com.shivams.mockmate.model.QuestionStatus
 import com.shivams.mockmate.model.TestAttempt
@@ -17,6 +17,7 @@ import com.shivams.mockmate.model.UserAnswer
 import com.shivams.mockmate.model.UserStats
 // Import for generateSampleTests from SampleData.kt
 import com.google.gson.Gson
+import com.shivams.mockmate.data.database.UserAnswerEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
@@ -162,7 +163,7 @@ class TestRepositoryImpl(
                 val testAttemptEntity = attempt.asEntity()
                 val userAnswerEntities = attempt.userAnswers.mapNotNull { (questionId, answer) ->
                     try {
-                        com.shivams.mockmate.data.database.entities.UserAnswerEntity(
+                        UserAnswerEntity(
                             testAttemptId = attempt.id,
                             questionId = questionId,
                             selectedOptionIndex = answer.selectedOptionIndex,

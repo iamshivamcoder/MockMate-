@@ -1,4 +1,4 @@
-package com.shivams.mockmate.data.database.daos
+package com.shivams.mockmate.data.database
 
 import androidx.room.Dao
 import androidx.room.Insert
@@ -6,12 +6,6 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
-import com.shivams.mockmate.data.database.entities.QuestionEntity
-import com.shivams.mockmate.data.database.entities.TestAttemptEntity
-import com.shivams.mockmate.data.database.entities.TestEntity
-import com.shivams.mockmate.data.database.entities.TestQuestionCrossRef
-import com.shivams.mockmate.data.database.entities.UserAnswerEntity
-import com.shivams.mockmate.data.database.entities.UserStatsEntity
 import kotlinx.coroutines.flow.Flow
 
 // Content from TestDao.kt

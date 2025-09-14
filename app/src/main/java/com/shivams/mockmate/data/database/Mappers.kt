@@ -1,6 +1,5 @@
-package com.shivams.mockmate.data.database.mappers
+package com.shivams.mockmate.data.database
 
-import com.shivams.mockmate.data.database.entities.TestAttemptEntity
 import com.shivams.mockmate.model.TestAttempt
 
 fun TestAttemptEntity.asDomainObject(): TestAttempt {

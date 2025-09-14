@@ -5,17 +5,6 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
-import com.shivams.mockmate.data.database.converters.DateConverter
-import com.shivams.mockmate.data.database.daos.QuestionDao
-import com.shivams.mockmate.data.database.daos.TestAttemptDao
-import com.shivams.mockmate.data.database.daos.TestDao
-import com.shivams.mockmate.data.database.daos.UserStatsDao
-import com.shivams.mockmate.data.database.entities.QuestionEntity
-import com.shivams.mockmate.data.database.entities.TestAttemptEntity
-import com.shivams.mockmate.data.database.entities.TestEntity
-import com.shivams.mockmate.data.database.entities.TestQuestionCrossRef
-import com.shivams.mockmate.data.database.entities.UserAnswerEntity
-import com.shivams.mockmate.data.database.entities.UserStatsEntity
 
 @Database(
     entities = [

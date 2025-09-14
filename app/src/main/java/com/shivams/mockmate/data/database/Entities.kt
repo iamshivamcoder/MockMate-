@@ -1,4 +1,4 @@
-package com.shivams.mockmate.data.database.entities
+package com.shivams.mockmate.data.database
 
 import androidx.room.Entity
 import androidx.room.ForeignKey

@@ -1,8 +1,8 @@
 package com.shivams.mockmate.data
 
-import com.shivams.mockmate.data.database.entities.QuestionEntity
-import com.shivams.mockmate.data.database.entities.TestEntity
-import com.shivams.mockmate.data.database.entities.UserStatsEntity
+import com.shivams.mockmate.data.database.QuestionEntity
+import com.shivams.mockmate.data.database.TestEntity
+import com.shivams.mockmate.data.database.UserStatsEntity
 import com.shivams.mockmate.model.MockTest
 import com.shivams.mockmate.model.Question
 import com.shivams.mockmate.model.QuestionDifficulty
