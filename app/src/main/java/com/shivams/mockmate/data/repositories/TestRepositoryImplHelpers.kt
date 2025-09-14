@@ -1,4 +1,4 @@
-package com.shivams.mockmate.data
+package com.shivams.mockmate.data.repositories
 
 import com.shivams.mockmate.data.database.QuestionEntity
 import com.shivams.mockmate.data.database.TestEntity

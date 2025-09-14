@@ -2,7 +2,7 @@ package com.shivams.mockmate.ui.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.shivams.mockmate.data.TestRepository
+import com.shivams.mockmate.data.repositories.TestRepository
 import com.shivams.mockmate.model.MockTest
 import com.shivams.mockmate.model.QuestionStatus
 import com.shivams.mockmate.model.TestAttempt

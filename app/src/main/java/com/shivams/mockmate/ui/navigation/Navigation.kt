@@ -19,7 +19,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.navArgument
 import com.shivams.mockmate.MockMateApplication
-import com.shivams.mockmate.data.TestRepository
+import com.shivams.mockmate.data.repositories.TestRepository
 import com.shivams.mockmate.model.QuestionType
 import com.shivams.mockmate.model.UserStats
 import com.shivams.mockmate.ui.components.AppBottomNavigationBar

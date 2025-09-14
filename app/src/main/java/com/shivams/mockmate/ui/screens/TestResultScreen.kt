@@ -50,7 +50,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.shivams.mockmate.data.TestRepository
+import com.shivams.mockmate.data.repositories.TestRepository
 import com.shivams.mockmate.model.MockTest
 import com.shivams.mockmate.model.TestAttempt
 import com.shivams.mockmate.ui.components.MockMateTopBar

@@ -1,11 +1,11 @@
-package com.shivams.mockmate.data
+package com.shivams.mockmate.data.repositories
 
 import android.content.Context
 import android.content.SharedPreferences
-import com.shivams.mockmate.data.prefs.NotificationPreferences // Added this import
+import com.google.gson.Gson
+import com.shivams.mockmate.data.prefs.NotificationPreferences
 import com.shivams.mockmate.model.AppSettings
 import com.shivams.mockmate.model.TestDifficulty
-import com.google.gson.Gson
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,13 +14,13 @@ import kotlinx.coroutines.flow.asStateFlow
  * Repository that manages user settings and preferences
  */
 class SettingsRepository(private val context: Context) { // Made context a property
-    
+
     private val sharedPreferences: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     private val gson = Gson()
-    
+
     private val _settings = MutableStateFlow(loadSettings())
     val settings: StateFlow<AppSettings> = _settings.asStateFlow()
-    
+
     /**
      * Load settings from SharedPreferences
      */
@@ -38,7 +38,7 @@ class SettingsRepository(private val context: Context) { // Made context a prope
         val currentAffairsUpdates = sharedPreferences.getBoolean(KEY_CURRENT_AFFAIRS_UPDATES, false)
         val optionalSubject = sharedPreferences.getString(KEY_OPTIONAL_SUBJECT, "Not Selected") ?: "Not Selected"
         val pulsatingBadgesEnabled = NotificationPreferences.arePulsatingBadgesEnabled(context) // Added this line
-        
+
         return AppSettings(
             darkMode = darkMode,
             notificationsEnabled = notificationsEnabled,

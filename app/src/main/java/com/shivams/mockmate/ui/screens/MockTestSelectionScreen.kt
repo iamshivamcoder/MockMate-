@@ -31,8 +31,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.shivams.mockmate.MockMateApplication
-import com.shivams.mockmate.data.SettingsRepository
-import com.shivams.mockmate.data.TestRepository
+import com.shivams.mockmate.data.repositories.SettingsRepository
+import com.shivams.mockmate.data.repositories.TestRepository
 import com.shivams.mockmate.model.MockTest
 import com.shivams.mockmate.model.AppSettings // Required for default settings
 import com.shivams.mockmate.ui.components.MockMateTopBar

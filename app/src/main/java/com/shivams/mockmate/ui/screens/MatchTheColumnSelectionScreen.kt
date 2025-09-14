@@ -37,7 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.shivams.mockmate.data.TestRepository
+import com.shivams.mockmate.data.repositories.TestRepository
 import com.shivams.mockmate.model.QuestionType
 import com.shivams.mockmate.model.TestDifficulty
 import com.shivams.mockmate.ui.components.MockMateTopBar

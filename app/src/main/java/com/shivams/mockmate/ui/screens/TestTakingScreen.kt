@@ -41,8 +41,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.shivams.mockmate.data.SettingsRepository
-import com.shivams.mockmate.data.TestRepository
+import com.shivams.mockmate.data.repositories.SettingsRepository
+import com.shivams.mockmate.data.repositories.TestRepository
 import com.shivams.mockmate.model.AppSettings // Required for default settings
 import com.shivams.mockmate.model.Question
 import com.shivams.mockmate.model.QuestionStatus // Ensure this is imported
@@ -54,6 +54,7 @@ import com.shivams.mockmate.ui.viewmodels.TestTakingScreenViewModel
 import com.shivams.mockmate.ui.components.FinishTestDialog
 import com.shivams.mockmate.ui.components.ErrorAlertDialog
 import com.shivams.mockmate.data.generateSampleQuestionPreview // Added import
+import com.shivams.mockmate.data.repositories.InMemoryTestRepository
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -230,7 +231,7 @@ fun TestTakingScreenPreview() {
         testId = "sampleTestId",
         onNavigateBack = {},
         onFinish = {},
-        repository = com.shivams.mockmate.data.InMemoryTestRepository(),
+        repository = InMemoryTestRepository(),
         settingsRepository = SettingsRepository(context)
     )
 }

@@ -2,8 +2,9 @@ package com.shivams.mockmate
 
 import android.app.Application
 import com.shivams.mockmate.api.GeminiApiService
-import com.shivams.mockmate.data.SettingsRepository
-import com.shivams.mockmate.data.TestRepository
+import com.shivams.mockmate.data.repositories.SettingsRepository
+import com.shivams.mockmate.data.repositories.TestRepository
+import com.shivams.mockmate.data.repositories.TestRepositoryImpl
 import com.shivams.mockmate.service.AIQuestionGenerator
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
@@ -24,7 +25,7 @@ class MockMateApplication : Application() {
         INSTANCE = this
         
         // Initialize repositories
-        testRepository = com.shivams.mockmate.data.TestRepositoryImpl(applicationContext)
+        testRepository = TestRepositoryImpl(applicationContext)
         settingsRepository = SettingsRepository(applicationContext)
         apiConfig = ApiConfig(applicationContext)
 

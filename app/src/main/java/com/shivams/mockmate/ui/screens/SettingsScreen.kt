@@ -16,7 +16,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.shivams.mockmate.data.SettingsRepository
+import com.shivams.mockmate.data.repositories.SettingsRepository
 import com.shivams.mockmate.data.prefs.NotificationPreferences
 import com.shivams.mockmate.notifications.TestReminderReceiver
 import com.shivams.mockmate.ui.components.MockMateTopBar

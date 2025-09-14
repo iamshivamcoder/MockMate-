@@ -40,7 +40,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 // import androidx.compose.ui.text.style.TextAlign // No longer needed here
 import androidx.compose.ui.unit.dp
-import com.shivams.mockmate.data.TestRepository
+import com.shivams.mockmate.data.repositories.TestRepository
 import com.shivams.mockmate.model.UserStats
 import com.shivams.mockmate.ui.components.MockMateTopBar
 import com.shivams.mockmate.ui.components.WelcomeCard

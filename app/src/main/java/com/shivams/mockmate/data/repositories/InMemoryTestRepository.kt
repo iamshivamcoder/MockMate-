@@ -1,5 +1,9 @@
-package com.shivams.mockmate.data
+package com.shivams.mockmate.data.repositories
 
+import android.util.Log
+import com.shivams.mockmate.data.repositories.TestRepository
+import com.shivams.mockmate.data.generateSampleTests
+import com.shivams.mockmate.data.generateSampleUserStats
 import com.shivams.mockmate.model.MockTest
 import com.shivams.mockmate.model.TestAttempt
 import com.shivams.mockmate.model.TestDifficulty
@@ -100,7 +104,7 @@ class InMemoryTestRepository : TestRepository {
                 // longestStreak = ... // Requires logic based on lastPracticeDate and currentStreak
             )
         } catch (e: Exception) {
-            android.util.Log.e("TestRepository", "Error saving test attempt: ${e.message}", e)
+            Log.e("TestRepository", "Error saving test attempt: ${e.message}", e)
             throw e
         }
     }

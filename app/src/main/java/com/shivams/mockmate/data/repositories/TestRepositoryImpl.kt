@@ -1,23 +1,23 @@
-package com.shivams.mockmate.data
+package com.shivams.mockmate.data.repositories
 
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
 import androidx.room.withTransaction
+import com.google.gson.Gson
 import com.shivams.mockmate.data.database.AppDatabase
 import com.shivams.mockmate.data.database.TestQuestionCrossRef
+import com.shivams.mockmate.data.database.UserAnswerEntity
 import com.shivams.mockmate.data.database.UserStatsEntity
 import com.shivams.mockmate.data.database.asDomainObject
 import com.shivams.mockmate.data.database.asEntity
+import com.shivams.mockmate.data.generateSampleTests
 import com.shivams.mockmate.model.MockTest
 import com.shivams.mockmate.model.QuestionStatus
 import com.shivams.mockmate.model.TestAttempt
 import com.shivams.mockmate.model.TestDifficulty
 import com.shivams.mockmate.model.UserAnswer
 import com.shivams.mockmate.model.UserStats
-// Import for generateSampleTests from SampleData.kt
-import com.google.gson.Gson
-import com.shivams.mockmate.data.database.UserAnswerEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
@@ -33,8 +33,8 @@ import java.util.UUID
 class TestRepositoryImpl(
     private val context: Context
 ) : TestRepository {
-    
-    private val database by lazy { AppDatabase.getInstance(context) }
+
+    private val database by lazy { AppDatabase.Companion.getInstance(context) }
     private val questionDao by lazy { database.questionDao() }
     private val testDao by lazy { database.testDao() }
     private val testAttemptDao by lazy { database.testAttemptDao() }
@@ -48,7 +48,7 @@ class TestRepositoryImpl(
     companion object {
         private const val SAMPLE_DATA_LOADED_ONCE_KEY = "sample_data_loaded_once"
     }
-    
+
     override val mockTests: Flow<List<MockTest>> = testDao.getAllTests()
         .map { testEntities ->
             testEntities.map { testEntity ->
@@ -56,18 +56,18 @@ class TestRepositoryImpl(
                 testEntityToModel(testEntity, questions, gson)
             }
         }
-    
+
     override val userStats: Flow<UserStats> = userStatsDao.getUserStats()
         .map { userStatsEntity ->
             val userStats = userStatsEntity?.let { entityToUserStats(gson, it) } ?: UserStats()
             Log.d("TestRepositoryImpl", "UserStats loaded: questionsAnswered=${userStats.questionsAnswered}, correctAnswers=${userStats.correctAnswers}, currentStreak=${userStats.currentStreak}, longestStreak=${userStats.longestStreak}, subjectPerformance=${userStats.subjectPerformance.size}")
             userStats
         }
-    
+
     override fun getTestsByDifficulty(difficulty: TestDifficulty): Flow<List<MockTest>> {
         return mockTests.map { tests -> tests.filter { it.difficulty == difficulty } }
     }
-    
+
     override suspend fun getTestById(id: String): MockTest? {
         return withContext(Dispatchers.IO) {
             val testEntity = testDao.getTestById(id) ?: return@withContext null
@@ -128,7 +128,7 @@ class TestRepositoryImpl(
             testAttempts
         }
     }
-    
+
     override suspend fun saveTest(test: MockTest) {
         withContext(Dispatchers.IO) {
             val testEntity = testModelToEntity(test)
@@ -140,12 +140,12 @@ class TestRepositoryImpl(
                     questionOrder = index
                 )
             }
-            
+
             questionDao.insertQuestions(questionEntities)
             testDao.insertTestWithQuestions(testEntity, crossRefs)
         }
     }
-    
+
     override suspend fun saveTestAttempt(attempt: TestAttempt) {
         withContext(Dispatchers.IO) {
             try {
@@ -219,7 +219,7 @@ class TestRepositoryImpl(
             }
         }
     }
-    
+
     override suspend fun deleteTestAttempt(attemptId: String) {
         withContext(Dispatchers.IO) {
             testAttemptDao.deleteAttemptAndAnswers(attemptId)
@@ -237,10 +237,16 @@ class TestRepositoryImpl(
             try {
                 val sampleDataLoadedOnce = prefs.getBoolean(SAMPLE_DATA_LOADED_ONCE_KEY, false)
                 val questionCount = questionDao.getQuestionCount()
-                Log.d("TestRepositoryImpl", "Question count in database: $questionCount. Sample data loaded once: $sampleDataLoadedOnce")
+                Log.d(
+                    "TestRepositoryImpl",
+                    "Question count in database: $questionCount. Sample data loaded once: $sampleDataLoadedOnce"
+                )
 
                 if (!sampleDataLoadedOnce && questionCount == 0) {
-                    Log.d("TestRepositoryImpl", "Database is empty and sample data not loaded before, initializing with sample data")
+                    Log.d(
+                        "TestRepositoryImpl",
+                        "Database is empty and sample data not loaded before, initializing with sample data"
+                    )
                     // Use the imported generateSampleTests
                     val sampleTests = generateSampleTests()
                     Log.d("TestRepositoryImpl", "Generated ${sampleTests.size} sample tests")
@@ -256,25 +262,40 @@ class TestRepositoryImpl(
                     val existingAttemptCount = testAttemptDao.getTestAttemptCount()
 
                     if (existingAttemptCount == 0 && newlyCreatedTestCount > 0) {
-                        Log.d("TestRepositoryImpl", "Initial sample data loaded. Generating sample test attempts.")
+                        Log.d(
+                            "TestRepositoryImpl",
+                            "Initial sample data loaded. Generating sample test attempts."
+                        )
                         generateSampleTestAttempts()
                     }
-                    
+
                     with(prefs.edit()) {
                         putBoolean(SAMPLE_DATA_LOADED_ONCE_KEY, true)
                         apply()
                     }
-                    Log.d("TestRepositoryImpl", "Sample data initialization completed and flag set.")
+                    Log.d(
+                        "TestRepositoryImpl",
+                        "Sample data initialization completed and flag set."
+                    )
                 } else if (sampleDataLoadedOnce) {
-                    Log.d("TestRepositoryImpl", "Sample data already loaded once, skipping initialization.")
+                    Log.d(
+                        "TestRepositoryImpl",
+                        "Sample data already loaded once, skipping initialization."
+                    )
                 } else { // !sampleDataLoadedOnce is false (so it IS loaded once) OR questionCount != 0 (DB not empty)
-                    Log.d("TestRepositoryImpl", "Database already contains data ($questionCount questions) or sample data already marked as loaded, skipping initialization.")
+                    Log.d(
+                        "TestRepositoryImpl",
+                        "Database already contains data ($questionCount questions) or sample data already marked as loaded, skipping initialization."
+                    )
                 }
 
                 val finalQuestionCount = questionDao.getQuestionCount()
                 val finalTestCount = testDao.getTestCount()
                 val finalTestAttemptCount = testAttemptDao.getTestAttemptCount()
-                Log.d("TestRepositoryImpl", "Final verification - Questions: $finalQuestionCount, Tests: $finalTestCount, TestAttempts: $finalTestAttemptCount")
+                Log.d(
+                    "TestRepositoryImpl",
+                    "Final verification - Questions: $finalQuestionCount, Tests: $finalTestCount, TestAttempts: $finalTestAttemptCount"
+                )
 
             } catch (e: Exception) {
                 Log.e("TestRepositoryImpl", "Error during initialization: ${e.message}", e)
@@ -297,7 +318,8 @@ class TestRepositoryImpl(
             val calendar = Calendar.getInstance()
 
             tests.take(3).forEachIndexed { testIndex, testEntity ->
-                val mockTest = testEntityToModel(testEntity, testDao.getQuestionsForTest(testEntity.id), gson)
+                val mockTest =
+                    testEntityToModel(testEntity, testDao.getQuestionsForTest(testEntity.id), gson)
 
                 sampleScores.forEachIndexed { scoreIndex, score ->
                     calendar.time = Date()
@@ -317,7 +339,9 @@ class TestRepositoryImpl(
                             }
                             question.id to UserAnswer(
                                 questionId = question.id,
-                                selectedOptionIndex = if (isCorrect) question.correctOptionIndex else (question.correctOptionIndex?.plus(1))?.rem(4),
+                                selectedOptionIndex = if (isCorrect) question.correctOptionIndex else (question.correctOptionIndex?.plus(
+                                    1
+                                ))?.rem(4),
                                 timeSpent = 45 + (questionIndex * 5),
                                 status = QuestionStatus.ANSWERED
                             )
@@ -346,14 +370,20 @@ class TestRepositoryImpl(
                     testDao.deleteCrossRefsByTestId(testId)
                     testDao.deleteTestEntityById(testId)
                 }
-                Log.d("TestRepositoryImpl", "Successfully deleted test $testId and its associated data.")
+                Log.d(
+                    "TestRepositoryImpl",
+                    "Successfully deleted test $testId and its associated data."
+                )
             } catch (e: Exception) {
                 Log.e("TestRepositoryImpl", "Error deleting test $testId: ${e.message}", e)
-                throw IllegalStateException("Failed to delete test $testId: ${e.localizedMessage}", e)
+                throw IllegalStateException(
+                    "Failed to delete test $testId: ${e.localizedMessage}",
+                    e
+                )
             }
         }
     }
-    
+
     private suspend fun updateStats(attempt: TestAttempt) {
         val test = testDao.getTestById(attempt.testId)
         Log.d("TestRepositoryImpl", "Loaded test: ${test?.name}")
@@ -386,7 +416,7 @@ class TestRepositoryImpl(
         }
 
         val correctAnswers = questionsFromDb.associate { it.id to it.correctOptionIndex }
-        
+
         var correctCount = 0
         var answeredCount = 0
         attempt.userAnswers.forEach { (questionId, answer) ->
@@ -398,7 +428,7 @@ class TestRepositoryImpl(
                 if (correct) correctCount++
             }
         }
-        
+
         Log.d("TestRepositoryImpl", "New unique answered questions: $answeredCount")
         Log.d("TestRepositoryImpl", "New unique correct answers: $correctCount")
 
@@ -426,9 +456,12 @@ class TestRepositoryImpl(
                 val calNextDayAfterLastPractice = Calendar.getInstance().apply { timeInMillis = lastPracticeTimestamp }
                 calNextDayAfterLastPractice.add(Calendar.DAY_OF_YEAR, 1)
 
-                val isConsecutiveDay = calNextDayAfterLastPractice.get(Calendar.YEAR) == calToday.get(Calendar.YEAR) &&
-                                       calNextDayAfterLastPractice.get(Calendar.MONTH) == calToday.get(Calendar.MONTH) &&
-                                       calNextDayAfterLastPractice.get(Calendar.DAY_OF_MONTH) == calToday.get(Calendar.DAY_OF_MONTH)
+                val isConsecutiveDay = calNextDayAfterLastPractice.get(Calendar.YEAR) == calToday.get(
+                    Calendar.YEAR) &&
+                                       calNextDayAfterLastPractice.get(Calendar.MONTH) == calToday.get(
+                    Calendar.MONTH) &&
+                                       calNextDayAfterLastPractice.get(Calendar.DAY_OF_MONTH) == calToday.get(
+                    Calendar.DAY_OF_MONTH)
 
                 if (isConsecutiveDay) {
                     userStatsDao.incrementStreak(today.time)
@@ -442,5 +475,5 @@ class TestRepositoryImpl(
             }
         }
     }
-    
+
 }
