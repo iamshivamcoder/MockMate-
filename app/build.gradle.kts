@@ -5,10 +5,11 @@ plugins {
     id("org.jetbrains.kotlin.plugin.parcelize")
     id("com.google.dagger.hilt.android")
     id("org.jetbrains.kotlin.plugin.compose") // Added this line
+    id("com.google.gms.google-services")
 }
 
 android {
-    namespace = "com.example.mockmate"
+    namespace = "com.shivams.mockmate"
     compileSdk = 36
 
     kapt {
@@ -26,7 +27,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.mockmate"
+        applicationId = "com.shivams.mockmate"
         minSdk = 26
         targetSdk = 34
         versionCode = 1
@@ -133,6 +134,10 @@ dependencies {
     implementation("com.patrykandpatrick.vico:compose:2.1.3")
     implementation("com.patrykandpatrick.vico:compose-m3:2.1.3")
     implementation("com.patrykandpatrick.vico:core:2.1.3")
+
+    // Firebase
+    implementation(platform("com.google.firebase:firebase-bom:33.2.0"))
+    implementation("com.google.firebase:firebase-messaging-ktx")
 
     // Debug dependencies
     debugImplementation("androidx.compose.ui:ui-tooling")
