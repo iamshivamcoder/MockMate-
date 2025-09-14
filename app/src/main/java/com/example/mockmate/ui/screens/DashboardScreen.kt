@@ -55,7 +55,7 @@ fun DashboardScreen(
     onImportClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onAnalyticsClick: () -> Unit, // Added for Analytics navigation
-    repository: TestRepository = com.example.mockmate.MockMateApplication.getTestRepository()
+    repository: TestRepository // Removed default value
 ) {
     val userStats by repository.userStats.collectAsState(initial = UserStats(questionsAnswered = 0, correctAnswers = 0, currentStreak = 0, longestStreak = 0))
     var showStreakInfoDialog by remember { mutableStateOf(false) }
@@ -71,7 +71,7 @@ fun DashboardScreen(
                 currentStreak = userStats.currentStreak,
                 onSettingsClick = onSettingsClick,
                 onStreakClick = { showStreakInfoDialog = true },
-                onImportClick = onImportClick, // Pass the onImportClick lambda
+                onImportClick = onImportClick, // Pass the onImportClick lambda - forcing recompile
                 scrollBehavior = scrollBehavior
             )
         }

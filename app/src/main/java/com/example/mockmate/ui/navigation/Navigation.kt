@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -20,7 +21,6 @@ import androidx.navigation.navArgument
 import com.example.mockmate.MockMateApplication
 import com.example.mockmate.data.TestRepository
 import com.example.mockmate.model.QuestionType
-import com.example.mockmate.model.TestAttempt
 import com.example.mockmate.model.UserStats
 import com.example.mockmate.ui.components.AppBottomNavigationBar
 import com.example.mockmate.ui.screens.AboutDeveloperScreen
@@ -39,10 +39,6 @@ import com.example.mockmate.ui.screens.TestTakingScreen
 import com.example.mockmate.ui.util.ComposeStabilityUtils
 import kotlinx.coroutines.launch
 import java.util.Date
-
-// Import for collectAsState
-import androidx.compose.runtime.collectAsState
-// Import for UserStats.default() is no longer needed due to the object renaming
 
 object Routes {
     const val DASHBOARD = "dashboard"
@@ -141,7 +137,7 @@ fun AppNavHost(
                     onImportClick = { navController.safeNavigate(Routes.TEST_IMPORT) },
                     onSettingsClick = { navController.safeNavigate(Routes.SETTINGS) },
                     onAnalyticsClick = { navController.safeNavigate(Routes.ANALYTICS_SCREEN) }, // Updated
-                    repository = stableRepository
+                    repository = stableRepository // Explicitly pass repository
                 )
             }
 
@@ -196,6 +192,7 @@ fun AppNavHost(
                         }
                     },
                     onSettingsClick = { navController.safeNavigate(Routes.SETTINGS) },
+                    onImportClick = { navController.safeNavigate(Routes.TEST_IMPORT) },
                     repository = stableRepository
                 )
             }
@@ -235,7 +232,8 @@ fun AppNavHost(
                                 popUpTo(Routes.testTakingRoute(testId)) { inclusive = true }
                                 launchSingleTop = true
                             }
-                        } catch (e: Exception) {
+                        }
+                        catch (e: Exception) {
                             Log.e("Navigation", "Failed to navigate to test result: ${e.message}", e)
                             navController.safeNavigate(Routes.TEST_HISTORY)
                         }

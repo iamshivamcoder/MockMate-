@@ -66,6 +66,7 @@ fun MockTestSelectionScreen(
     onNavigateBack: () -> Unit,
     onTestSelected: (String) -> Unit,
     onSettingsClick: () -> Unit,
+    onImportClick: () -> Unit,
     repository: TestRepository = MockMateApplication.getTestRepository(),
     settingsRepository: SettingsRepository = SettingsRepository(LocalContext.current) // Added settings repo
 ) {
@@ -112,15 +113,16 @@ fun MockTestSelectionScreen(
             title = "Mock Prelims Tests",
             showBackButton = true,
             onBackClick = onNavigateBack,
-            showSettings = true,
-            onSettingsClick = onSettingsClick
+            showSettings = false,
+            onSettingsClick = onSettingsClick,
+            onImportClick = onImportClick
         )
 
         if (showDeleteDialog) {
             AlertDialog(
                 onDismissRequest = { showDeleteDialog = false },
                 title = { Text("Delete Test") },
-                text = { Text("Are you sure you want to delete \"${testToDelete?.name}\"? This action cannot be undone.") },
+                text = { Text("Are you sure you want to delete ${testToDelete?.name}? This action cannot be undone.") },
                 confirmButton = {
                     TextButton(
                         onClick = {

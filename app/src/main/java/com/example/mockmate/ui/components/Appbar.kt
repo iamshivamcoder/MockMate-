@@ -125,8 +125,8 @@ fun MockMateTopBar(
             }
 
             // Display import icon if onImportClick is provided
-            onImportClick?.let {
-                IconButton(onClick = it) {
+            if (onImportClick != null) {
+                IconButton(onClick = onImportClick) {
                     Icon(
                         imageVector = Icons.Filled.FileUpload,
                         contentDescription = "Import Test"
