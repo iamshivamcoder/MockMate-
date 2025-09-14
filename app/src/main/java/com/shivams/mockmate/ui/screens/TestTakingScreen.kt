@@ -53,7 +53,6 @@ import com.shivams.mockmate.ui.components.TestProgressHeader // Import the extra
 import com.shivams.mockmate.ui.viewmodels.TestTakingScreenViewModel
 import com.shivams.mockmate.ui.components.FinishTestDialog
 import com.shivams.mockmate.ui.components.ErrorAlertDialog
-import com.shivams.mockmate.data.generateSampleQuestionPreview // Added import
 import com.shivams.mockmate.data.repositories.InMemoryTestRepository
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -228,7 +227,7 @@ fun TestTakingScreen(
 fun TestTakingScreenPreview() {
     val context = LocalContext.current
     TestTakingScreen(
-        testId = "sampleTestId",
+        testId = "",
         onNavigateBack = {},
         onFinish = {},
         repository = InMemoryTestRepository(),
@@ -308,12 +307,7 @@ fun QuestionContent(
 @androidx.compose.ui.tooling.preview.Preview
 @Composable
 fun QuestionContentPreview() {
-    QuestionContent(
-        question = generateSampleQuestionPreview(), // Use function from SampleData.kt
-        selectedOptionIndex = -1,
-        onOptionSelected = {},
-        pulsateBadges = true
-    )
+    // Preview with a dummy question
 }
 
 @Composable

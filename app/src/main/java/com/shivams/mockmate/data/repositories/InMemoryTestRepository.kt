@@ -1,9 +1,6 @@
 package com.shivams.mockmate.data.repositories
 
 import android.util.Log
-import com.shivams.mockmate.data.repositories.TestRepository
-import com.shivams.mockmate.data.generateSampleTests
-import com.shivams.mockmate.data.generateSampleUserStats
 import com.shivams.mockmate.model.MockTest
 import com.shivams.mockmate.model.TestAttempt
 import com.shivams.mockmate.model.TestDifficulty
@@ -19,39 +16,30 @@ import kotlinx.coroutines.flow.map
  */
 class InMemoryTestRepository : TestRepository {
 
-    // Mock data for testing, now using centralized SampleData
-    private val _mockTests = MutableStateFlow(generateSampleTests())
+    private val _mockTests = MutableStateFlow<List<MockTest>>(emptyList())
 
     override val mockTests: Flow<List<MockTest>> = _mockTests.asStateFlow()
 
-    // Sample user stats, now using centralized SampleData
-    private val _userStats = MutableStateFlow(generateSampleUserStats())
+    private val _userStats = MutableStateFlow(UserStats())
 
     override val userStats: Flow<UserStats> = _userStats.asStateFlow()
 
-    // Test attempts
     private val _testAttempts = MutableStateFlow<MutableList<TestAttempt>>(mutableListOf())
     private val testAttempts: StateFlow<List<TestAttempt>> = _testAttempts.asStateFlow()
 
-    // Get mock test by difficulty
     override fun getTestsByDifficulty(difficulty: TestDifficulty): Flow<List<MockTest>> {
         return mockTests.map { tests -> tests.filter { it.difficulty == difficulty } }
     }
 
-    // Get a test by ID
     override suspend fun getTestById(id: String): MockTest? {
         return _mockTests.value.find { it.id == id }
     }
 
-    // Delete a mock test by ID
     override suspend fun deleteMockTestById(testId: String) {
         val currentTests = _mockTests.value.toMutableList()
         val removed = currentTests.removeIf { it.id == testId }
         if (removed) {
             _mockTests.value = currentTests
-            // Consider if associated test attempts should also be deleted.
-            // For now, they will remain but might be orphaned if not handled elsewhere.
-            // A more complete solution would also delete TestAttempts associated with this testId.
             val currentAttempts = _testAttempts.value.toMutableList()
             val attemptsRemoved = currentAttempts.removeIf { it.testId == testId }
             if (attemptsRemoved) {
@@ -60,35 +48,28 @@ class InMemoryTestRepository : TestRepository {
         }
     }
 
-    // Get a test attempt by ID
     override suspend fun getTestAttemptById(id: String): TestAttempt? {
         return _testAttempts.value.find { it.id == id }
     }
 
-    // Get all test attempts
     override fun getAllTestAttempts(): Flow<List<TestAttempt>> {
         return testAttempts
     }
 
-    // Save test
     override suspend fun saveTest(test: MockTest) {
-        // First remove test with same ID if exists
         val currentTests = _mockTests.value.toMutableList()
         currentTests.removeIf { it.id == test.id }
         currentTests.add(test)
         _mockTests.value = currentTests
     }
 
-    // Save test attempt
     override suspend fun saveTestAttempt(attempt: TestAttempt) {
         try {
             val currentAttempts = _testAttempts.value.toMutableList()
-            // Remove any existing attempt with the same ID
             currentAttempts.removeIf { it.id == attempt.id }
             currentAttempts.add(attempt)
             _testAttempts.value = currentAttempts
 
-            // Update user stats
             val currentStats = _userStats.value
             val correctAnswers = attempt.userAnswers.count { (questionId, answer) ->
                 val question = _mockTests.value
@@ -96,12 +77,9 @@ class InMemoryTestRepository : TestRepository {
                     .find { it.id == questionId }
                 question?.correctOptionIndex == answer.selectedOptionIndex
             }
-            // Streak update logic should be added here if needed
             _userStats.value = currentStats.copy(
                 questionsAnswered = currentStats.questionsAnswered + attempt.userAnswers.size,
                 correctAnswers = currentStats.correctAnswers + correctAnswers
-                // currentStreak = ..., // Requires logic based on lastPracticeDate
-                // longestStreak = ... // Requires logic based on lastPracticeDate and currentStreak
             )
         } catch (e: Exception) {
             Log.e("TestRepository", "Error saving test attempt: ${e.message}", e)
@@ -114,8 +92,6 @@ class InMemoryTestRepository : TestRepository {
         val attemptRemoved = currentAttempts.removeIf { it.id == attemptId }
         if (attemptRemoved) {
             _testAttempts.value = currentAttempts
-            // Note: This simple implementation does not reverse the user stat changes.
-            // A more robust implementation might need to recalculate stats or store attempt-specific stat changes.
         }
     }
 
@@ -129,10 +105,8 @@ class InMemoryTestRepository : TestRepository {
         }
     }
 
-    // Initialize if empty - already initialized in constructor
     override suspend fun initializeIfEmpty() {
-        // Nothing to do, tests already loaded using SampleData.generateSampleTests()
+        // This function is now empty as per your request.
     }
 
-    // Removed local generateSampleQuestions function as it's now centralized in SampleData.kt
 }

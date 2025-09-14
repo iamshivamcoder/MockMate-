@@ -1,20 +1,19 @@
 package com.shivams.mockmate.ui.components
 
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.shivams.mockmate.data.getSampleErrorMessage // Corrected import
 import com.shivams.mockmate.ui.theme.MockMateTheme
 
 @Composable
@@ -73,14 +72,6 @@ fun ErrorAlertDialog(
             }
         }
     )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun ErrorAlertDialogPreview() {
-    MockMateTheme {
-        ErrorAlertDialog(onDismiss = {}, errorMessage = getSampleErrorMessage()) // Direct call
-    }
 }
 
 @Composable

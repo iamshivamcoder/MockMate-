@@ -11,7 +11,6 @@ import com.shivams.mockmate.data.database.UserAnswerEntity
 import com.shivams.mockmate.data.database.UserStatsEntity
 import com.shivams.mockmate.data.database.asDomainObject
 import com.shivams.mockmate.data.database.asEntity
-import com.shivams.mockmate.data.generateSampleTests
 import com.shivams.mockmate.model.MockTest
 import com.shivams.mockmate.model.QuestionStatus
 import com.shivams.mockmate.model.TestAttempt
@@ -43,10 +42,6 @@ class TestRepositoryImpl(
 
     private val prefs: SharedPreferences by lazy {
         context.getSharedPreferences("mockmate_prefs", Context.MODE_PRIVATE)
-    }
-
-    companion object {
-        private const val SAMPLE_DATA_LOADED_ONCE_KEY = "sample_data_loaded_once"
     }
 
     override val mockTests: Flow<List<MockTest>> = testDao.getAllTests()
@@ -131,18 +126,20 @@ class TestRepositoryImpl(
 
     override suspend fun saveTest(test: MockTest) {
         withContext(Dispatchers.IO) {
-            val testEntity = testModelToEntity(test)
-            val questionEntities = test.questions.map { questionModelToEntity(gson, it) }
-            val crossRefs = test.questions.mapIndexed { index, question ->
-                TestQuestionCrossRef(
-                    testId = test.id,
-                    questionId = question.id,
-                    questionOrder = index
-                )
-            }
+            database.withTransaction {
+                val testEntity = testModelToEntity(test)
+                val questionEntities = test.questions.map { questionModelToEntity(gson, it) }
+                val crossRefs = test.questions.mapIndexed { index, question ->
+                    TestQuestionCrossRef(
+                        testId = test.id,
+                        questionId = question.id,
+                        questionOrder = index
+                    )
+                }
 
-            questionDao.insertQuestions(questionEntities)
-            testDao.insertTestWithQuestions(testEntity, crossRefs)
+                questionDao.insertQuestions(questionEntities)
+                testDao.insertTestWithQuestions(testEntity, crossRefs)
+            }
         }
     }
 
@@ -233,133 +230,7 @@ class TestRepositoryImpl(
     }
 
     override suspend fun initializeIfEmpty() {
-        withContext(Dispatchers.IO) {
-            try {
-                val sampleDataLoadedOnce = prefs.getBoolean(SAMPLE_DATA_LOADED_ONCE_KEY, false)
-                val questionCount = questionDao.getQuestionCount()
-                Log.d(
-                    "TestRepositoryImpl",
-                    "Question count in database: $questionCount. Sample data loaded once: $sampleDataLoadedOnce"
-                )
-
-                if (!sampleDataLoadedOnce && questionCount == 0) {
-                    Log.d(
-                        "TestRepositoryImpl",
-                        "Database is empty and sample data not loaded before, initializing with sample data"
-                    )
-                    // Use the imported generateSampleTests
-                    val sampleTests = generateSampleTests()
-                    Log.d("TestRepositoryImpl", "Generated ${sampleTests.size} sample tests")
-
-                    sampleTests.forEach { test ->
-                        saveTest(test)
-                    }
-                    userStatsDao.insertUserStats(UserStatsEntity()) // Initialize user stats
-                    Log.d("TestRepositoryImpl", "Sample tests and user stats loaded.")
-
-                    // Generate sample attempts only if sample tests were successfully loaded and no attempts exist
-                    val newlyCreatedTestCount = testDao.getTestCount()
-                    val existingAttemptCount = testAttemptDao.getTestAttemptCount()
-
-                    if (existingAttemptCount == 0 && newlyCreatedTestCount > 0) {
-                        Log.d(
-                            "TestRepositoryImpl",
-                            "Initial sample data loaded. Generating sample test attempts."
-                        )
-                        generateSampleTestAttempts()
-                    }
-
-                    with(prefs.edit()) {
-                        putBoolean(SAMPLE_DATA_LOADED_ONCE_KEY, true)
-                        apply()
-                    }
-                    Log.d(
-                        "TestRepositoryImpl",
-                        "Sample data initialization completed and flag set."
-                    )
-                } else if (sampleDataLoadedOnce) {
-                    Log.d(
-                        "TestRepositoryImpl",
-                        "Sample data already loaded once, skipping initialization."
-                    )
-                } else { // !sampleDataLoadedOnce is false (so it IS loaded once) OR questionCount != 0 (DB not empty)
-                    Log.d(
-                        "TestRepositoryImpl",
-                        "Database already contains data ($questionCount questions) or sample data already marked as loaded, skipping initialization."
-                    )
-                }
-
-                val finalQuestionCount = questionDao.getQuestionCount()
-                val finalTestCount = testDao.getTestCount()
-                val finalTestAttemptCount = testAttemptDao.getTestAttemptCount()
-                Log.d(
-                    "TestRepositoryImpl",
-                    "Final verification - Questions: $finalQuestionCount, Tests: $finalTestCount, TestAttempts: $finalTestAttemptCount"
-                )
-
-            } catch (e: Exception) {
-                Log.e("TestRepositoryImpl", "Error during initialization: ${e.message}", e)
-                throw e // Re-throw to make it visible, or handle more gracefully
-            }
-        }
-    }
-
-    private suspend fun generateSampleTestAttempts() {
-        try {
-            val tests = testDao.getAllTests().firstOrNull()
-            if (tests.isNullOrEmpty()) {
-                Log.d("TestRepositoryImpl", "No tests available to generate attempts for generateSampleTestAttempts")
-                return
-            }
-
-            Log.d("TestRepositoryImpl", "Generating sample test attempts for ${tests.size} tests")
-
-            val sampleScores = listOf(65f, 75f, 85f, 90f, 95f)
-            val calendar = Calendar.getInstance()
-
-            tests.take(3).forEachIndexed { testIndex, testEntity ->
-                val mockTest =
-                    testEntityToModel(testEntity, testDao.getQuestionsForTest(testEntity.id), gson)
-
-                sampleScores.forEachIndexed { scoreIndex, score ->
-                    calendar.time = Date()
-                    calendar.add(Calendar.DAY_OF_MONTH, -(testIndex * 7 + scoreIndex * 2))
-
-                    val attempt = TestAttempt(
-                        id = UUID.randomUUID().toString(),
-                        testId = mockTest.id,
-                        startTime = calendar.time,
-                        endTime = Date(calendar.timeInMillis + 1800000),
-                        userAnswers = mockTest.questions.mapIndexed { questionIndex, question ->
-                            val isCorrect = when {
-                                score >= 90 -> questionIndex < (mockTest.questions.size * 0.9).toInt()
-                                score >= 80 -> questionIndex < (mockTest.questions.size * 0.8).toInt()
-                                score >= 70 -> questionIndex < (mockTest.questions.size * 0.7).toInt()
-                                else -> questionIndex < (mockTest.questions.size * 0.6).toInt()
-                            }
-                            question.id to UserAnswer(
-                                questionId = question.id,
-                                selectedOptionIndex = if (isCorrect) question.correctOptionIndex else (question.correctOptionIndex?.plus(
-                                    1
-                                ))?.rem(4),
-                                timeSpent = 45 + (questionIndex * 5),
-                                status = QuestionStatus.ANSWERED
-                            )
-                        }.toMap(),
-                        isCompleted = true,
-                        score = score
-                    )
-
-                    saveTestAttempt(attempt)
-                    Log.d("TestRepositoryImpl", "Generated sample attempt: ${attempt.id} for test ${mockTest.name} with score $score")
-                }
-            }
-
-            Log.d("TestRepositoryImpl", "Sample test attempts generation completed")
-
-        } catch (e: Exception) {
-            Log.e("TestRepositoryImpl", "Error generating sample test attempts: ${e.message}", e)
-        }
+        // This function is now empty as per your request.
     }
 
     override suspend fun deleteMockTestById(testId: String) {

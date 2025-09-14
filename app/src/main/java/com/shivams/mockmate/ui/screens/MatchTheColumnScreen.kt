@@ -43,16 +43,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.shivams.mockmate.data.MatchItem // Added import
-import com.shivams.mockmate.data.generateSampleMatchItemsA // Added import
-import com.shivams.mockmate.data.generateSampleMatchItemsB // Added import
+
+data class MatchItem(val id: String, val text: String, val matchId: String)
 
 data class MatchedPair(val itemA: MatchItem, val itemB: MatchItem) {
     val isCorrect: Boolean
         get() = itemA.matchId == itemB.id
 }
-
-// Sample data moved to SampleData.kt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,21 +57,17 @@ fun MatchTheColumnScreen(
     onNavigateBack: () -> Unit,
     testId: String? = null // Added testId parameter
 ) {
-    var columnAItems by remember { mutableStateOf(generateSampleMatchItemsA()) } // Use function from SampleData.kt
-    var columnBItems by remember { mutableStateOf(generateSampleMatchItemsB()) } // Use function from SampleData.kt
+    var columnAItems by remember { mutableStateOf<List<MatchItem>>(emptyList()) }
+    var columnBItems by remember { mutableStateOf<List<MatchItem>>(emptyList()) }
 
     var selectedAItemId by remember { mutableStateOf<String?>(null) }
     var selectedBItemId by remember { mutableStateOf<String?>(null) }
     val matchedPairs = remember { mutableStateListOf<MatchedPair>() }
     var submitted by remember { mutableStateOf(false) }
 
-    // Log the testId if it's provided (placeholder for actual data loading)
     LaunchedEffect(testId) {
         if (testId != null) {
             Log.d("MatchTheColumnScreen", "Received testId: $testId")
-            // Here you would typically launch a coroutine to fetch test data
-            // using the testId and a ViewModel/Repository.
-            // For now, it will still use sampleItemsA and sampleItemsB.
         }
     }
 
@@ -98,7 +91,6 @@ fun MatchTheColumnScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                // Dynamically change title based on whether it's a test or practice
                 title = { Text(if (testId != null) "Match The Column Test" else "Match The Column Practice") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {

@@ -1,9 +1,5 @@
 package com.shivams.mockmate.ui.screens
 
-// import com.example.mockmate.ui.components.DifficultyBreakdownChart // Removed as per request
-// import com.example.mockmate.ui.components.OverallAccuracyChart // Replaced with WebViewChart
-// import com.example.mockmate.ui.components.SubjectDifficultyMatrixChart // Removed as per request
-// import com.example.mockmate.ui.components.WebViewChart // Removed WebViewChart import
 import android.util.Log
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
@@ -37,17 +33,9 @@ import com.shivams.mockmate.ui.components.AvgTimeSpentChart
 import com.shivams.mockmate.ui.components.EngagementTimelineChart
 import com.shivams.mockmate.ui.components.PerQuestionAnalysisChart
 import com.shivams.mockmate.ui.components.StreakTrackerChart
-// import com.example.mockmate.ui.components.SubjectWiseAccuracyChart // Removed
 import com.shivams.mockmate.ui.components.TestAttemptsCounterChart
 import com.shivams.mockmate.ui.components.TestScoresOverTimeChart
-// import com.example.mockmate.ui.components.TopicDrilldownChart // Removed
 import com.shivams.mockmate.ui.theme.MockMateTheme
-import com.shivams.mockmate.data.generateSampleTestAttemptsPreview // Added import
-import com.shivams.mockmate.data.generateSampleUserStats // Added import
-
-// import com.google.gson.Gson // Removed Gson import
-
-// Removed getOverallAccuracyChartJsData function
 
 @Composable
 fun KotlinOverallAccuracyChart(userStats: UserStats, modifier: Modifier = Modifier) {
@@ -71,7 +59,6 @@ fun KotlinOverallAccuracyChart(userStats: UserStats, modifier: Modifier = Modifi
             Text("Overall Accuracy", style = MaterialTheme.typography.titleMedium)
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Simple Pie Chart representation
             Box(
                 modifier = Modifier.size(150.dp),
                 contentAlignment = Alignment.Center
@@ -80,7 +67,6 @@ fun KotlinOverallAccuracyChart(userStats: UserStats, modifier: Modifier = Modifi
                     val sweepAngleCorrect = if (total > 0) (correct.toFloat() / total.toFloat()) * 360f else 0f
                     val sweepAngleIncorrect = if (total > 0) (incorrect.toFloat() / total.toFloat()) * 360f else 0f
 
-                    // Draw incorrect slice (background)
                     drawArc(
                         color = Color.Red.copy(alpha = 0.3f),
                         startAngle = -90f,
@@ -88,7 +74,6 @@ fun KotlinOverallAccuracyChart(userStats: UserStats, modifier: Modifier = Modifi
                         useCenter = true,
                         size = Size(size.width, size.height)
                     )
-                    // Draw correct slice
                     drawArc(
                         color = Color.Green.copy(alpha = 0.5f),
                         startAngle = -90f,
@@ -96,7 +81,6 @@ fun KotlinOverallAccuracyChart(userStats: UserStats, modifier: Modifier = Modifi
                         useCenter = true,
                         size = Size(size.width, size.height)
                     )
-                     // Optional: Draw a border for the pie chart
                     drawArc(
                         color = Color.Gray,
                         startAngle = -90f,
@@ -123,9 +107,7 @@ fun KotlinOverallAccuracyChart(userStats: UserStats, modifier: Modifier = Modifi
 fun AnalyticsScreen(
     userStats: UserStats,
     testAttempts: List<TestAttempt>,
-    /* onNavigateBack: () -> Unit */ // Commented out as it's not directly used here
 ) {
-    // Debug logging
     Log.d("AnalyticsScreen", "UserStats received: questionsAnswered=${userStats.questionsAnswered}, correctAnswers=${userStats.correctAnswers}, currentStreak=${userStats.currentStreak}")
     Log.d("AnalyticsScreen", "SubjectPerformance size: ${userStats.subjectPerformance.size}")
     Log.d("AnalyticsScreen", "TestAttempts received: ${testAttempts.size} attempts")
@@ -142,9 +124,7 @@ fun AnalyticsScreen(
     ) {
         Text("Analytics Screen", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(vertical = 16.dp))
 
-        KotlinOverallAccuracyChart(userStats = userStats) // Added new Kotlin based chart
-        // SubjectWiseAccuracyChart(userStats = userStats) // Removed
-        // TopicDrilldownChart(userStats = userStats) // Removed
+        KotlinOverallAccuracyChart(userStats = userStats)
 
         Text("Progress Over Time", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 16.dp, bottom = 8.dp))
         TestScoresOverTimeChart(testAttempts = testAttempts)
@@ -159,12 +139,7 @@ fun AnalyticsScreen(
         StreakTrackerChart(userStats = userStats)
         TestAttemptsCounterChart(testAttempts = testAttempts)
 
-        // Removed Comparative Analytics section as per request
-        // Text("Comparative Analytics", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 16.dp, bottom = 8.dp))
-        // DifficultyBreakdownChart(userStats = userStats)
-        // SubjectDifficultyMatrixChart(userStats = userStats)
-
-        Spacer(modifier = Modifier.height(16.dp)) // Add some spacing at the end
+        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 
@@ -173,9 +148,8 @@ fun AnalyticsScreen(
 fun AnalyticsScreenPreview() {
     MockMateTheme {
         AnalyticsScreen(
-            userStats = generateSampleUserStats(), // Use function from SampleData.kt
-            testAttempts = generateSampleTestAttemptsPreview(), // Use function from SampleData.kt
-            // onNavigateBack = {} // Commented out for preview as well
+            userStats = UserStats(),
+            testAttempts = emptyList(),
         )
     }
 }
