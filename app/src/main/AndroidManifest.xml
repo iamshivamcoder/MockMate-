@@ -25,6 +25,8 @@
     <!-- Permission for scheduling exact alarms (for API 31+ for setExactAndAllowWhileIdle, or for setExact on all API levels) -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
     <application
         android:name=".MockMateApplication"
         android:allowBackup="true"
@@ -64,6 +66,15 @@
         <receiver android:name=".notifications.TestReminderReceiver"
             android:enabled="true"
             android:exported="false" />
+
+        <receiver
+            android:name=".notifications.BootCompletedReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
 
         <service
             android:name=".notifications.PushNotificationService"
