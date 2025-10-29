@@ -1,5 +1,8 @@
 package com.shivams.mockmate.ui.components
 
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
@@ -10,7 +13,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -101,10 +106,38 @@ fun StreakInfoDialog(
     )
 }
 
+@Composable
+fun StreakProgressDialog(
+    onDismiss: () -> Unit,
+    currentStreak: Int,
+    longestStreak: Int
+) {
+    AlertDialog(
+        shape = RoundedCornerShape(16.dp),
+        onDismissRequest = onDismiss,
+        icon = { Icon(Icons.Filled.Info, contentDescription = "Streak Progress", tint = MaterialTheme.colorScheme.primary) },
+        title = { Text("Your Streak Progress", style = MaterialTheme.typography.headlineSmall) },
+        text = {
+            Column {
+                Text("Current Streak: $currentStreak days")
+                Spacer(modifier = Modifier.height(8.dp))
+                Text("Longest Streak: $longestStreak days")
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("Keep up the great work!", fontWeight = FontWeight.Bold)
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Awesome!", style = MaterialTheme.typography.labelLarge)
+            }
+        }
+    )
+}
+
 @Preview(showBackground = true)
 @Composable
-fun StreakInfoDialogPreview() {
+fun StreakProgressDialogPreview() {
     MockMateTheme {
-        StreakInfoDialog(onDismiss = {}) // Uses default icon
+        StreakProgressDialog(onDismiss = {}, currentStreak = 12, longestStreak = 50)
     }
 }

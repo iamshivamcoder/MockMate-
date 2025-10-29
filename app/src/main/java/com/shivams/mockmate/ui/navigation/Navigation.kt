@@ -7,8 +7,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
@@ -21,6 +23,7 @@ import androidx.navigation.navArgument
 import com.shivams.mockmate.MockMateApplication
 import com.shivams.mockmate.data.repositories.TestRepository
 import com.shivams.mockmate.model.QuestionType
+import com.shivams.mockmate.model.TestAttempt
 import com.shivams.mockmate.model.UserStats
 import com.shivams.mockmate.ui.components.AppBottomNavigationBar
 import com.shivams.mockmate.ui.screens.AboutDeveloperScreen
@@ -144,6 +147,11 @@ fun AppNavHost(
             composable(Routes.ANALYTICS_SCREEN) { // New destination
                 val userStats by stableRepository.userStats.collectAsState(initial = UserStatsDefaults.default()) // Provide a default UserStats
                 val testAttempts by stableRepository.getAllTestAttempts().collectAsState(initial = emptyList())
+                var isLoading by remember { mutableStateOf(true) }
+
+                LaunchedEffect(userStats, testAttempts) {
+                    isLoading = userStats == UserStatsDefaults.default() || testAttempts.isEmpty()
+                }
 
                 // Enhanced debugging for analytics data
                 Log.d("Navigation", "Analytics Screen - Collected userStats: questionsAnswered=${userStats.questionsAnswered}, correctAnswers=${userStats.correctAnswers}, currentStreak=${userStats.currentStreak}")
@@ -155,7 +163,8 @@ fun AppNavHost(
 
                 AnalyticsScreen(
                     userStats = userStats,
-                    testAttempts = testAttempts
+                    testAttempts = testAttempts,
+                    isLoading = isLoading
                 )
             }
 

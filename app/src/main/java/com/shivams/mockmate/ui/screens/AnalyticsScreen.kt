@@ -16,6 +16,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -107,39 +108,49 @@ fun KotlinOverallAccuracyChart(userStats: UserStats, modifier: Modifier = Modifi
 fun AnalyticsScreen(
     userStats: UserStats,
     testAttempts: List<TestAttempt>,
+    isLoading: Boolean // Added isLoading parameter
 ) {
-    Log.d("AnalyticsScreen", "UserStats received: questionsAnswered=${userStats.questionsAnswered}, correctAnswers=${userStats.correctAnswers}, currentStreak=${userStats.currentStreak}")
-    Log.d("AnalyticsScreen", "SubjectPerformance size: ${userStats.subjectPerformance.size}")
-    Log.d("AnalyticsScreen", "TestAttempts received: ${testAttempts.size} attempts")
-    testAttempts.forEach { attempt ->
-        Log.d("AnalyticsScreen", "Attempt ${attempt.id}: testId=${attempt.testId}, score=${attempt.score}, completed=${attempt.isCompleted}")
-    }
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 16.dp)
-            .verticalScroll(rememberScrollState()),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Top
-    ) {
-        Text("Analytics Screen", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(vertical = 16.dp))
+    if (isLoading) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+    } else {
+        Log.d("AnalyticsScreen", "UserStats received: questionsAnswered=${userStats.questionsAnswered}, correctAnswers=${userStats.correctAnswers}, currentStreak=${userStats.currentStreak}")
+        Log.d("AnalyticsScreen", "SubjectPerformance size: ${userStats.subjectPerformance.size}")
+        Log.d("AnalyticsScreen", "TestAttempts received: ${testAttempts.size} attempts")
+        testAttempts.forEach { attempt ->
+            Log.d("AnalyticsScreen", "Attempt ${attempt.id}: testId=${attempt.testId}, score=${attempt.score}, completed=${attempt.isCompleted}")
+        }
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Top
+        ) {
+            Text("Analytics Screen", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(vertical = 16.dp))
 
-        KotlinOverallAccuracyChart(userStats = userStats)
+            KotlinOverallAccuracyChart(userStats = userStats)
 
-        Text("Progress Over Time", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 16.dp, bottom = 8.dp))
-        TestScoresOverTimeChart(testAttempts = testAttempts)
-        AccuracyTrendChart(testAttempts = testAttempts)
-        EngagementTimelineChart(testAttempts = testAttempts)
+            Text("Progress Over Time", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 16.dp, bottom = 8.dp))
+            TestScoresOverTimeChart(testAttempts = testAttempts)
+            AccuracyTrendChart(testAttempts = testAttempts)
+            EngagementTimelineChart(testAttempts = testAttempts)
 
-        Text("Time Management Insights", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 16.dp, bottom = 8.dp))
-        AvgTimeSpentChart(userStats = userStats)
-        PerQuestionAnalysisChart(testAttempts = testAttempts)
+            Text("Time Management Insights", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 16.dp, bottom = 8.dp))
+            AvgTimeSpentChart(userStats = userStats)
+            PerQuestionAnalysisChart(testAttempts = testAttempts)
 
-        Text("Engagement & Habits", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 16.dp, bottom = 8.dp))
-        StreakTrackerChart(userStats = userStats)
-        TestAttemptsCounterChart(testAttempts = testAttempts)
+            Text("Engagement & Habits", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 16.dp, bottom = 8.dp))
+            StreakTrackerChart(userStats = userStats)
+            TestAttemptsCounterChart(testAttempts = testAttempts)
 
-        Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+        }
     }
 }
 
@@ -150,6 +161,7 @@ fun AnalyticsScreenPreview() {
         AnalyticsScreen(
             userStats = UserStats(),
             testAttempts = emptyList(),
+            isLoading = false // Added for preview
         )
     }
 }

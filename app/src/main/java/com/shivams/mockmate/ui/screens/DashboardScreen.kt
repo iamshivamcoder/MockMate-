@@ -42,10 +42,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.shivams.mockmate.data.repositories.TestRepository
 import com.shivams.mockmate.model.UserStats
-import com.shivams.mockmate.ui.components.MockMateTopBar
-import com.shivams.mockmate.ui.components.WelcomeCard
 import com.shivams.mockmate.ui.components.ActionButton
-import com.shivams.mockmate.ui.components.StreakInfoDialog // Import the extracted dialog
+import com.shivams.mockmate.ui.components.MockMateTopBar
+import com.shivams.mockmate.ui.components.PrelimsCountdownCard
+import com.shivams.mockmate.ui.components.StreakProgressDialog
+import com.shivams.mockmate.ui.components.WelcomeCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -89,6 +90,8 @@ fun DashboardScreen(
 
             PracticeLureSection()
 
+            PrelimsCountdownCard()
+
             Spacer(modifier = Modifier.height(24.dp))
 
             ActionButton(
@@ -122,12 +125,66 @@ fun DashboardScreen(
     }
 
     if (showStreakInfoDialog) {
-        StreakInfoDialog(onDismiss = { showStreakInfoDialog = false })
+        StreakProgressDialog(
+            onDismiss = { showStreakInfoDialog = false },
+            currentStreak = userStats.currentStreak,
+            longestStreak = userStats.longestStreak
+        )
     }
 }
 
 @Composable
 fun PracticeLureSection() {
+
+    // Step 1: List of dynamic motivational statements (Now with regional flavours!)
+    val practiceMessages = listOf(
+        // --- Mumbai (Bambaiyya) ---
+        "Chal bhidu, thoda dimaag ki batti jala!",
+        "Apun ready hai, tu bhi ho ja!",
+        "Practice ka kya bolta hai? Kar daal!",
+
+        // --- Haryanavi ---
+        "Re laadle, do-chaar sawal maar le!",
+        "Kati tayaar hai practice ke liye?",
+        "Chal, dekhe kitna dum hai!",
+
+        // --- Delhi ---
+        "Oye! Practice scene set karein?",
+        "Bhai, full power prep ho jaye?",
+        "Chal na, do-teen mock test hi niptaate hain.",
+
+        // --- Bhojpuri / Purvanchali ---
+        "Ka ho, practice kare ke mann ba?",
+        "Chala, aaj garda udaa diyal jaa!"
+    )
+
+    val subMessages = listOf(
+        // --- Mumbai (Bambaiyya) ---
+        "Load nahi lene ka, bas practice karne ka.",
+        "Ek number banega, likh ke le.",
+        "Shaane, yahi time hai padhne ka!",
+
+        // --- Haryanavi ---
+        "Officer banna hai toh ragda laagega.",
+        "Tora baith jaayega, laage reh!",
+        "Maa-baapu ka naam roshan karna hai!",
+
+        // --- Delhi ---
+        "IAS-VAIAS ban, scene sorted hai.",
+        "Bhai, chill maarke padh, ho jaayega.",
+        "System set karna hai poora!",
+
+        // --- Bhojpuri / Purvanchali ---
+        "Ehi se badka officer banba.",
+        "Tohaar sapna poora hokhi!",
+        "Bilkul fikar mat kara, sab ho jayi."
+    )
+
+    // Step 2: Pick random statements (only once when Composable first loads)
+    val mainText = remember { practiceMessages.random() }
+    val subText = remember { subMessages.random() }
+
+    // Step 3: UI layout same as before
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -138,21 +195,21 @@ fun PracticeLureSection() {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(horizontal = 16.dp, vertical = 32.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceAround
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Thoda practice ho jaye?",
-                    style = MaterialTheme.typography.titleMedium,
+                    text = mainText,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Apne knowledge ko next level pe le jao!",
-                    style = MaterialTheme.typography.bodyMedium,
+                    text = subText,
+                    style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                 )
             }
