@@ -5,16 +5,20 @@ import android.content.SharedPreferences
 import android.util.Log
 import androidx.room.withTransaction
 import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import com.shivams.mockmate.data.database.AppDatabase
 import com.shivams.mockmate.data.database.TestQuestionCrossRef
 import com.shivams.mockmate.data.database.UserAnswerEntity
 import com.shivams.mockmate.data.database.UserStatsEntity
 import com.shivams.mockmate.data.database.asDomainObject
 import com.shivams.mockmate.data.database.asEntity
+import com.shivams.mockmate.data.generateSampleTests
 import com.shivams.mockmate.model.MockTest
 import com.shivams.mockmate.model.QuestionStatus
+import com.shivams.mockmate.model.SubjectPerformance
 import com.shivams.mockmate.model.TestAttempt
 import com.shivams.mockmate.model.TestDifficulty
+import com.shivams.mockmate.model.TopicPerformance
 import com.shivams.mockmate.model.UserAnswer
 import com.shivams.mockmate.model.UserStats
 import kotlinx.coroutines.Dispatchers
@@ -230,7 +234,58 @@ class TestRepositoryImpl(
     }
 
     override suspend fun initializeIfEmpty() {
-        // This function is now empty as per your request.
+        withContext(Dispatchers.IO) {
+            try {
+                val testCount = testDao.getTestCount()
+                val questionCount = questionDao.getQuestionCount()
+
+                Log.d(
+                    "TestRepositoryImpl",
+                    "Current database state - Tests: $testCount, Questions: $questionCount"
+                )
+
+                // Initialize with sample data if database is empty
+                if (testCount == 0 && questionCount == 0) {
+                    Log.d("TestRepositoryImpl", "Database is empty, initializing with sample data")
+
+                    val sampleTests = generateSampleTests()
+
+                    database.withTransaction {
+                        sampleTests.forEach { test ->
+                            val testEntity = testModelToEntity(test)
+                            val questionEntities =
+                                test.questions.map { questionModelToEntity(gson, it) }
+                            val crossRefs = test.questions.mapIndexed { index, question ->
+                                TestQuestionCrossRef(
+                                    testId = test.id,
+                                    questionId = question.id,
+                                    questionOrder = index
+                                )
+                            }
+
+                            questionDao.insertQuestions(questionEntities)
+                            testDao.insertTestWithQuestions(testEntity, crossRefs)
+                        }
+                    }
+
+                    Log.d("TestRepositoryImpl", "Sample data initialization completed")
+                } else {
+                    Log.d(
+                        "TestRepositoryImpl",
+                        "Database already contains data, skipping initialization"
+                    )
+                }
+
+                // Initialize user stats if they don't exist
+                val userStats = userStatsDao.getUserStats().firstOrNull()
+                if (userStats == null) {
+                    Log.d("TestRepositoryImpl", "Initializing user stats")
+                    userStatsDao.insertUserStats(UserStatsEntity())
+                }
+            } catch (e: Exception) {
+                Log.e("TestRepositoryImpl", "Error during initialization: ${e.message}", e)
+            }
+        }
     }
 
     override suspend fun deleteMockTestById(testId: String) {
@@ -290,13 +345,28 @@ class TestRepositoryImpl(
 
         var correctCount = 0
         var answeredCount = 0
+        val subjectPerformanceMap = mutableMapOf<String, SubjectStats>()
+
         attempt.userAnswers.forEach { (questionId, answer) ->
             if (answer.selectedOptionIndex != null && !previouslyAnsweredQuestions.contains(questionId)) {
                 answeredCount++
-                val correct = correctAnswers[questionId]?.let { correctIndex ->
-                    answer.selectedOptionIndex == correctIndex
-                } ?: false
-                if (correct) correctCount++
+                val question = questionsFromDb.find { it.id == questionId }
+                if (question != null) {
+                    // Track subject performance
+                    val subject = question.subject
+                    val subjectStats =
+                        subjectPerformanceMap.getOrPut(subject) { SubjectStats(subject) }
+                    subjectStats.totalQuestions++
+
+                    val correct = correctAnswers[questionId]?.let { correctIndex ->
+                        answer.selectedOptionIndex == correctIndex
+                    } ?: false
+
+                    if (correct) {
+                        correctCount++
+                        subjectStats.correctAnswers++
+                    }
+                }
             }
         }
 
@@ -306,6 +376,43 @@ class TestRepositoryImpl(
         if (answeredCount > 0) {
             userStatsDao.incrementQuestionsAnswered(answeredCount)
             userStatsDao.incrementCorrectAnswers(correctCount)
+
+            // Update subject performance
+            val currentStatsEntity = userStatsDao.getUserStats().firstOrNull() ?: UserStatsEntity()
+            val currentSubjectPerformance: Map<String, SubjectPerformance> = try {
+                gson.fromJson(
+                    currentStatsEntity.subjectPerformance,
+                    object : TypeToken<Map<String, SubjectPerformance>>() {}.type
+                )
+            } catch (_: Exception) {
+                mapOf<String, SubjectPerformance>()
+            } ?: mapOf()
+
+            // Merge current and new subject performance
+            val updatedSubjectPerformance = currentSubjectPerformance.toMutableMap()
+            subjectPerformanceMap.forEach { (subject, newStats) ->
+                val currentSubjectStats = updatedSubjectPerformance[subject] ?: SubjectPerformance(
+                    subject = subject,
+                    questionsAttempted = 0,
+                    correctAnswers = 0,
+                    accuracy = 0f,
+                    topicPerformance = mapOf()
+                )
+                updatedSubjectPerformance[subject] = SubjectPerformance(
+                    subject = subject,
+                    questionsAttempted = currentSubjectStats.questionsAttempted + newStats.totalQuestions,
+                    correctAnswers = currentSubjectStats.correctAnswers + newStats.correctAnswers,
+                    accuracy = if (currentSubjectStats.questionsAttempted + newStats.totalQuestions > 0) {
+                        (currentSubjectStats.correctAnswers + newStats.correctAnswers).toFloat() /
+                                (currentSubjectStats.questionsAttempted + newStats.totalQuestions).toFloat()
+                    } else 0f,
+                    topicPerformance = currentSubjectStats.topicPerformance
+                )
+            }
+
+            // Save updated subject performance to database
+            val subjectPerformanceJson = gson.toJson(updatedSubjectPerformance)
+            userStatsDao.updateSubjectPerformance(subjectPerformanceJson)
         }
 
         val today = Date()
@@ -346,5 +453,11 @@ class TestRepositoryImpl(
             }
         }
     }
+
+    data class SubjectStats(
+        val subject: String,
+        var totalQuestions: Int = 0,
+        var correctAnswers: Int = 0
+    )
 
 }

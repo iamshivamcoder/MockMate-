@@ -104,8 +104,8 @@ data class UserStatsEntity(
     @PrimaryKey val id: Int = 1, // Single row for user stats
     val questionsAnswered: Int = 0,
     val correctAnswers: Int = 0,
-    val currentStreak: Int = 0, // Changed from streak
-    val longestStreak: Int = 0, // Added
+    val currentStreak: Int = 0,
+    val longestStreak: Int = 0,
     val lastPracticeDate: Date? = null,
     val subjectPerformance: String = "{}" // JSON string of subject performance
 )
