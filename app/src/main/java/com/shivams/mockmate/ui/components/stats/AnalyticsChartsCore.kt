@@ -1,5 +1,6 @@
-package com.shivams.mockmate.ui.components
+package com.shivams.mockmate.ui.components.stats
 
+import android.graphics.Paint
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -264,16 +265,16 @@ fun NativeTestScoresLineChart(
 
 
     val textPaint = remember {
-        android.graphics.Paint().apply {
+        Paint().apply {
             this.color = textColor.hashCode()
-            textAlign = android.graphics.Paint.Align.CENTER
+            textAlign = Paint.Align.CENTER
             textSize = labelTextSizePx
         }
     }
      val titlePaint = remember {
-        android.graphics.Paint().apply {
+        Paint().apply {
             this.color = textColor.hashCode()
-            textAlign = android.graphics.Paint.Align.CENTER
+            textAlign = Paint.Align.CENTER
             textSize = titleTextSizePx
             isFakeBoldText = true
         }
@@ -333,7 +334,7 @@ fun NativeTestScoresLineChart(
                 "${value.toInt()}%",
                 effectiveCanvasLeftPadding - 8.dp.toPx(),
                 yPos + textPaint.textSize / 3,
-                textPaint.apply { textAlign = android.graphics.Paint.Align.RIGHT }
+                textPaint.apply { textAlign = Paint.Align.RIGHT }
             )
              drawLine(
                 color = axisColor.copy(alpha = 0.3f),
@@ -389,7 +390,7 @@ fun NativeTestScoresLineChart(
                     dateLabel,
                     labelX,
                     labelY,
-                    textPaint.apply { textAlign = android.graphics.Paint.Align.RIGHT } // Align right for rotated labels
+                    textPaint.apply { textAlign = Paint.Align.RIGHT } // Align right for rotated labels
                 )
                 drawContext.canvas.nativeCanvas.restore()
             }

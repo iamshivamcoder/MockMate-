@@ -1,5 +1,6 @@
-package com.shivams.mockmate.ui.components
+package com.shivams.mockmate.ui.components.stats
 
+import android.util.Log
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,7 +34,7 @@ import kotlin.math.roundToInt
 @Composable
 fun AvgTimeSpentChart(userStats: UserStats) {
     // Debug logging
-    android.util.Log.d("AvgTimeSpentChart", "UserStats received: questionsAnswered=${userStats.questionsAnswered}, subjectPerformance=${userStats.subjectPerformance.size}")
+    Log.d("AvgTimeSpentChart", "UserStats received: questionsAnswered=${userStats.questionsAnswered}, subjectPerformance=${userStats.subjectPerformance.size}")
 
     Card(
         modifier = Modifier

@@ -1,5 +1,6 @@
-package com.shivams.mockmate.ui.components
+package com.shivams.mockmate.ui.components.stats
 
+import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Typeface
 import androidx.compose.foundation.Canvas
@@ -200,7 +201,7 @@ private fun NativeAccuracyTrendLineChart(attempts: List<TestAttempt>) {
         val chartHeight = size.height - xAxisLabelAreaHeight - chartPadding
 
         val labelPaint = Paint().apply {
-            color = android.graphics.Color.BLACK
+            color = Color.BLACK
             textAlign = Paint.Align.CENTER
             textSize = labelSize
         }
@@ -279,7 +280,7 @@ private fun NativeEngagementTimelineBarChart(timelineEntries: List<Map.Entry<Lon
         val chartHeight = size.height - xAxisLabelAreaHeight - chartPadding
 
         val labelPaint = Paint().apply {
-            color = android.graphics.Color.BLACK
+            color = Color.BLACK
             textAlign = Paint.Align.CENTER
             textSize = labelSize
         }
@@ -349,7 +350,7 @@ private fun NativePerQuestionAnalysisBarChart(distribution: List<Int>) {
         val chartHeight = size.height - xAxisLabelAreaHeight - chartPadding
 
         val labelPaint = Paint().apply {
-            color = android.graphics.Color.BLACK
+            color = Color.BLACK
             textAlign = Paint.Align.CENTER
             textSize = labelSize
         }

@@ -28,13 +28,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.shivams.mockmate.model.TestAttempt
 import com.shivams.mockmate.model.UserStats
-import com.shivams.mockmate.ui.components.AccuracyTrendChart
-import com.shivams.mockmate.ui.components.AvgTimeSpentChart
-import com.shivams.mockmate.ui.components.EngagementTimelineChart
-import com.shivams.mockmate.ui.components.PerQuestionAnalysisChart
-import com.shivams.mockmate.ui.components.StreakTrackerChart
-import com.shivams.mockmate.ui.components.TestAttemptsCounterChart
-import com.shivams.mockmate.ui.components.TestScoresOverTimeChart
+import com.shivams.mockmate.ui.components.stats.AccuracyTrendChart
+import com.shivams.mockmate.ui.components.stats.AvgTimeSpentChart
+import com.shivams.mockmate.ui.components.stats.EngagementTimelineChart
+import com.shivams.mockmate.ui.components.stats.PerQuestionAnalysisChart
+import com.shivams.mockmate.ui.components.stats.StreakTrackerChart
+import com.shivams.mockmate.ui.components.stats.TestAttemptsCounterChart
+import com.shivams.mockmate.ui.components.stats.TestScoresOverTimeChart
 import com.shivams.mockmate.ui.theme.MockMateTheme
 
 @Composable
