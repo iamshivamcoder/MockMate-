@@ -2,7 +2,6 @@ package com.shivams.mockmate
 
 import android.app.Application
 import com.shivams.mockmate.data.repositories.TestRepository
-import com.shivams.mockmate.BuildConfig
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -21,7 +20,7 @@ class MockMateApplication : Application() {
         try {
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    if (BuildConfig.SAMPLE_DATA_ENABLED) {
+                    if (BuildConfig.DEBUG) {
                         testRepository.initializeIfEmpty()
                         android.util.Log.d("MockMateApp", "Repository initialized with sample data")
                     }

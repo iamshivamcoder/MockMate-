@@ -111,7 +111,10 @@ fun TestHistoryScreen(
                 onViewResult = { attemptId, testId ->
                     onViewTestResult(attemptId, testId)
                 },
-                onRenameClick = { showRenameDialog = it },
+                onRenameClick = { 
+                    newName = it.testName
+                    showRenameDialog = it
+                },
                 onDeleteClick = { showDeleteDialog = it }
             )
         }

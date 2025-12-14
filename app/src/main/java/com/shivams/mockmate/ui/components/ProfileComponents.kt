@@ -1,6 +1,5 @@
 package com.shivams.mockmate.ui.components
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -17,63 +16,48 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.shivams.mockmate.R
 
 @Composable
-fun ProfileBodyContent() {
+fun ProfileHeader(name: String, avatar: ImageVector) {
     Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .fillMaxWidth()
+            .padding(vertical = 16.dp)
     ) {
-        // Profile Header
-        ProfileHeader("Anjali Sharma")
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // Avatar Selection
-        ChooseAvatarSection()
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // Personal Details
-        PersonalDetailsSection()
-    }
-}
-
-@Composable
-fun ProfileHeader(name: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Image(
-            painter = painterResource(id = R.drawable.ic_launcher_background),
-            contentDescription = "Profile Picture",
+        Box(
             modifier = Modifier
                 .size(120.dp)
-                .clip(CircleShape),
-            contentScale = ContentScale.Crop
-        )
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.secondaryContainer),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = avatar,
+                contentDescription = "Profile Avatar",
+                modifier = Modifier.size(80.dp),
+                tint = MaterialTheme.colorScheme.onSecondaryContainer
+            )
+        }
         Spacer(modifier = Modifier.height(16.dp))
         Text(
             text = name,
@@ -84,18 +68,19 @@ fun ProfileHeader(name: String) {
 }
 
 @Composable
-fun ChooseAvatarSection() {
-    var selectedAvatar by remember { mutableStateOf(2) }
-    val avatars = listOf(
-        R.drawable.ic_launcher_background,
-        R.drawable.ic_launcher_background,
-        R.drawable.ic_launcher_background,
-        R.drawable.ic_launcher_background,
-        R.drawable.ic_launcher_background,
-        R.drawable.ic_launcher_background
-    )
+fun AvatarGrid(selectedAvatar: ImageVector, onAvatarChange: (ImageVector) -> Unit) {
+    val avatars = remember {
+        listOf(
+            Icons.Default.Person,
+            Icons.Default.Person,
+            Icons.Default.Person,
+            Icons.Default.Person,
+            Icons.Default.Person,
+            Icons.Default.Person
+        )
+    }
 
-    Column(horizontalAlignment = Alignment.Start) {
+    Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = "Choose Your Avatar",
             style = MaterialTheme.typography.titleLarge,
@@ -103,41 +88,39 @@ fun ChooseAvatarSection() {
             modifier = Modifier.padding(bottom = 16.dp)
         )
         LazyVerticalGrid(
-            columns = GridCells.Fixed(3),
-            contentPadding = PaddingValues(8.dp),
+            columns = GridCells.Adaptive(minSize = 80.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) { 
-            items(avatars.size) { index ->
-                AvatarItem(avatars[index], index == selectedAvatar) {
-                    selectedAvatar = index
-                }
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.padding(horizontal = 8.dp)
+        ) {
+            itemsIndexed(avatars) { index, avatar ->
+                AvatarItem(
+                    icon = avatar,
+                    isSelected = avatar == selectedAvatar,
+                    onClick = { onAvatarChange(avatar) }
+                )
             }
         }
     }
 }
 
 @Composable
-fun AvatarItem(avatarResId: Int, isSelected: Boolean, onClick: () -> Unit) {
+fun AvatarItem(icon: ImageVector, isSelected: Boolean, onClick: () -> Unit) {
+    val borderColor = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent
     Box(
         modifier = Modifier
             .size(80.dp)
             .clip(RoundedCornerShape(12.dp))
-            .border(
-                width = 2.dp,
-                color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
-                shape = RoundedCornerShape(12.dp)
-            )
-            .clickable { onClick() },
+            .border(2.dp, borderColor, RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f))
+            .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
-        Image(
-            painter = painterResource(id = avatarResId),
+        Icon(
+            imageVector = icon,
             contentDescription = null,
-            modifier = Modifier
-                .size(72.dp)
-                .clip(RoundedCornerShape(8.dp)),
-            contentScale = ContentScale.Crop
+            modifier = Modifier.size(48.dp),
+            tint = MaterialTheme.colorScheme.onSecondaryContainer
         )
         if (isSelected) {
             Box(
@@ -152,7 +135,7 @@ fun AvatarItem(avatarResId: Int, isSelected: Boolean, onClick: () -> Unit) {
                 Icon(
                     imageVector = Icons.Default.Check,
                     contentDescription = "Selected",
-                    tint = MaterialTheme.colorScheme.onPrimary,
+                    tint = Color.White,
                     modifier = Modifier.size(12.dp)
                 )
             }
@@ -161,8 +144,8 @@ fun AvatarItem(avatarResId: Int, isSelected: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-fun PersonalDetailsSection() {
-    Column(horizontalAlignment = Alignment.Start) {
+fun PersonalDetailsSection(name: String, email: String, phone: String, isEditable: Boolean) {
+    Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = "Personal Details",
             style = MaterialTheme.typography.titleLarge,
@@ -170,24 +153,27 @@ fun PersonalDetailsSection() {
             modifier = Modifier.padding(bottom = 16.dp)
         )
         OutlinedTextField(
-            value = "Anjali Sharma",
-            onValueChange = {},
+            value = name,
+            onValueChange = { /* Handle name change */ },
             label = { Text("Name") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            readOnly = !isEditable
         )
         Spacer(modifier = Modifier.height(16.dp))
         OutlinedTextField(
-            value = "mockmate@gmail.com",
-            onValueChange = {},
+            value = email,
+            onValueChange = { /* Handle email change */ },
             label = { Text("Email") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            readOnly = !isEditable
         )
         Spacer(modifier = Modifier.height(16.dp))
         OutlinedTextField(
-            value = "",
-            onValueChange = {},
+            value = phone,
+            onValueChange = { /* Handle phone change */ },
             label = { Text("Phone Number") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            readOnly = !isEditable
         )
     }
 }

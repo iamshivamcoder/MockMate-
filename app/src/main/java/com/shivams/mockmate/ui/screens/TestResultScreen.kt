@@ -331,13 +331,13 @@ private fun ResultContent(
 
                     if (isAnswered) {
                         Text(
-                            text = "Your Answer: ${question.options?.get(userAnswer.selectedOptionIndex ?: 0)}",
+                            text = "Your Answer: ${question.options?.get(userAnswer.selectedOptionIndex ?: 0) ?: ""}",
                             style = MaterialTheme.typography.bodyMedium,
                             color = if (isCorrect) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
                         )
 
                         Text(
-                            text = "Correct Answer: ${question.options?.get(question.correctOptionIndex ?: 0)}",
+                            text = "Correct Answer: ${question.options?.get(question.correctOptionIndex ?: 0) ?: ""}",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.primary
                         )
@@ -358,7 +358,7 @@ private fun ResultContent(
                         )
 
                         Text(
-                            text = "Correct Answer: ${question.options?.get(question.correctOptionIndex ?: 0)}",
+                            text = "Correct Answer: ${question.options?.get(question.correctOptionIndex ?: 0) ?: ""}",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.primary
                         )

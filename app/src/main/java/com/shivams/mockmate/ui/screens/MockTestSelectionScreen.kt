@@ -27,13 +27,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.shivams.mockmate.data.repositories.SettingsRepository
 import com.shivams.mockmate.data.repositories.TestRepository
 import com.shivams.mockmate.model.MockTest
-import com.shivams.mockmate.model.AppSettings // Required for default settings
+import com.shivams.mockmate.model.AppSettings
 import com.shivams.mockmate.ui.components.MockMateTopBar
 import com.shivams.mockmate.ui.components.SortControls
 import com.shivams.mockmate.ui.components.TestCard

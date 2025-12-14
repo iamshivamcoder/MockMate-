@@ -2,6 +2,10 @@ package com.shivams.mockmate.ui.navigation
 
 import android.util.Log
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Event
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -33,6 +37,8 @@ import com.shivams.mockmate.ui.screens.HelpScreen
 import com.shivams.mockmate.ui.screens.MatchTheColumnScreen
 import com.shivams.mockmate.ui.screens.MatchTheColumnSelectionScreen
 import com.shivams.mockmate.ui.screens.MockTestSelectionScreen
+import com.shivams.mockmate.ui.screens.NotificationDetailScreen
+import com.shivams.mockmate.ui.screens.NotificationItemData
 import com.shivams.mockmate.ui.screens.NotificationScreen
 import com.shivams.mockmate.ui.screens.PracticeModeSelectionScreen
 import com.shivams.mockmate.ui.screens.ProfileScreen
@@ -63,10 +69,12 @@ object Routes {
     const val ANALYTICS_SCREEN = "analytics_screen" // New route
     const val NOTIFICATION_SCREEN = "notification_screen"
     const val PROFILE_SCREEN = "profile_screen"
+    const val NOTIFICATION_DETAIL_SCREEN = "notification_detail_screen/{notificationId}"
 
     fun testTakingRoute(testId: String) = "test_taking/$testId"
     fun testResultRoute(attemptId: String, testId: String) = "test_result/$attemptId/$testId"
     fun matchTheColumnTakingRoute(testId: String) = "match_the_column_taking/$testId"
+    fun notificationDetailRoute(notificationId: String) = "notification_detail_screen/$notificationId"
 
     fun logRoute(route: String) {
         Log.d("Navigation", "Navigating to route: $route")
@@ -350,24 +358,67 @@ fun AppNavHost(
             }
 
             composable(Routes.NOTIFICATION_SCREEN) {
-                NotificationScreen(onNavigateBack = { navController.navigateUp() })
+                NotificationScreen(
+                    onNavigateBack = { navController.navigateUp() },
+                    onNotificationClick = { notificationId ->
+                        navController.safeNavigate(Routes.notificationDetailRoute(notificationId))
+                    }
+                )
             }
 
             composable(Routes.PROFILE_SCREEN) {
                 ProfileScreen(onNavigateBack = { navController.navigateUp() })
             }
+
+            composable(
+                route = Routes.NOTIFICATION_DETAIL_SCREEN,
+                arguments = listOf(navArgument("notificationId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val notificationId = backStackEntry.arguments?.getString("notificationId")
+                val notification = notifications.find { it.id == notificationId }
+                NotificationDetailScreen(
+                    notification = notification,
+                    onNavigateBack = { navController.navigateUp() })
+            }
         }
     }
 }
 
-// Added a default UserStats object for previewing and initial state
 object UserStatsDefaults {
     fun default() = UserStats(
         questionsAnswered = 0,
         correctAnswers = 0,
         currentStreak = 0,
         longestStreak = 0,
-        lastPracticeDate = Date(0), // Use epoch for a sensible default
+        lastPracticeDate = Date(0),
         subjectPerformance = emptyMap()
     )
 }
+
+val notifications = mutableListOf(
+    NotificationItemData(
+        id = "1",
+        icon = Icons.Default.Event,
+        title = "New Mock Test Available!",
+        subtitle = "Today, 10:30 AM",
+        description = "A new full-length mock test for the upcoming UPSC Prelims is now available. The test covers General Studies Paper I, including History, Geography, Polity, Economy, and Current Affairs.\n\nDuration: 2 hours.\nTotal Questions: 100.",
+        actionLabel = "Start Mock Test Now"
+    ),
+    NotificationItemData(
+        id = "2",
+        icon = Icons.Default.Schedule,
+        title = "Daily Practice Reminder.",
+        subtitle = "Yesterday, 6:00 PM",
+        description = "Don't forget to maintain your streak! Take 10 minutes to practice today's questions.",
+        actionLabel = null, // No button needed for this one
+        isRead = true
+    ),
+    NotificationItemData(
+        id = "3",
+        icon = Icons.Default.Description,
+        title = "Your History Report is Ready.",
+        subtitle = "Yesterday, 12:00 PM",
+        description = "Your detailed performance analysis for the last History mock test is now available. Review your strong and weak areas.",
+        actionLabel = "View Report"
+    )
+)

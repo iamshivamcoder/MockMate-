@@ -60,19 +60,41 @@ data class NotificationItemData(
     val icon: ImageVector,
     val title: String,
     val subtitle: String,
+    val description: String,
+    val actionLabel: String? = null,
     var isRead: Boolean = false
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NotificationScreen(onNavigateBack: () -> Unit) {
+fun NotificationScreen(onNavigateBack: () -> Unit, onNotificationClick: (String) -> Unit) {
     val notifications = remember {
         mutableStateListOf(
-            NotificationItemData("1", Icons.Default.Event, "New Mock Test Available!", "10:30 AM"),
-            NotificationItemData("2", Icons.Default.Schedule, "Daily Practice Reminder.", "Yesterday, 6:00 PM", isRead = true),
-            NotificationItemData("3", Icons.Default.Description, "Your History Report is Ready.", "Yesterday, 12:00 PM"),
-            NotificationItemData("4", Icons.Default.Star, "New Feature: Dark Mode.", "Dec 12", isRead = true),
-            NotificationItemData("5", Icons.Default.Handshake, "Welcome to MockMate!", "Dec 10", isRead = true)
+            NotificationItemData(
+                id = "1",
+                icon = Icons.Default.Event,
+                title = "New Mock Test Available!",
+                subtitle = "Today, 10:30 AM",
+                description = "A new full-length mock test for the upcoming UPSC Prelims is now available. The test covers General Studies Paper I, including History, Geography, Polity, Economy, and Current Affairs.\n\nDuration: 2 hours.\nTotal Questions: 100.",
+                actionLabel = "Start Mock Test Now"
+            ),
+            NotificationItemData(
+                id = "2",
+                icon = Icons.Default.Schedule,
+                title = "Daily Practice Reminder.",
+                subtitle = "Yesterday, 6:00 PM",
+                description = "Don't forget to maintain your streak! Take 10 minutes to practice today's questions.",
+                actionLabel = null, // No button needed for this one
+                isRead = true
+            ),
+            NotificationItemData(
+                id = "3",
+                icon = Icons.Default.Description,
+                title = "Your History Report is Ready.",
+                subtitle = "Yesterday, 12:00 PM",
+                description = "Your detailed performance analysis for the last History mock test is now available. Review your strong and weak areas.",
+                actionLabel = "View Report"
+            )
         )
     }
 
@@ -107,13 +129,13 @@ fun NotificationScreen(onNavigateBack: () -> Unit) {
                 )
             )
         },
-        containerColor = Color.White // Main background
+        containerColor = Color.White
     ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .background(Color(0xFFF5FCFF)) // Very light blue background for body
+                .background(Color(0xFFF5FCFF))
         ) {
             if (notifications.isEmpty()) {
                 EmptyStateView()
@@ -130,6 +152,7 @@ fun NotificationScreen(onNavigateBack: () -> Unit) {
                                 if (index != -1) {
                                     notifications[index] = notifications[index].copy(isRead = true)
                                 }
+                                onNotificationClick(notification.id)
                             },
                             onDismiss = { notification ->
                                 notifications.remove(notification)

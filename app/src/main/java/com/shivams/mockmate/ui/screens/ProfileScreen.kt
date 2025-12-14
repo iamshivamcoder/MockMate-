@@ -41,7 +41,6 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -248,7 +247,7 @@ fun AvatarGrid(
             .fillMaxWidth()
             .height(200.dp) // Adjusted height for 2 rows
     ) {
-        itemsIndexed(avatars) { index, icon ->
+        itemsIndexed(avatars) { index, _ ->
             AvatarItem(
                 iconVector = Icons.Default.Person,
                 isSelected = index == selectedIndex,

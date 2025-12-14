@@ -7,10 +7,10 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Row // Added for streak display
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.padding // Added for streak display padding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
@@ -51,20 +51,6 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.shivams.mockmate.ui.navigation.Screen
 
-/**
- * A customizable top app bar for the MockMate application.
- *
- * @param title The title to display in the app bar.
- * @param showBackButton Whether to show a back button. Defaults to true.
- * @param showSettings Whether to show a settings icon. Defaults to false.
- * @param currentStreak The current streak count to display. If null or <= 0, it won't be shown.
- * @param onBackClick Lambda to be invoked when the back button is clicked.
- * @param onSettingsClick Lambda to be invoked when the settings icon is clicked.
- * @param onStreakClick Lambda to be invoked when the streak display is clicked.
- * @param onImportClick Lambda to be invoked when the import icon is clicked.
- * @param dropdownContent Optional composable content for a dropdown menu.
- * @param scrollBehavior Optional [TopAppBarScrollBehavior] to apply to the TopAppBar.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MockMateTopBar(
@@ -100,7 +86,6 @@ fun MockMateTopBar(
             }
         },
         actions = {
-            // Display streak icon and count if currentStreak is available and positive
             if (currentStreak != null && currentStreak > 0) {
                 val infiniteTransition = rememberInfiniteTransition(label = "streak_icon_animation")
                 val iconAlpha by infiniteTransition.animateFloat(
@@ -116,7 +101,7 @@ fun MockMateTopBar(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .clickable(enabled = onStreakClick != null) { onStreakClick?.invoke() }
-                        .padding(horizontal = 4.dp) // Added padding for the streak display
+                        .padding(horizontal = 4.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.LocalFireDepartment,
@@ -124,17 +109,16 @@ fun MockMateTopBar(
                         tint = Color(0xFFFF4500).copy(alpha = iconAlpha),
                         modifier = Modifier.size(24.dp)
                     )
-                    Spacer(modifier = Modifier.width(4.dp)) // Spacer between icon and text
+                    Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = "$currentStreak",
                         style = MaterialTheme.typography.titleMedium,
                         color = Color(0xFFFF4500)
                     )
                 }
-                Spacer(modifier = Modifier.width(8.dp)) // Spacer after the streak Row
+                Spacer(modifier = Modifier.width(8.dp))
             }
 
-            // Display import icon if onImportClick is provided
             if (onImportClick != null) {
                 IconButton(onClick = onImportClick) {
                     Icon(
@@ -202,8 +186,6 @@ fun MockMateTopBar(
         scrollBehavior = scrollBehavior
     )
 }
-
-// Content from BottomNavigationBar.kt starts here
 
 data class BottomNavItem(
     val label: String,
