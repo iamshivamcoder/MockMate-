@@ -30,7 +30,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.shivams.mockmate.MockMateApplication
 import com.shivams.mockmate.data.repositories.SettingsRepository
 import com.shivams.mockmate.data.repositories.TestRepository
 import com.shivams.mockmate.model.MockTest
@@ -67,8 +66,8 @@ fun MockTestSelectionScreen(
     onTestSelected: (String) -> Unit,
     onSettingsClick: () -> Unit,
     onImportClick: () -> Unit,
-    repository: TestRepository = MockMateApplication.getTestRepository(),
-    settingsRepository: SettingsRepository = SettingsRepository(LocalContext.current) // Added settings repo
+    repository: TestRepository,
+    settingsRepository: SettingsRepository // Added settings repo
 ) {
     // Fetch raw MockTest objects
     val allRawMockTests by repository.mockTests.collectAsState(initial = emptyList())

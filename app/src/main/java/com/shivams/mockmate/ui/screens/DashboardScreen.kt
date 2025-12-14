@@ -56,6 +56,8 @@ fun DashboardScreen(
     onImportClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onAnalyticsClick: () -> Unit, // Added for Analytics navigation
+    onNotificationClick: () -> Unit,
+    onProfileClick: () -> Unit,
     repository: TestRepository // Removed default value
 ) {
     val userStats by repository.userStats.collectAsState(initial = UserStats(questionsAnswered = 0, correctAnswers = 0, currentStreak = 0, longestStreak = 0))
@@ -73,6 +75,8 @@ fun DashboardScreen(
                 onSettingsClick = onSettingsClick,
                 onStreakClick = { showStreakInfoDialog = true },
                 onImportClick = onImportClick, // Pass the onImportClick lambda - forcing recompile
+                onNotificationClick = onNotificationClick,
+                onProfileClick = onProfileClick,
                 scrollBehavior = scrollBehavior
             )
         }
@@ -82,7 +86,7 @@ fun DashboardScreen(
                 .fillMaxSize()
                 .padding(innerPadding) // Apply innerPadding from Scaffold
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 24.dp), // Original padding for content
+                .padding(horizontal = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {

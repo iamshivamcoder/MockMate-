@@ -1,5 +1,7 @@
 package com.shivams.mockmate.model
 
+import androidx.room.Entity
+import androidx.room.PrimaryKey
 import java.util.Date
 import java.util.UUID
 
@@ -104,4 +106,14 @@ data class AttemptWithTest(
     val correctAnswers: Int,
     val totalQuestions: Int,
     val score: Int
+)
+
+@Entity(tableName = "user_profile")
+data class UserProfile(
+    @PrimaryKey
+    val id: String = "user_profile",
+    val name: String,
+    val email: String,
+    val phoneNumber: String,
+    val avatar: String
 )

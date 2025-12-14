@@ -25,11 +25,23 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import androidx.navigation.compose.rememberNavController
+import com.shivams.mockmate.data.repositories.SettingsRepository
+import com.shivams.mockmate.data.repositories.TestRepository
 import com.shivams.mockmate.notifications.TestReminderReceiver
 import com.shivams.mockmate.ui.navigation.AppNavHost
 import com.shivams.mockmate.ui.theme.MockMateTheme
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject
+    lateinit var testRepository: TestRepository
+
+    @Inject
+    lateinit var settingsRepository: SettingsRepository
+
     // Permission launcher
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -108,13 +120,6 @@ class MainActivity : ComponentActivity() {
             android.util.Log.e("MainActivity", "Could not modify MIUI settings: ${e.message}")
         }
 
-        // Initialize application instance
-        MockMateApplication.setInstance(application as MockMateApplication)
-        
-        // Initialize repositories with stable reference
-        val testRepository = MockMateApplication.getTestRepository()
-        val settingsRepository = MockMateApplication.getSettingsRepository()
-
         // Schedule reminders
         TestReminderReceiver.scheduleTestReminder(this)
         
@@ -138,7 +143,8 @@ class MainActivity : ComponentActivity() {
                             // Normal app UI
                             AppNavHost(
                                 navController = navController,
-                                repository = testRepository
+                                repository = testRepository,
+                                settingsRepository = settingsRepository
                             )
                             
                             // Error handling via effect, not try-catch

@@ -16,24 +16,26 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
-import androidx.compose.material.icons.filled.LocalFireDepartment
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.ModelTraining
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -75,6 +77,8 @@ fun MockMateTopBar(
     onStreakClick: (() -> Unit)? = null,
     onImportClick: (() -> Unit)? = null,
     onHelpClick: (() -> Unit)? = null,
+    onNotificationClick: (() -> Unit)? = null,
+    onProfileClick: (() -> Unit)? = null,
     dropdownContent: (@Composable ColumnScope.() -> Unit)? = null,
     scrollBehavior: TopAppBarScrollBehavior? = null
 ) {
@@ -149,6 +153,15 @@ fun MockMateTopBar(
                 }
             }
 
+            if (onNotificationClick != null) {
+                IconButton(onClick = onNotificationClick) {
+                    Icon(
+                        imageVector = Icons.Default.Notifications,
+                        contentDescription = "Notifications"
+                    )
+                }
+            }
+
             if (showSettings) {
                 IconButton(onClick = onSettingsClick) {
                     Icon(
@@ -174,6 +187,15 @@ fun MockMateTopBar(
                     onDismissRequest = { showMenu = false }
                 ) {
                     dropdownContent()
+                }
+            }
+
+            if (onProfileClick != null) {
+                IconButton(onClick = onProfileClick) {
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = "Profile"
+                    )
                 }
             }
         },

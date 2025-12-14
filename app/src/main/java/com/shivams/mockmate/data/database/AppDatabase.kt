@@ -7,6 +7,7 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.shivams.mockmate.model.UserProfile
 
 @Database(
     entities = [
@@ -15,9 +16,10 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         TestAttemptEntity::class,
         UserAnswerEntity::class,
         UserStatsEntity::class,
-        TestQuestionCrossRef::class
+        TestQuestionCrossRef::class,
+        UserProfile::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 @TypeConverters(DateConverter::class)
@@ -27,6 +29,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun testDao(): TestDao
     abstract fun testAttemptDao(): TestAttemptDao
     abstract fun userStatsDao(): UserStatsDao
+    abstract fun userProfileDao(): UserProfileDao
     
     companion object {
         @Volatile

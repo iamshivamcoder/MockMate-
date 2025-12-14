@@ -13,6 +13,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavOptionsBuilder
 import androidx.navigation.NavType
@@ -20,7 +21,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.navArgument
-import com.shivams.mockmate.MockMateApplication
+import com.shivams.mockmate.data.repositories.SettingsRepository
 import com.shivams.mockmate.data.repositories.TestRepository
 import com.shivams.mockmate.model.QuestionType
 import com.shivams.mockmate.model.UserStats
@@ -32,13 +33,16 @@ import com.shivams.mockmate.ui.screens.HelpScreen
 import com.shivams.mockmate.ui.screens.MatchTheColumnScreen
 import com.shivams.mockmate.ui.screens.MatchTheColumnSelectionScreen
 import com.shivams.mockmate.ui.screens.MockTestSelectionScreen
+import com.shivams.mockmate.ui.screens.NotificationScreen
 import com.shivams.mockmate.ui.screens.PracticeModeSelectionScreen
+import com.shivams.mockmate.ui.screens.ProfileScreen
 import com.shivams.mockmate.ui.screens.SettingsScreen
 import com.shivams.mockmate.ui.screens.TestHistoryScreen
 import com.shivams.mockmate.ui.screens.TestImportScreen
 import com.shivams.mockmate.ui.screens.TestResultScreen
 import com.shivams.mockmate.ui.screens.TestTakingScreen
 import com.shivams.mockmate.ui.util.ComposeStabilityUtils
+import com.shivams.mockmate.ui.viewmodels.TestHistoryViewModel
 import kotlinx.coroutines.launch
 import java.util.Date
 
@@ -57,6 +61,8 @@ object Routes {
     const val ABOUT_DEVELOPER = "about_developer"
     const val HELP_AND_FAQ = "help_and_faq"
     const val ANALYTICS_SCREEN = "analytics_screen" // New route
+    const val NOTIFICATION_SCREEN = "notification_screen"
+    const val PROFILE_SCREEN = "profile_screen"
 
     fun testTakingRoute(testId: String) = "test_taking/$testId"
     fun testResultRoute(attemptId: String, testId: String) = "test_result/$attemptId/$testId"
@@ -98,7 +104,8 @@ private fun NavHostController.safeNavigate(
 fun AppNavHost(
     navController: NavHostController,
     startDestination: String = Routes.DASHBOARD,
-    repository: TestRepository = MockMateApplication.getTestRepository()
+    repository: TestRepository,
+    settingsRepository: SettingsRepository
 ) {
     ComposeStabilityUtils.LogCompositionErrors("AppNavHost")
     ComposeStabilityUtils.MonitorLifecycle { errorMsg ->
@@ -138,6 +145,8 @@ fun AppNavHost(
                     onImportClick = { navController.safeNavigate(Routes.TEST_IMPORT) },
                     onSettingsClick = { navController.safeNavigate(Routes.SETTINGS) },
                     onAnalyticsClick = { navController.safeNavigate(Routes.ANALYTICS_SCREEN) }, // Updated
+                    onNotificationClick = { navController.safeNavigate(Routes.NOTIFICATION_SCREEN) },
+                    onProfileClick = { navController.safeNavigate(Routes.PROFILE_SCREEN) },
                     repository = stableRepository // Explicitly pass repository
                 )
             }
@@ -200,7 +209,8 @@ fun AppNavHost(
                     },
                     onSettingsClick = { navController.safeNavigate(Routes.SETTINGS) },
                     onImportClick = { navController.safeNavigate(Routes.TEST_IMPORT) },
-                    repository = stableRepository
+                    repository = stableRepository,
+                    settingsRepository = settingsRepository
                 )
             }
 
@@ -303,6 +313,7 @@ fun AppNavHost(
             }
 
             composable(Routes.TEST_HISTORY) {
+                val viewModel: TestHistoryViewModel = hiltViewModel()
                 TestHistoryScreen(
                     onNavigateBack = { navController.navigateUp() },
                     onViewTestResult = { attemptId, testId ->
@@ -310,7 +321,8 @@ fun AppNavHost(
                         Routes.logRoute(route)
                         navController.safeNavigate(route)
                     },
-                    repository = stableRepository
+                    repository = stableRepository,
+                    viewModel = viewModel
                 )
             }
 
@@ -335,6 +347,14 @@ fun AppNavHost(
 
             composable(Routes.HELP_AND_FAQ) {
                 HelpScreen(onNavigateBack = { navController.navigateUp() })
+            }
+
+            composable(Routes.NOTIFICATION_SCREEN) {
+                NotificationScreen(onNavigateBack = { navController.navigateUp() })
+            }
+
+            composable(Routes.PROFILE_SCREEN) {
+                ProfileScreen(onNavigateBack = { navController.navigateUp() })
             }
         }
     }
