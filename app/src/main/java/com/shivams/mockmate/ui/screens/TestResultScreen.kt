@@ -99,6 +99,8 @@ fun TestResultScreen(
     testId: String,
     onNavigateBack: () -> Unit,
     onDashboardClick: () -> Unit,
+    onAnalyticsClick: () -> Unit,
+    onTestHistoryClick: () -> Unit,
     repository: TestRepository
 ) {
     val viewModel: TestResultViewModel = viewModel(
@@ -156,7 +158,9 @@ fun TestResultScreen(
                     ResultContent(
                         test = uiState.mockTest!!,
                         attempt = uiState.testAttempt!!,
-                        onDashboardClick = onDashboardClick
+                        onDashboardClick = onDashboardClick,
+                        onAnalyticsClick = onAnalyticsClick,
+                        onTestHistoryClick = onTestHistoryClick
                     )
                 }
             }
@@ -216,7 +220,9 @@ fun TestResultScreen(
 private fun ResultContent(
     test: MockTest,
     attempt: TestAttempt,
-    onDashboardClick: () -> Unit
+    onDashboardClick: () -> Unit,
+    onAnalyticsClick: () -> Unit,
+    onTestHistoryClick: () -> Unit
 ) {
     // Calculate stats
     val totalQuestions = test.questions.size
@@ -240,13 +246,12 @@ private fun ResultContent(
             }
 
     val totalMarks = test.questions.size.toFloat()
-    val scorePercentage = totalScore / totalMarks * 100
+    val scorePercentage = if (totalMarks > 0) totalScore / totalMarks * 100 else 0f
 
     // Group questions by subject
     val subjectPerformance = test.questions
         .groupBy { it.subject }
-        .mapValues { (_, questions) -> // Removed unused 'subject' parameter
-            val subjectQuestions = questions.size
+        .mapValues { (_, questions) ->
             val subjectAttempted = questions.count { question ->
                 attempt.userAnswers[question.id]?.selectedOptionIndex != null
             }
@@ -254,7 +259,7 @@ private fun ResultContent(
                 val answer = attempt.userAnswers[question.id]
                 answer?.selectedOptionIndex == question.correctOptionIndex
             }
-            Triple(subjectQuestions, subjectAttempted, subjectCorrect)
+            Pair(subjectAttempted, subjectCorrect)
         }
 
     // Calculate average time per question
@@ -323,14 +328,13 @@ private fun ResultContent(
         SectionHeader(text = "Subject-wise Performance")
 
         subjectPerformance.forEach { (subject, performance) ->
-            val (_, attempted, correct) = performance // Renamed 'total' to 'totalInSubject'
+            val (attempted, correct) = performance
             val subjectAccuracy = if (attempted > 0) correct.toFloat() / attempted else 0f
 
             SubjectPerformanceCard(
                 subject = subject,
                 accuracy = subjectAccuracy,
                 attempted = attempted,
-                // totalInSubject = totalInSubject, // Pass renamed 'totalInSubject'
                 correct = correct
             )
 
@@ -346,11 +350,11 @@ private fun ResultContent(
             // Find subjects with lowest accuracy
             val weakestSubjects = subjectPerformance.entries
                 .filter { (_, performance) ->
-                    val (_, attempted, correct) = performance
+                    val (attempted, correct) = performance
                     attempted > 0 && correct.toFloat() / attempted < 0.7f
                 }
                 .sortedBy { (_, performance) ->
-                    val (_, attempted, correct) = performance
+                    val (attempted, correct) = performance
                     if (attempted > 0) correct.toFloat() / attempted else 0f
                 }
                 .take(2)
@@ -389,7 +393,7 @@ private fun ResultContent(
         test.questions.forEachIndexed { index, question ->
             val userAnswer = attempt.userAnswers[question.id]
             val isAnswered = userAnswer?.selectedOptionIndex != null
-            val isCorrect = isAnswered && userAnswer?.selectedOptionIndex == question.correctOptionIndex
+            val isCorrect = isAnswered && userAnswer.selectedOptionIndex == question.correctOptionIndex
 
             Card(
                 modifier = Modifier
@@ -416,11 +420,13 @@ private fun ResultContent(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     if (isAnswered) {
-                        Text(
-                            text = "Your Answer: ${question.options?.get(userAnswer?.selectedOptionIndex ?: 0)}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = if (isCorrect) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
-                        )
+                        userAnswer.let {
+                            Text(
+                                text = "Your Answer: ${question.options?.get(it.selectedOptionIndex ?: 0)}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = if (isCorrect) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                            )
+                        }
 
                         Text(
                             text = "Correct Answer: ${question.options?.get(question.correctOptionIndex ?: 0)}",
@@ -470,6 +476,25 @@ private fun ResultContent(
         }
 
         Spacer(modifier = Modifier.height(16.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Button(
+                onClick = onAnalyticsClick,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text("Analytics")
+            }
+
+            Button(
+                onClick = onTestHistoryClick,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text("Test History")
+            }
+        }
     }
 }
 
@@ -587,7 +612,6 @@ fun SubjectPerformanceCard(
     subject: String,
     accuracy: Float,
     attempted: Int,
-    // totalInSubject: Int, // Renamed 'total' to 'totalInSubject' - NOW REMOVED
     correct: Int
 ) {
     Card(

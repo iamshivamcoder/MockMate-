@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.FileUpload
@@ -73,6 +74,7 @@ fun MockMateTopBar(
     onSettingsClick: () -> Unit = {},
     onStreakClick: (() -> Unit)? = null,
     onImportClick: (() -> Unit)? = null,
+    onHelpClick: (() -> Unit)? = null,
     dropdownContent: (@Composable ColumnScope.() -> Unit)? = null,
     scrollBehavior: TopAppBarScrollBehavior? = null
 ) {
@@ -136,7 +138,15 @@ fun MockMateTopBar(
                         contentDescription = "Import Test"
                     )
                 }
-                // Consider adding a Spacer here if needed: Spacer(modifier = Modifier.width(4.dp))
+            }
+
+            if (onHelpClick != null) {
+                IconButton(onClick = onHelpClick) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.HelpOutline,
+                        contentDescription = "Help"
+                    )
+                }
             }
 
             if (showSettings) {
@@ -146,11 +156,9 @@ fun MockMateTopBar(
                         contentDescription = "Settings"
                     )
                 }
-                // Consider adding a Spacer here if needed: Spacer(modifier = Modifier.width(4.dp))
             }
 
             if (dropdownContent != null) {
-                // Add a Spacer before the dropdown if other icons are present and it's not the first action
                 val anyPreviousIcon = (currentStreak != null && currentStreak > 0) || onImportClick != null || showSettings
                 if (anyPreviousIcon) {
                     Spacer(modifier = Modifier.width(4.dp))

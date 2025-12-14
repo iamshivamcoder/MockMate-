@@ -174,13 +174,16 @@ fun generateSampleQuestions(): List<Question> {
 
 fun generateSampleTests(): List<MockTest> {
     val questions = generateSampleQuestions()
+    val polityQuestions = questions.filter { it.subject == "Polity" }
+    val geographyQuestions = questions.filter { it.subject == "Geography" }
+
 
     return listOf(
         MockTest(
             id = UUID.randomUUID().toString(),
             name = "Polity Master Test",
             difficulty = TestDifficulty.HARD,
-            questions = questions.filter { it.subject == "Polity" },
+            questions = polityQuestions,
             timeLimit = 30,
             negativeMarking = true,
             negativeMarkingValue = 0.25f
@@ -189,7 +192,7 @@ fun generateSampleTests(): List<MockTest> {
             id = UUID.randomUUID().toString(),
             name = "Geography Challenge",
             difficulty = TestDifficulty.MEDIUM,
-            questions = questions.filter { it.subject == "Geography" },
+            questions = geographyQuestions,
             timeLimit = 25,
             negativeMarking = false
         ),
@@ -201,6 +204,14 @@ fun generateSampleTests(): List<MockTest> {
             timeLimit = 45,
             negativeMarking = true,
             negativeMarkingValue = 0.33f
+        ),
+        MockTest(
+        id = UUID.randomUUID().toString(),
+        name = "Basic Knowledge Test",
+        difficulty = TestDifficulty.EASY,
+        questions = questions.filter { it.difficulty == QuestionDifficulty.EASY },
+        timeLimit = 15,
+        negativeMarking = false
         )
     )
 }

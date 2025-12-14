@@ -23,7 +23,6 @@ import androidx.navigation.navArgument
 import com.shivams.mockmate.MockMateApplication
 import com.shivams.mockmate.data.repositories.TestRepository
 import com.shivams.mockmate.model.QuestionType
-import com.shivams.mockmate.model.TestAttempt
 import com.shivams.mockmate.model.UserStats
 import com.shivams.mockmate.ui.components.AppBottomNavigationBar
 import com.shivams.mockmate.ui.screens.AboutDeveloperScreen
@@ -73,7 +72,6 @@ sealed class Screen(val route: String) {
     object PracticeModeSelection : Screen(Routes.PRACTICE_MODE_SELECTION)
     object TestHistory : Screen(Routes.TEST_HISTORY)
     object Settings : Screen(Routes.SETTINGS)
-    object Analytics : Screen(Routes.ANALYTICS_SCREEN) // New screen object
     // Add other screens here if needed for typed navigation
 }
 
@@ -290,6 +288,8 @@ fun AppNavHost(
                     testId = testId,
                     onNavigateBack = { navController.navigateUp() },
                     onDashboardClick = { navController.safeNavigate(Routes.DASHBOARD) { popUpTo(Routes.DASHBOARD) { inclusive = true } } },
+                    onAnalyticsClick = { navController.safeNavigate(Routes.ANALYTICS_SCREEN) },
+                    onTestHistoryClick = { navController.safeNavigate(Routes.TEST_HISTORY) },
                     repository = stableRepository
                 )
             }
