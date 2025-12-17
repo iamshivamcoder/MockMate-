@@ -107,43 +107,7 @@ fun StreakInfoDialog(
                 Text("Got it!", style = MaterialTheme.typography.labelLarge)
             }
         }
-    )
-}
-
-@Composable
-fun StreakProgressDialog(
-    onDismiss: () -> Unit,
-    currentStreak: Int,
-    longestStreak: Int
-) {
-    AlertDialog(
-        shape = RoundedCornerShape(16.dp),
-        onDismissRequest = onDismiss,
-        icon = { Icon(Icons.Filled.Info, contentDescription = "Streak Progress", tint = MaterialTheme.colorScheme.primary) },
-        title = { Text("Your Streak Progress", style = MaterialTheme.typography.headlineSmall) },
-        text = {
-            Column {
-                Text("Current Streak: $currentStreak days")
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("Longest Streak: $longestStreak days")
-                Spacer(modifier = Modifier.height(16.dp))
-                Text("Keep up the great work!", fontWeight = FontWeight.Bold)
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Awesome!", style = MaterialTheme.typography.labelLarge)
-            }
-        }
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun StreakProgressDialogPreview() {
-    MockMateTheme {
-        StreakProgressDialog(onDismiss = {}, currentStreak = 12, longestStreak = 50)
-    }
+)
 }
 
 /**

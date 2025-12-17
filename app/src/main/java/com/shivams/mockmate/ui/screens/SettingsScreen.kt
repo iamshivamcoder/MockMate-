@@ -28,6 +28,8 @@ fun SettingsScreen(
     onNavigateBack: () -> Unit,
     onNavigateToAboutDeveloper: () -> Unit,
     onNavigateToHelp: () -> Unit,
+    onNavigateToAnalytics: () -> Unit = {},
+    onNavigateToSavedQuestions: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val settingsRepository = remember { SettingsRepository(context) } // Instantiate SettingsRepository
@@ -179,6 +181,39 @@ fun SettingsScreen(
                 )
             }
 
+
+            item {
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            }
+
+            // Your Progress Section
+            item {
+                Text(
+                    text = "Your Progress",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            }
+
+            item {
+                SettingsItem(
+                    icon = Icons.Filled.TrendingUp,
+                    title = "Progress & Achievements",
+                    subtitle = "View your performance analytics and stats",
+                    onClick = onNavigateToAnalytics
+                )
+            }
+
+            item {
+                SettingsItem(
+                    icon = Icons.Filled.Bookmark,
+                    title = "Saved Questions",
+                    subtitle = "Review flagged and bookmarked questions",
+                    onClick = onNavigateToSavedQuestions
+                )
+            }
 
             item {
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))

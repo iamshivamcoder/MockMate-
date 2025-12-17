@@ -33,6 +33,7 @@ import com.shivams.mockmate.ui.components.AppBottomNavigationBar
 import com.shivams.mockmate.ui.screens.AboutDeveloperScreen
 import com.shivams.mockmate.ui.screens.AnalyticsScreen
 import com.shivams.mockmate.ui.screens.DashboardScreen
+import com.shivams.mockmate.ui.screens.FlaggedBookmarkedScreen
 import com.shivams.mockmate.ui.screens.HelpScreen
 import com.shivams.mockmate.ui.screens.MatchTheColumnScreen
 import com.shivams.mockmate.ui.screens.MatchTheColumnSelectionScreen
@@ -72,6 +73,7 @@ object Routes {
     const val PROFILE_SCREEN = "profile_screen"
     const val NOTIFICATION_DETAIL_SCREEN = "notification_detail_screen/{notificationId}"
     const val STREAK_SCREEN = "streak_screen"
+    const val FLAGGED_BOOKMARKED_SCREEN = "flagged_bookmarked_screen"
 
     fun testTakingRoute(testId: String) = "test_taking/$testId"
     fun testResultRoute(attemptId: String, testId: String) = "test_result/$attemptId/$testId"
@@ -158,6 +160,7 @@ fun AppNavHost(
                     onNotificationClick = { navController.safeNavigate(Routes.NOTIFICATION_SCREEN) },
                     onProfileClick = { navController.safeNavigate(Routes.PROFILE_SCREEN) },
                     onStreakClick = { navController.safeNavigate(Routes.STREAK_SCREEN) },
+                    onSavedQuestionsClick = { navController.safeNavigate(Routes.FLAGGED_BOOKMARKED_SCREEN) },
                     repository = stableRepository
                 )
             }
@@ -319,7 +322,9 @@ fun AppNavHost(
                 SettingsScreen(
                     onNavigateBack = { navController.navigateUp() },
                     onNavigateToAboutDeveloper = { navController.safeNavigate(Routes.ABOUT_DEVELOPER) },
-                    onNavigateToHelp = { navController.safeNavigate(Routes.HELP_AND_FAQ) }
+                    onNavigateToHelp = { navController.safeNavigate(Routes.HELP_AND_FAQ) },
+                    onNavigateToAnalytics = { navController.safeNavigate(Routes.ANALYTICS_SCREEN) },
+                    onNavigateToSavedQuestions = { navController.safeNavigate(Routes.FLAGGED_BOOKMARKED_SCREEN) }
                 )
             }
 
@@ -375,6 +380,13 @@ fun AppNavHost(
 
             composable(Routes.STREAK_SCREEN) {
                 StreakScreen(
+                    onNavigateBack = { navController.navigateUp() },
+                    repository = stableRepository
+                )
+            }
+
+            composable(Routes.FLAGGED_BOOKMARKED_SCREEN) {
+                FlaggedBookmarkedScreen(
                     onNavigateBack = { navController.navigateUp() },
                     repository = stableRepository
                 )

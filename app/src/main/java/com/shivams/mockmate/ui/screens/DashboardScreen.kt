@@ -12,7 +12,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Analytics // Added for Analytics button
+import androidx.compose.material.icons.filled.Analytics
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.DataExploration
 // import androidx.compose.material.icons.filled.Pets // Import for placeholder icon - No longer needed here
 import androidx.compose.material.icons.filled.PlayArrow
@@ -55,6 +56,7 @@ fun DashboardScreen(
     onNotificationClick: () -> Unit,
     onProfileClick: () -> Unit,
     onStreakClick: () -> Unit,
+    onSavedQuestionsClick: () -> Unit,
     repository: TestRepository
 ) {
     val userStats by repository.userStats.collectAsState(initial = UserStats(questionsAnswered = 0, correctAnswers = 0, currentStreak = 0, longestStreak = 0))
@@ -119,7 +121,14 @@ fun DashboardScreen(
                 text = "Import Data",
                 icon = Icons.Default.Upload,
                 onClick = onImportClick,
-                primaryColor = MaterialTheme.colorScheme.tertiary // Consider a different color if needed
+                primaryColor = MaterialTheme.colorScheme.tertiary
+            )
+
+            ActionButton(
+                text = "Saved Questions",
+                icon = Icons.Default.Bookmark,
+                onClick = onSavedQuestionsClick,
+                primaryColor = MaterialTheme.colorScheme.secondary
             )
         }
     }
