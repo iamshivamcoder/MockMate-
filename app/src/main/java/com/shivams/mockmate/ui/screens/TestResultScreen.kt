@@ -36,6 +36,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.shivams.mockmate.data.repositories.TestRepository
+import com.shivams.mockmate.domain.usecases.TestAttemptOperationsUseCase
 import com.shivams.mockmate.model.MockTest
 import com.shivams.mockmate.model.TestAttempt
 import com.shivams.mockmate.ui.components.MetricCard
@@ -49,12 +50,13 @@ import com.shivams.mockmate.ui.viewmodels.TestResultViewModel
 @Suppress("UNCHECKED_CAST")
 class TestResultViewModelFactory(
     private val repository: TestRepository,
+    private val testAttemptOperations: TestAttemptOperationsUseCase,
     private val testId: String,
     private val attemptId: String
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(TestResultViewModel::class.java)) {
-            return TestResultViewModel(repository, testId, attemptId) as T
+            return TestResultViewModel(repository, testAttemptOperations, testId, attemptId) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
@@ -75,8 +77,9 @@ fun TestResultScreen(
     onTestHistoryClick: () -> Unit,
     repository: TestRepository
 ) {
+    val testAttemptOperations = TestAttemptOperationsUseCase(repository)
     val viewModel: TestResultViewModel = viewModel(
-        factory = TestResultViewModelFactory(repository, testId, attemptId)
+        factory = TestResultViewModelFactory(repository, testAttemptOperations, testId, attemptId)
     )
     val uiState by viewModel.uiState.collectAsState()
 

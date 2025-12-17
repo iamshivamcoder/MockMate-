@@ -117,6 +117,13 @@ fun AnalyticsScreen(
         ) {
             CircularProgressIndicator()
         }
+    } else if (userStats.questionsAnswered == 0 && testAttempts.isEmpty()) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("Give some tests to see your stats here.", style = MaterialTheme.typography.bodyLarge)
+        }
     } else {
         Log.d("AnalyticsScreen", "UserStats received: questionsAnswered=${userStats.questionsAnswered}, correctAnswers=${userStats.correctAnswers}, currentStreak=${userStats.currentStreak}")
         Log.d("AnalyticsScreen", "SubjectPerformance size: ${userStats.subjectPerformance.size}")

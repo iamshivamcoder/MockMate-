@@ -42,9 +42,8 @@ import androidx.compose.ui.unit.dp
 import com.shivams.mockmate.model.AttemptWithTest
 import com.shivams.mockmate.model.UserStats
 import com.shivams.mockmate.ui.screens.TestHistorySortCriteria
+import com.shivams.mockmate.util.DateFormatUtils
 import com.shivams.mockmate.util.sortTestHistoryAttempts
-import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.Locale
 
 @Composable
@@ -216,7 +215,7 @@ private fun TestHistoryItem(
                 )
 
                 Text(
-                    text = formatDate(attempt.date),
+                    text = DateFormatUtils.formatTestHistoryDate(attempt.date),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                 )
@@ -253,10 +252,6 @@ private fun TestHistoryItem(
     }
 }
 
-private fun formatDate(date: Date): String {
-    val formatter = SimpleDateFormat("MMM d, yyyy 'at' h:mm a", Locale.getDefault())
-    return formatter.format(date)
-}
 
 private fun getSortCriteriaDisplayName(criteria: TestHistorySortCriteria): String {
     return when (criteria) {

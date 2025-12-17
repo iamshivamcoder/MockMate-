@@ -43,6 +43,7 @@ import com.shivams.mockmate.ui.screens.NotificationScreen
 import com.shivams.mockmate.ui.screens.PracticeModeSelectionScreen
 import com.shivams.mockmate.ui.screens.ProfileScreen
 import com.shivams.mockmate.ui.screens.SettingsScreen
+import com.shivams.mockmate.ui.screens.StreakScreen
 import com.shivams.mockmate.ui.screens.TestHistoryScreen
 import com.shivams.mockmate.ui.screens.TestImportScreen
 import com.shivams.mockmate.ui.screens.TestResultScreen
@@ -70,6 +71,7 @@ object Routes {
     const val NOTIFICATION_SCREEN = "notification_screen"
     const val PROFILE_SCREEN = "profile_screen"
     const val NOTIFICATION_DETAIL_SCREEN = "notification_detail_screen/{notificationId}"
+    const val STREAK_SCREEN = "streak_screen"
 
     fun testTakingRoute(testId: String) = "test_taking/$testId"
     fun testResultRoute(attemptId: String, testId: String) = "test_result/$attemptId/$testId"
@@ -152,10 +154,11 @@ fun AppNavHost(
                     onHistoryClick = { navController.safeNavigate(Routes.TEST_HISTORY) },
                     onImportClick = { navController.safeNavigate(Routes.TEST_IMPORT) },
                     onSettingsClick = { navController.safeNavigate(Routes.SETTINGS) },
-                    onAnalyticsClick = { navController.safeNavigate(Routes.ANALYTICS_SCREEN) }, // Updated
+                    onAnalyticsClick = { navController.safeNavigate(Routes.ANALYTICS_SCREEN) },
                     onNotificationClick = { navController.safeNavigate(Routes.NOTIFICATION_SCREEN) },
                     onProfileClick = { navController.safeNavigate(Routes.PROFILE_SCREEN) },
-                    repository = stableRepository // Explicitly pass repository
+                    onStreakClick = { navController.safeNavigate(Routes.STREAK_SCREEN) },
+                    repository = stableRepository
                 )
             }
 
@@ -368,6 +371,13 @@ fun AppNavHost(
 
             composable(Routes.PROFILE_SCREEN) {
                 ProfileScreen(onNavigateBack = { navController.navigateUp() })
+            }
+
+            composable(Routes.STREAK_SCREEN) {
+                StreakScreen(
+                    onNavigateBack = { navController.navigateUp() },
+                    repository = stableRepository
+                )
             }
 
             composable(

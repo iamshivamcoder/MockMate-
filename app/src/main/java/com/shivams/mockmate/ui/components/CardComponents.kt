@@ -40,7 +40,7 @@ import com.shivams.mockmate.model.MockTest
 import com.shivams.mockmate.model.PracticeMode
 import com.shivams.mockmate.model.UserStats
 import com.shivams.mockmate.ui.theme.extendedColorScheme
-import java.text.SimpleDateFormat
+import com.shivams.mockmate.util.DateFormatUtils
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
@@ -415,9 +415,7 @@ fun WelcomeCard(userName: String) {
                 Spacer(modifier = Modifier.padding(4.dp))
 
                 Text(
-                    text = remember { SimpleDateFormat("EEE, MMM d, yyyy", Locale.getDefault()).format(
-                        Date()
-                    ) },
+                    text = remember { DateFormatUtils.formatWelcomeDate(Date()) },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )

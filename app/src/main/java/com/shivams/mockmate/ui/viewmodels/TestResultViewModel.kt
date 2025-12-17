@@ -3,6 +3,7 @@ package com.shivams.mockmate.ui.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.shivams.mockmate.data.repositories.TestRepository
+import com.shivams.mockmate.domain.usecases.TestAttemptOperationsUseCase
 import com.shivams.mockmate.model.MockTest
 import com.shivams.mockmate.model.TestAttempt
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,6 +23,7 @@ data class TestResultUiState(
 
 class TestResultViewModel(
     private val testRepository: TestRepository,
+    private val testAttemptOperations: TestAttemptOperationsUseCase,
     private val testId: String,
     private val attemptId: String
 ) : ViewModel() {
@@ -60,38 +62,42 @@ class TestResultViewModel(
      */
     fun deleteTestAttempt() {
         viewModelScope.launch {
-            try {
-                testRepository.deleteTestAttempt(attemptId)
-                _uiState.update { it.copy(isDeleted = true) }
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(error = e.message ?: "Failed to delete attempt")
+            val result = testAttemptOperations.deleteTestAttempt(attemptId)
+            result.fold(
+                onSuccess = {
+                    _uiState.update { it.copy(isDeleted = true) }
+                },
+                onFailure = { exception ->
+                    _uiState.update {
+                        it.copy(error = exception.message ?: "Failed to delete attempt")
+                    }
                 }
-            }
+            )
         }
     }
 
     fun renameTestAttempt(customName: String) {
         viewModelScope.launch {
-            _uiState.value.testAttempt?.let { currentAttempt -> // Get the current attempt
-                try {
-                    testRepository.updateTestAttemptCustomName(attemptId, customName)
-                    // Update the testAttempt object in the uiState with the new customName
-                    val updatedAttempt = currentAttempt.copy(customName = customName)
-                    _uiState.update {
-                        it.copy(
-                            testAttempt = updatedAttempt,
-                            updatedCustomName = customName, // You can keep this if used elsewhere
-                            error = null // Clear any previous error
-                        )
+            _uiState.value.testAttempt?.let { currentAttempt ->
+                val result = testAttemptOperations.renameTestAttempt(attemptId, customName)
+                result.fold(
+                    onSuccess = {
+                        val updatedAttempt = currentAttempt.copy(customName = customName)
+                        _uiState.update {
+                            it.copy(
+                                testAttempt = updatedAttempt,
+                                updatedCustomName = customName,
+                                error = null
+                            )
+                        }
+                    },
+                    onFailure = { exception ->
+                        _uiState.update {
+                            it.copy(error = exception.message ?: "Failed to rename attempt")
+                        }
                     }
-                } catch (e: Exception) {
-                    _uiState.update {
-                        it.copy(error = e.message ?: "Failed to rename attempt")
-                    }
-                }
+                )
             } ?: run {
-                 // Handle case where currentAttempt is null, though unlikely if rename is attempted
                 _uiState.update {
                     it.copy(error = "Cannot rename, attempt data is missing.")
                 }

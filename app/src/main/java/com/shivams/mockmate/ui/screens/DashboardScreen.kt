@@ -31,21 +31,17 @@ import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
-// import androidx.compose.ui.text.style.TextAlign // No longer needed here
 import androidx.compose.ui.unit.dp
 import com.shivams.mockmate.data.repositories.TestRepository
 import com.shivams.mockmate.model.UserStats
 import com.shivams.mockmate.ui.components.ActionButton
 import com.shivams.mockmate.ui.components.MockMateTopBar
 import com.shivams.mockmate.ui.components.PrelimsCountdownCard
-import com.shivams.mockmate.ui.components.StreakProgressDialog
 import com.shivams.mockmate.ui.components.WelcomeCard
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -55,13 +51,13 @@ fun DashboardScreen(
     onHistoryClick: () -> Unit,
     onImportClick: () -> Unit,
     onSettingsClick: () -> Unit,
-    onAnalyticsClick: () -> Unit, // Added for Analytics navigation
+    onAnalyticsClick: () -> Unit,
     onNotificationClick: () -> Unit,
     onProfileClick: () -> Unit,
-    repository: TestRepository // Removed default value
+    onStreakClick: () -> Unit,
+    repository: TestRepository
 ) {
     val userStats by repository.userStats.collectAsState(initial = UserStats(questionsAnswered = 0, correctAnswers = 0, currentStreak = 0, longestStreak = 0))
-    var showStreakInfoDialog by remember { mutableStateOf(false) }
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
 
     Scaffold(
@@ -73,7 +69,7 @@ fun DashboardScreen(
                 showSettings = false,
                 currentStreak = userStats.currentStreak,
                 onSettingsClick = onSettingsClick,
-                onStreakClick = { showStreakInfoDialog = true },
+                onStreakClick = onStreakClick,
                 onImportClick = onImportClick, // Pass the onImportClick lambda - forcing recompile
                 onNotificationClick = onNotificationClick,
                 onProfileClick = onProfileClick,
@@ -128,13 +124,6 @@ fun DashboardScreen(
         }
     }
 
-    if (showStreakInfoDialog) {
-        StreakProgressDialog(
-            onDismiss = { showStreakInfoDialog = false },
-            currentStreak = userStats.currentStreak,
-            longestStreak = userStats.longestStreak
-        )
-    }
 }
 
 @Composable

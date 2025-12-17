@@ -13,6 +13,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -140,4 +144,81 @@ fun StreakProgressDialogPreview() {
     MockMateTheme {
         StreakProgressDialog(onDismiss = {}, currentStreak = 12, longestStreak = 50)
     }
+}
+
+/**
+ * Reusable rename dialog with text field input
+ */
+@Composable
+fun RenameDialog(
+    currentName: String,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit,
+    title: String = "Rename",
+    label: String = "New name"
+) {
+    var name by remember { mutableStateOf(currentName) }
+    
+    AlertDialog(
+        shape = RoundedCornerShape(16.dp),
+        onDismissRequest = onDismiss,
+        title = { Text(title, style = MaterialTheme.typography.headlineSmall) },
+        text = {
+            androidx.compose.material3.TextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text(label) },
+                singleLine = true
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(name) },
+                enabled = name.isNotBlank()
+            ) {
+                Text("Save", style = MaterialTheme.typography.labelLarge)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", style = MaterialTheme.typography.labelLarge)
+            }
+        }
+    )
+}
+
+/**
+ * Reusable delete confirmation dialog
+ */
+@Composable
+fun DeleteConfirmationDialog(
+    itemName: String,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+    title: String = "Delete Confirmation",
+    message: String = "Are you sure you want to permanently delete \"$itemName\"?"
+) {
+    AlertDialog(
+        shape = RoundedCornerShape(16.dp),
+        onDismissRequest = onDismiss,
+        icon = { 
+            Icon(
+                Icons.Filled.Warning, 
+                contentDescription = "Warning", 
+                tint = MaterialTheme.colorScheme.error
+            ) 
+        },
+        title = { Text(title, style = MaterialTheme.typography.headlineSmall) },
+        text = { Text(message, style = MaterialTheme.typography.bodyMedium) },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text("Delete", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.error)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", style = MaterialTheme.typography.labelLarge)
+            }
+        }
+    )
 }

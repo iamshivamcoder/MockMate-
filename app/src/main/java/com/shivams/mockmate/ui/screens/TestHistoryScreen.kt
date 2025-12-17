@@ -3,13 +3,9 @@ package com.shivams.mockmate.ui.screens
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
@@ -26,7 +22,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.shivams.mockmate.data.repositories.TestRepository
 import com.shivams.mockmate.model.AttemptWithTest
 import com.shivams.mockmate.model.UserStats
+import com.shivams.mockmate.ui.components.DeleteConfirmationDialog
 import com.shivams.mockmate.ui.components.MockMateTopBar
+import com.shivams.mockmate.ui.components.RenameDialog
 import com.shivams.mockmate.ui.components.TestHistoryContent
 import com.shivams.mockmate.ui.viewmodels.TestHistoryViewModel
 
@@ -121,49 +119,27 @@ fun TestHistoryScreen(
     }
 
     showRenameDialog?.let { attempt ->
-        AlertDialog(
-            onDismissRequest = { showRenameDialog = null },
-            title = { Text("Rename Test") },
-            text = {
-                TextField(
-                    value = newName,
-                    onValueChange = { newName = it },
-                    label = { Text("New test name") })
+        RenameDialog(
+            currentName = newName,
+            onDismiss = { showRenameDialog = null },
+            onConfirm = { name ->
+                viewModel.renameTestAttempt(attempt.attemptId, name)
+                showRenameDialog = null
             },
-            confirmButton = {
-                Button(onClick = {
-                    viewModel.renameTestAttempt(attempt.attemptId, newName)
-                    showRenameDialog = null
-                }) {
-                    Text("Save")
-                }
-            },
-            dismissButton = {
-                Button(onClick = { showRenameDialog = null }) {
-                    Text("Cancel")
-                }
-            }
+            title = "Rename Test",
+            label = "New test name"
         )
     }
 
     showDeleteDialog?.let { attempt ->
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = null },
-            title = { Text("Delete Attempt") },
-            text = { Text("Are you sure you want to permanently delete this test attempt?") },
-            confirmButton = {
-                Button(onClick = {
-                    viewModel.deleteTestAttempt(attempt.attemptId)
-                    showDeleteDialog = null
-                }) {
-                    Text("Confirm")
-                }
+        DeleteConfirmationDialog(
+            itemName = attempt.testName,
+            onDismiss = { showDeleteDialog = null },
+            onConfirm = {
+                viewModel.deleteTestAttempt(attempt.attemptId)
+                showDeleteDialog = null
             },
-            dismissButton = {
-                Button(onClick = { showDeleteDialog = null }) {
-                    Text("Cancel")
-                }
-            }
+            title = "Delete Test Attempt"
         )
     }
 }

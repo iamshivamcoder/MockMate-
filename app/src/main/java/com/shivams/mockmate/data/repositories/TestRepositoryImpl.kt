@@ -236,6 +236,7 @@ class TestRepositoryImpl(
     override suspend fun initializeIfEmpty() {
         withContext(Dispatchers.IO) {
             try {
+                Log.d("TestRepositoryImpl", "initializeIfEmpty called")
                 val testCount = testDao.getTestCount()
                 val questionCount = questionDao.getQuestionCount()
 

@@ -8,6 +8,7 @@ import com.shivams.mockmate.data.repositories.SettingsRepository
 import com.shivams.mockmate.data.repositories.TestRepository
 import com.shivams.mockmate.data.repositories.TestRepositoryImpl
 import com.shivams.mockmate.data.repositories.UserProfileRepository
+import com.shivams.mockmate.domain.usecases.TestAttemptOperationsUseCase
 import com.shivams.mockmate.service.AIQuestionGenerator
 import dagger.Module
 import dagger.Provides
@@ -66,5 +67,11 @@ object AppModule {
     @Singleton
     fun provideAppDatabase(@ApplicationContext context: Context): com.shivams.mockmate.data.database.AppDatabase {
         return com.shivams.mockmate.data.database.AppDatabase.getInstance(context)
+    }
+
+    @Provides
+    @Singleton
+    fun provideTestAttemptOperationsUseCase(repository: TestRepository): TestAttemptOperationsUseCase {
+        return TestAttemptOperationsUseCase(repository)
     }
 }
