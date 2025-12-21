@@ -2,9 +2,12 @@ package com.shivams.mockmate.ui.screens
 
 import android.content.Intent
 import android.provider.Settings
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.filled.*
@@ -12,15 +15,23 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.shivams.mockmate.data.repositories.SettingsRepository
 import com.shivams.mockmate.data.prefs.NotificationPreferences
 import com.shivams.mockmate.notifications.TestReminderReceiver
 import com.shivams.mockmate.ui.components.MockMateTopBar
+import com.shivams.mockmate.ui.viewmodels.ProfileViewModel
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+
+// Define the teal color for profile avatar
+private val ProfileTeal = Color(0xFF00695C)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,11 +40,14 @@ fun SettingsScreen(
     onNavigateToAboutDeveloper: () -> Unit,
     onNavigateToHelp: () -> Unit,
     onNavigateToAnalytics: () -> Unit = {},
-    onNavigateToSavedQuestions: () -> Unit = {}
+    onNavigateToSavedQuestions: () -> Unit = {},
+    onNavigateToProfile: () -> Unit = {},
+    profileViewModel: ProfileViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
-    val settingsRepository = remember { SettingsRepository(context) } // Instantiate SettingsRepository
-    val appSettings by settingsRepository.settings.collectAsState() // Collect settings
+    val settingsRepository = remember { SettingsRepository(context) }
+    val appSettings by settingsRepository.settings.collectAsState()
+    val userProfile by profileViewModel.userProfile.collectAsState()
 
     var notificationsEnabled by remember {
         mutableStateOf(NotificationPreferences.areNotificationsEnabled(context))
@@ -89,6 +103,19 @@ fun SettingsScreen(
                 .padding(paddingValues)
                 .padding(vertical = 8.dp)
         ) {
+            // Profile Header Section
+            item {
+                ProfileHeaderSection(
+                    name = userProfile?.name ?: "Your Name",
+                    email = userProfile?.email ?: "edit@example.com",
+                    onEditProfileClick = onNavigateToProfile
+                )
+            }
+
+            item {
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            }
+
             item {
                 Text(
                     text = "General",
@@ -164,7 +191,7 @@ fun SettingsScreen(
 
             item {
                 SettingsItem(
-                    icon = Icons.Filled.ToggleOn, // Or Icons.Filled.Animation / Icons.Filled.Visibility
+                    icon = Icons.Filled.ToggleOn,
                     title = "Pulsating Badges",
                     subtitle = "Enable or disable badge animations",
                     onClick = {
@@ -180,7 +207,6 @@ fun SettingsScreen(
                     }
                 )
             }
-
 
             item {
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
@@ -246,6 +272,81 @@ fun SettingsScreen(
                     onClick = onNavigateToAboutDeveloper
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun ProfileHeaderSection(
+    name: String,
+    email: String,
+    onEditProfileClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Avatar
+        Box(
+            modifier = Modifier
+                .size(72.dp)
+                .clip(CircleShape)
+                .background(ProfileTeal),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.Person,
+                contentDescription = "Profile",
+                tint = Color.White,
+                modifier = Modifier.size(40.dp)
+            )
+        }
+        
+        Spacer(modifier = Modifier.width(16.dp))
+        
+        // Name and Email
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = name,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            Text(
+                text = email,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+            )
+        }
+        
+        // Edit Profile Button
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.clickable { onEditProfileClick() }
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = "Edit Profile",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "Edit Profile",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
+                fontSize = 10.sp
+            )
         }
     }
 }

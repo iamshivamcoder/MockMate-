@@ -72,8 +72,8 @@ fun TestTakingScreen(
     val appSettings by settingsRepository.settings.collectAsState(initial = AppSettings())
 
     var showFinishDialog by remember { mutableStateOf(false) }
-    val questionStartTimes = remember { mutableMapOf<Int, Long>() }
-    var previousQuestionIndex by remember(uiState.currentQuestionIndex) { mutableIntStateOf(uiState.currentQuestionIndex) }
+    val questionStartTime = remember { mutableStateOf(System.currentTimeMillis()) }
+    var lastTrackedQuestionIndex by remember { mutableIntStateOf(-1) }
 
 
     LaunchedEffect(uiState.timeRemaining, uiState.mockTest) {
@@ -116,19 +116,25 @@ fun TestTakingScreen(
     val currentQuestionIndex = uiState.currentQuestionIndex
     val mockTest = uiState.mockTest!!
 
+    // Track time spent on each question
     LaunchedEffect(currentQuestionIndex) {
-        if (currentQuestionIndex != previousQuestionIndex) {
-            questionStartTimes[previousQuestionIndex]?.let { startTime ->
-                val timeSpent = ((System.currentTimeMillis() - startTime) / 1000).toInt()
-                viewModel.updateQuestionTimeSpent(previousQuestionIndex, timeSpent)
+        // Record time for the previous question if we're switching
+        if (lastTrackedQuestionIndex >= 0 && lastTrackedQuestionIndex != currentQuestionIndex) {
+            val timeSpentOnPrevious = ((System.currentTimeMillis() - questionStartTime.value) / 1000).toInt()
+            if (timeSpentOnPrevious > 0) {
+                viewModel.updateQuestionTimeSpent(lastTrackedQuestionIndex, timeSpentOnPrevious)
             }
-            questionStartTimes[currentQuestionIndex] = System.currentTimeMillis()
-            previousQuestionIndex = currentQuestionIndex
         }
+        // Start tracking time for current question
+        questionStartTime.value = System.currentTimeMillis()
+        lastTrackedQuestionIndex = currentQuestionIndex
     }
+    
+    // Initialize first question tracking
     LaunchedEffect(Unit) {
-        if (!questionStartTimes.containsKey(currentQuestionIndex)) {
-            questionStartTimes[currentQuestionIndex] = System.currentTimeMillis()
+        if (lastTrackedQuestionIndex < 0) {
+            questionStartTime.value = System.currentTimeMillis()
+            lastTrackedQuestionIndex = currentQuestionIndex
         }
     }
 
@@ -190,10 +196,11 @@ fun TestTakingScreen(
     }
 
     if (showFinishDialog) {
-        questionStartTimes[currentQuestionIndex]?.let { startTime ->
-            val timeSpent = ((System.currentTimeMillis() - startTime) / 1000).toInt()
-            viewModel.updateQuestionTimeSpent(currentQuestionIndex, timeSpent)
-            questionStartTimes.remove(currentQuestionIndex)
+        // Record time for the current question before finishing
+        val timeSpentOnCurrent = ((System.currentTimeMillis() - questionStartTime.value) / 1000).toInt()
+        if (timeSpentOnCurrent > 0 && lastTrackedQuestionIndex >= 0) {
+            viewModel.updateQuestionTimeSpent(lastTrackedQuestionIndex, timeSpentOnCurrent)
+            questionStartTime.value = System.currentTimeMillis() // Reset to avoid double counting
         }
 
         val attemptedCount = uiState.selectedOptions.count { it != -1 }

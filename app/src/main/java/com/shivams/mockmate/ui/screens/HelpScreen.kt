@@ -1,6 +1,16 @@
 package com.shivams.mockmate.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,41 +21,59 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
-import androidx.compose.material.icons.automirrored.filled.ListAlt
-import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Analytics
+import androidx.compose.material.icons.filled.Book
+import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.filled.OfflineBolt
+import androidx.compose.material.icons.filled.Quiz
+import androidx.compose.material.icons.filled.RocketLaunch
+import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.shivams.mockmate.ui.components.ExpandableContentCard
 import com.shivams.mockmate.ui.components.MockMateTopBar
-import com.shivams.mockmate.ui.components.rememberExpandableCardState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HelpScreen(
     onNavigateBack: () -> Unit
 ) {
+    var showContent by remember { mutableStateOf(false) }
+    
+    LaunchedEffect(Unit) {
+        showContent = true
+    }
+    
     Scaffold(
         topBar = {
             MockMateTopBar(
@@ -56,188 +84,332 @@ fun HelpScreen(
             )
         }
     ) { paddingValues ->
-        val topGradientColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.05f)
-        val bottomGradientColor = MaterialTheme.colorScheme.background
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(topGradientColor, bottomGradientColor)
-                    )
-                )
+                .background(MaterialTheme.colorScheme.background)
                 .padding(paddingValues)
-                .padding(horizontal = 16.dp)
                 .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Spacer(modifier = Modifier.height(24.dp))
-
-            HelpSection(
-                icon = Icons.Filled.Info,
-                title = "What is MockMate?",
-                content = buildAnnotatedString {
-                    append("MockMate is your personal companion for UPSC exam preparation. It allows you to take mock tests, practice specific subjects, import your own tests, and analyze your performance to identify areas for improvement.")
-                }
-            )
-
-            HelpSection(
-                icon = Icons.AutoMirrored.Filled.ListAlt,
-                title = "How does this app work?",
-                content = buildAnnotatedString {
-                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                        append("1. Dashboard: ")
-                    }
-                    append("Get an overview of your progress and quick access to features.\n")
-                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                        append("2. Mock Tests: ")
-                    }
-                    append("Choose from pre-defined full-length or subject-specific tests.\n")
-                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                        append("3. Practice: ")
-                    }
-                    append("Focus on specific subjects or topics with customized practice sessions.\n")
-                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                        append("4. Import Tests: ")
-                    }
-                    append("Create your own tests in JSON format and import them into the app. (See README.md for format details)\n")
-                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                        append("5. Performance Analysis: ")
-                    }
-                    append("After each test, review your answers, see detailed explanations, and track your scores over time.\n")
-                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                        append("6. Test History: ")
-                    }
-                    append("Access all your past attempts and review your performance trends.")
-                }
-            )
-
-            Spacer(modifier = Modifier.height(32.dp))
-            Text(
-                text = "Frequently Asked Questions (FAQ)",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.padding(bottom = 20.dp)
-            )
-
-            val importOwnTestState = rememberExpandableCardState(key = "importOwnTest")
-            ExpandableContentCard(
-                leadingIcon = Icons.AutoMirrored.Filled.HelpOutline,
-                title = "How do I import my own test data?",
-                initiallyExpanded = importOwnTestState.value,
-                onExpandedChange = { importOwnTestState.value = it }
+            // Welcome Header Card
+            AnimatedVisibility(
+                visible = showContent,
+                enter = fadeIn(tween(300)) + expandVertically(tween(400))
             ) {
-                Column {
-                    HorizontalDivider(modifier = Modifier.padding(bottom = 8.dp))
-                    Text("You can import tests by creating a JSON file with your questions, options, correct answers, and other details. The specific format is described in the README.md file of this project. From the Dashboard, tap 'Import Data' and select your JSON file.")
+                WelcomeHelpCard()
+            }
+            
+            // How It Works Section
+            AnimatedVisibility(
+                visible = showContent,
+                enter = fadeIn(tween(400, 100)) + expandVertically(tween(500, 100))
+            ) {
+                HowItWorksSection()
+            }
+            
+            // FAQ Section Header
+            AnimatedVisibility(
+                visible = showContent,
+                enter = fadeIn(tween(400, 200))
+            ) {
+                Text(
+                    text = "Frequently Asked Questions",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+            
+            // FAQ Items
+            AnimatedVisibility(
+                visible = showContent,
+                enter = fadeIn(tween(400, 300)) + expandVertically(tween(500, 300))
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    FAQItem(
+                        question = "How do I import my own test data?",
+                        answer = "Create a JSON file with your questions and import it via Dashboard → Import Data. See README.md for the exact format.",
+                        icon = Icons.Default.Upload
+                    )
+                    
+                    FAQItem(
+                        question = "Can I take tests offline?",
+                        answer = "Yes! Once tests are loaded, they're available offline. Internet is only needed for initial sync and updates.",
+                        icon = Icons.Default.OfflineBolt
+                    )
+                    
+                    FAQItem(
+                        question = "How is my performance calculated?",
+                        answer = "Based on correct answers, negative marking (if enabled), and time taken. You'll see subject-wise breakdowns after each test.",
+                        icon = Icons.Default.Analytics
+                    )
+                    
+                    FAQItem(
+                        question = "Is there negative marking?",
+                        answer = "Yes, similar to actual UPSC exams. The value (e.g., 0.33 for 1/3rd deduction) is defined in the test data.",
+                        icon = Icons.Default.Quiz
+                    )
+                    
+                    FAQItem(
+                        question = "Where's the JSON format documentation?",
+                        answer = "Check the README.md file in the MockMate project root directory for complete format details.",
+                        icon = Icons.Default.Code
+                    )
                 }
             }
-
-            val offlineTestState = rememberExpandableCardState(key = "offlineTest")
-            ExpandableContentCard(
-                leadingIcon = Icons.AutoMirrored.Filled.HelpOutline,
-                title = "Can I take tests offline?",
-                initiallyExpanded = offlineTestState.value,
-                onExpandedChange = { offlineTestState.value = it }
-            ) {
-                Column {
-                    HorizontalDivider(modifier = Modifier.padding(bottom = 8.dp))
-                    Text("Yes, once tests are loaded into the app (either pre-defined or imported), you can take them offline. An internet connection is primarily needed for initial data sync, updates, or if future cloud features are implemented.")
-                }
-            }
-
-            val performanceCalculationState = rememberExpandableCardState(key = "performanceCalculation")
-            ExpandableContentCard(
-                leadingIcon = Icons.AutoMirrored.Filled.HelpOutline,
-                title = "How is my performance calculated?",
-                initiallyExpanded = performanceCalculationState.value,
-                onExpandedChange = { performanceCalculationState.value = it }
-            ) {
-                Column {
-                    HorizontalDivider(modifier = Modifier.padding(bottom = 8.dp))
-                    Text("Performance is calculated based on the number of correct answers, incorrect answers (considering negative marking if enabled), and the time taken. You\'ll see a detailed breakdown after each test, including subject-wise scores.")
-                }
-            }
-
-            val negativeMarkingState = rememberExpandableCardState(key = "negativeMarking")
-            ExpandableContentCard(
-                leadingIcon = Icons.AutoMirrored.Filled.HelpOutline,
-                title = "Is there negative marking?",
-                initiallyExpanded = negativeMarkingState.value,
-                onExpandedChange = { negativeMarkingState.value = it }
-            ) {
-                Column {
-                    HorizontalDivider(modifier = Modifier.padding(bottom = 8.dp))
-                    Text("Yes, mock tests can have negative marking, similar to the actual UPSC exams. The value for negative marking (e.g., 0.33 for 1/3rd deduction) is defined within the test data.")
-                }
-            }
-
-            val jsonFormatState = rememberExpandableCardState(key = "jsonFormat")
-            ExpandableContentCard(
-                leadingIcon = Icons.AutoMirrored.Filled.HelpOutline,
-                title = "Where can I find the JSON format for importing tests?",
-                initiallyExpanded = jsonFormatState.value,
-                onExpandedChange = { jsonFormatState.value = it }
-            ) {
-                Column {
-                    HorizontalDivider(modifier = Modifier.padding(bottom = 8.dp))
-                    Text("The JSON format details are available in the README.md file located in the root directory of the MockMate project.")
-                }
-            }
-
-            val contributionState = rememberExpandableCardState(key = "contribution")
-            ExpandableContentCard(
-                leadingIcon = Icons.AutoMirrored.Filled.HelpOutline,
-                title = "How can I contribute to MockMate development?",
-                initiallyExpanded = contributionState.value,
-                onExpandedChange = { contributionState.value = it }
-            ) {
-                Column {
-                    HorizontalDivider(modifier = Modifier.padding(bottom = 8.dp))
-                    Text("Please refer to the 'Project Vision' section in the README.md file. For specific contribution guidelines (branching, PRs, etc.), please consult with the project maintainers.")
-                }
-            }
+            
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
 
 @Composable
-fun HelpSection(icon: ImageVector, title: String, content: AnnotatedString) {
+private fun WelcomeHelpCard() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.primary,
+                            MaterialTheme.colorScheme.secondary
+                        )
+                    )
+                )
+                .padding(24.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Welcome to MockMate!",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Your personal UPSC exam prep companion. Take tests, practice, and track your progress.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.White.copy(alpha = 0.9f)
+                    )
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Box(
+                    modifier = Modifier
+                        .size(60.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.2f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.RocketLaunch,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HowItWorksSection() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp)
+        ) {
+            Text(
+                text = "How It Works",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            val steps = listOf(
+                Triple(Icons.Default.Book, "Dashboard", "Overview of your progress and quick access"),
+                Triple(Icons.Default.Quiz, "Mock Tests", "Full-length and subject-specific tests"),
+                Triple(Icons.Default.Lightbulb, "Practice", "Focused practice on specific topics"),
+                Triple(Icons.Default.Upload, "Import", "Add your own tests in JSON format"),
+                Triple(Icons.Default.Analytics, "Analytics", "Track scores and identify weak areas"),
+                Triple(Icons.Default.History, "History", "Review all past test attempts")
+            )
+            
+            steps.forEachIndexed { index, (icon, title, desc) ->
+                StepItem(
+                    number = index + 1,
+                    icon = icon,
+                    title = title,
+                    description = desc
+                )
+                if (index < steps.size - 1) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun StepItem(
+    number: Int,
+    icon: ImageVector,
+    title: String,
+    description: String
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primaryContainer),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = number.toString(),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+        }
+        
+        Spacer(modifier = Modifier.width(12.dp))
+        
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(20.dp)
+        )
+        
+        Spacer(modifier = Modifier.width(12.dp))
+        
+        Column {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun FAQItem(
+    question: String,
+    answer: String,
+    icon: ImageVector
+) {
+    var isExpanded by remember { mutableStateOf(false) }
+    val rotationAngle by animateFloatAsState(
+        targetValue = if (isExpanded) 180f else 0f,
+        animationSpec = tween(300),
+        label = "rotation"
+    )
+    
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = 16.dp),
+            .clickable { isExpanded = !isExpanded },
         shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
+            containerColor = if (isExpanded) 
+                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+            else 
+                MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (isExpanded) 4.dp else 1.dp
         )
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = title,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp)
-                )
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .background(
+                            if (isExpanded) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                            else MaterialTheme.colorScheme.surfaceVariant
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = if (isExpanded) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+                
                 Spacer(modifier = Modifier.width(12.dp))
+                
                 Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                    text = question,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = if (isExpanded) FontWeight.SemiBold else FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f)
+                )
+                
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowDown,
+                    contentDescription = if (isExpanded) "Collapse" else "Expand",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .size(24.dp)
+                        .rotate(rotationAngle)
                 )
             }
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = content,
-                style = MaterialTheme.typography.bodyMedium,
-                lineHeight = 22.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            
+            AnimatedVisibility(
+                visible = isExpanded,
+                enter = fadeIn(tween(200)) + expandVertically(tween(300)),
+                exit = fadeOut(tween(200)) + shrinkVertically(tween(300))
+            ) {
+                Column {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = answer,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                        lineHeight = MaterialTheme.typography.bodyMedium.lineHeight
+                    )
+                }
+            }
         }
     }
 }

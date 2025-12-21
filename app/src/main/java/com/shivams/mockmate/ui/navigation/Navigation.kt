@@ -49,8 +49,14 @@ import com.shivams.mockmate.ui.screens.TestHistoryScreen
 import com.shivams.mockmate.ui.screens.TestImportScreen
 import com.shivams.mockmate.ui.screens.TestResultScreen
 import com.shivams.mockmate.ui.screens.TestTakingScreen
+import com.shivams.mockmate.ui.screens.MentorChatScreen
 import com.shivams.mockmate.ui.util.ComposeStabilityUtils
 import com.shivams.mockmate.ui.viewmodels.TestHistoryViewModel
+import com.shivams.mockmate.ui.viewmodels.MentorChatViewModel
+import com.shivams.mockmate.data.repositories.MentorChatRepository
+import com.shivams.mockmate.data.database.AppDatabase
+import com.shivams.mockmate.service.AiInsightsService
+import com.shivams.mockmate.ApiConfig
 import kotlinx.coroutines.launch
 import java.util.Date
 
@@ -74,6 +80,7 @@ object Routes {
     const val NOTIFICATION_DETAIL_SCREEN = "notification_detail_screen/{notificationId}"
     const val STREAK_SCREEN = "streak_screen"
     const val FLAGGED_BOOKMARKED_SCREEN = "flagged_bookmarked_screen"
+    const val MENTOR_CHAT_SCREEN = "mentor_chat_screen"
 
     fun testTakingRoute(testId: String) = "test_taking/$testId"
     fun testResultRoute(attemptId: String, testId: String) = "test_result/$attemptId/$testId"
@@ -161,6 +168,7 @@ fun AppNavHost(
                     onProfileClick = { navController.safeNavigate(Routes.PROFILE_SCREEN) },
                     onStreakClick = { navController.safeNavigate(Routes.STREAK_SCREEN) },
                     onSavedQuestionsClick = { navController.safeNavigate(Routes.FLAGGED_BOOKMARKED_SCREEN) },
+                    onMentorChatClick = { navController.safeNavigate(Routes.MENTOR_CHAT_SCREEN) },
                     repository = stableRepository
                 )
             }
@@ -324,7 +332,8 @@ fun AppNavHost(
                     onNavigateToAboutDeveloper = { navController.safeNavigate(Routes.ABOUT_DEVELOPER) },
                     onNavigateToHelp = { navController.safeNavigate(Routes.HELP_AND_FAQ) },
                     onNavigateToAnalytics = { navController.safeNavigate(Routes.ANALYTICS_SCREEN) },
-                    onNavigateToSavedQuestions = { navController.safeNavigate(Routes.FLAGGED_BOOKMARKED_SCREEN) }
+                    onNavigateToSavedQuestions = { navController.safeNavigate(Routes.FLAGGED_BOOKMARKED_SCREEN) },
+                    onNavigateToProfile = { navController.safeNavigate(Routes.PROFILE_SCREEN) }
                 )
             }
 
@@ -389,6 +398,25 @@ fun AppNavHost(
                 FlaggedBookmarkedScreen(
                     onNavigateBack = { navController.navigateUp() },
                     repository = stableRepository
+                )
+            }
+
+            composable(Routes.MENTOR_CHAT_SCREEN) {
+                val context = LocalContext.current
+                val database = remember { AppDatabase.getInstance(context) }
+                val chatRepository = remember { MentorChatRepository(database.chatDao()) }
+                val apiConfig = remember { ApiConfig(context) }
+                val aiInsightsService = remember { AiInsightsService(apiConfig, stableRepository) }
+                val viewModel = remember {
+                    MentorChatViewModel(
+                        chatRepository = chatRepository,
+                        aiInsightsService = aiInsightsService,
+                        testRepository = stableRepository
+                    )
+                }
+                MentorChatScreen(
+                    viewModel = viewModel,
+                    onNavigateBack = { navController.navigateUp() }
                 )
             }
 
