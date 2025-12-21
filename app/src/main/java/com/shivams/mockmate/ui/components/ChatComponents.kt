@@ -8,6 +8,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -29,7 +31,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.School
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Card
@@ -48,12 +49,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.shivams.mockmate.R
 import com.shivams.mockmate.model.ChatMessage
 import com.shivams.mockmate.model.MessageType
 import com.shivams.mockmate.model.QuickAction
@@ -131,11 +137,11 @@ fun MentorMessageBubble(
                 ),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = Icons.Default.School,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(20.dp)
+            Image(
+                painter = painterResource(id = R.drawable.mentor_avatar),
+                contentDescription = "Mentor",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
             )
         }
         
@@ -159,12 +165,37 @@ fun MentorMessageBubble(
                     Spacer(modifier = Modifier.height(4.dp))
                 }
                 
+                
                 Text(
-                    text = message.content,
+                    text = parseMarkdownText(message.content),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
+        }
+    }
+}
+
+private fun parseMarkdownText(text: String): androidx.compose.ui.text.AnnotatedString {
+    return buildAnnotatedString {
+        val boldRegex = Regex("\\*\\*(.*?)\\*\\*")
+        var lastIndex = 0
+        
+        boldRegex.findAll(text).forEach { result ->
+            // Append text before the match
+            append(text.substring(lastIndex, result.range.first))
+            
+            // Append the bold text
+            withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+                append(result.groupValues[1])
+            }
+            
+            lastIndex = result.range.last + 1
+        }
+        
+        // Append remaining text
+        if (lastIndex < text.length) {
+            append(text.substring(lastIndex))
         }
     }
 }
@@ -197,11 +228,11 @@ fun TypingIndicator(
                 ),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = Icons.Default.School,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(20.dp)
+            Image(
+                painter = painterResource(id = R.drawable.mentor_avatar),
+                contentDescription = "Mentor",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
             )
         }
         
@@ -372,11 +403,11 @@ fun EmptyChatState(
                 ),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = Icons.Default.School,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(40.dp)
+            Image(
+                painter = painterResource(id = R.drawable.mentor_avatar),
+                contentDescription = "Mentor",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
             )
         }
         

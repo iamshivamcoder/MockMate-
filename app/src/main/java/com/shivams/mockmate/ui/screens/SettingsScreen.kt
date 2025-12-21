@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -43,6 +44,7 @@ fun SettingsScreen(
     onNavigateToAnalytics: () -> Unit = {},
     onNavigateToSavedQuestions: () -> Unit = {},
     onNavigateToProfile: () -> Unit = {},
+    onNavigateToApiKeyConfig: () -> Unit = {},
     profileViewModel: ProfileViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
@@ -226,7 +228,7 @@ fun SettingsScreen(
 
             item {
                 SettingsItem(
-                    icon = Icons.Filled.TrendingUp,
+                    icon = Icons.AutoMirrored.Filled.TrendingUp,
                     title = "Progress & Achievements",
                     subtitle = "View your performance analytics and stats",
                     onClick = onNavigateToAnalytics
@@ -258,8 +260,11 @@ fun SettingsScreen(
             }
 
             item {
-                AiConfigurationSection(
-                    modifier = Modifier.padding(horizontal = 16.dp)
+                SettingsItem(
+                    icon = Icons.Filled.Key,
+                    title = "Configure AI API Key",
+                    subtitle = "Set up Gemini API for AI features",
+                    onClick = onNavigateToApiKeyConfig
                 )
             }
 

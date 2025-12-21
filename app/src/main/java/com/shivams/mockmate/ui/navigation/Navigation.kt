@@ -50,6 +50,9 @@ import com.shivams.mockmate.ui.screens.TestImportScreen
 import com.shivams.mockmate.ui.screens.TestResultScreen
 import com.shivams.mockmate.ui.screens.TestTakingScreen
 import com.shivams.mockmate.ui.screens.MentorChatScreen
+import com.shivams.mockmate.ui.screens.ApiKeyConfigScreen
+import com.shivams.mockmate.ui.screens.AiTestGeneratorScreen
+import com.shivams.mockmate.ui.viewmodels.AiTestGeneratorViewModel
 import com.shivams.mockmate.ui.util.ComposeStabilityUtils
 import com.shivams.mockmate.ui.viewmodels.TestHistoryViewModel
 import com.shivams.mockmate.ui.viewmodels.MentorChatViewModel
@@ -81,6 +84,8 @@ object Routes {
     const val STREAK_SCREEN = "streak_screen"
     const val FLAGGED_BOOKMARKED_SCREEN = "flagged_bookmarked_screen"
     const val MENTOR_CHAT_SCREEN = "mentor_chat_screen"
+    const val API_KEY_CONFIG_SCREEN = "api_key_config_screen"
+    const val AI_TEST_GENERATOR_SCREEN = "ai_test_generator_screen"
 
     fun testTakingRoute(testId: String) = "test_taking/$testId"
     fun testResultRoute(attemptId: String, testId: String) = "test_result/$attemptId/$testId"
@@ -169,6 +174,7 @@ fun AppNavHost(
                     onStreakClick = { navController.safeNavigate(Routes.STREAK_SCREEN) },
                     onSavedQuestionsClick = { navController.safeNavigate(Routes.FLAGGED_BOOKMARKED_SCREEN) },
                     onMentorChatClick = { navController.safeNavigate(Routes.MENTOR_CHAT_SCREEN) },
+                    onAiTestGeneratorClick = { navController.safeNavigate(Routes.AI_TEST_GENERATOR_SCREEN) },
                     repository = stableRepository
                 )
             }
@@ -333,7 +339,35 @@ fun AppNavHost(
                     onNavigateToHelp = { navController.safeNavigate(Routes.HELP_AND_FAQ) },
                     onNavigateToAnalytics = { navController.safeNavigate(Routes.ANALYTICS_SCREEN) },
                     onNavigateToSavedQuestions = { navController.safeNavigate(Routes.FLAGGED_BOOKMARKED_SCREEN) },
-                    onNavigateToProfile = { navController.safeNavigate(Routes.PROFILE_SCREEN) }
+                    onNavigateToProfile = { navController.safeNavigate(Routes.PROFILE_SCREEN) },
+                    onNavigateToApiKeyConfig = { navController.safeNavigate(Routes.API_KEY_CONFIG_SCREEN) }
+                )
+            }
+
+            composable(Routes.API_KEY_CONFIG_SCREEN) {
+                ApiKeyConfigScreen(
+                    onNavigateBack = { navController.navigateUp() }
+                )
+            }
+
+            composable(Routes.AI_TEST_GENERATOR_SCREEN) {
+                val currentContext = LocalContext.current
+                val apiConfig = remember { ApiConfig(currentContext) }
+                val aiInsightsService = remember { AiInsightsService(apiConfig, stableRepository) }
+                val viewModel = remember { 
+                    AiTestGeneratorViewModel(
+                        aiInsightsService = aiInsightsService,
+                        testRepository = stableRepository
+                    )
+                }
+                AiTestGeneratorScreen(
+                    viewModel = viewModel,
+                    onNavigateBack = { navController.navigateUp() },
+                    onTestGenerated = { testId ->
+                        navController.navigate(Routes.testTakingRoute(testId)) {
+                            popUpTo(Routes.AI_TEST_GENERATOR_SCREEN) { inclusive = true }
+                        }
+                    }
                 )
             }
 

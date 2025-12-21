@@ -18,7 +18,7 @@ data class Part(
 
 data class GenerationConfig(
     @SerializedName("temperature") val temperature: Float = 0.7f,
-    @SerializedName("maxOutputTokens") val maxOutputTokens: Int = 1024,
+    @SerializedName("maxOutputTokens") val maxOutputTokens: Int = 8192,
     @SerializedName("topP") val topP: Float = 0.95f,
     @SerializedName("topK") val topK: Int = 40
 )

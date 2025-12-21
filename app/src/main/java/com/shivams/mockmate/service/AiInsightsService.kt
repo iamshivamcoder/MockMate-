@@ -102,6 +102,34 @@ class AiInsightsService(
     }
 
     /**
+     * Generate a complete test with AI
+     */
+    suspend fun generateTest(
+        topic: String,
+        subject: String,
+        difficulty: TestDifficulty,
+        numberOfQuestions: Int,
+        timeLimit: Int,
+        negativeMarking: Boolean,
+        negativeMarkingValue: Float
+    ): Result<MockTest> = withContext(Dispatchers.IO) {
+        try {
+            val apiKey = apiConfig.getApiKey(GEMINI_PROVIDER)
+                ?: return@withContext Result.failure(Exception("Gemini API key not configured. Please configure it in Settings."))
+
+            val prompt = buildTestGenerationPrompt(
+                topic, subject, difficulty, numberOfQuestions, negativeMarking, negativeMarkingValue
+            )
+            val response = callGeminiApi(apiKey, prompt)
+            
+            parseGeneratedTest(response, topic, subject, difficulty, timeLimit, negativeMarking, negativeMarkingValue)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error generating test", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
      * Generate chat response with mentor persona
      */
     suspend fun generateMentorResponse(
@@ -130,7 +158,7 @@ class AiInsightsService(
             ),
             generationConfig = GenerationConfig(
                 temperature = 0.7f,
-                maxOutputTokens = 1024
+                maxOutputTokens = 8192
             )
         )
 
@@ -279,7 +307,12 @@ $historyStr
 
 Student: $userMessage
 
-Respond as the UPSC Mentor. Keep your response helpful, encouraging, and actionable. Use emojis sparingly for warmth.
+RESPONSE GUIDELINES:
+- Keep responses CONCISE: under 50 words for intro/simple queries
+- Use **bold** for metrics, data points, and key terms
+- Use bullet points (•) for lists
+- FOCUS on numbers, trends, and facts. Avoid fluff.
+- Be direct, precise, and analytical. No sugarcoating.
 """.trimIndent()
     }
 
@@ -385,9 +418,19 @@ Respond as the UPSC Mentor. Keep your response helpful, encouraging, and actiona
     }
 
     private fun extractJson(response: String): String {
-        // Try to extract JSON from response (it might be wrapped in markdown code blocks)
-        val jsonPattern = """\{[\s\S]*\}""".toRegex()
-        return jsonPattern.find(response)?.value ?: response
+        val startIndex = response.indexOf('{')
+        val endIndex = response.lastIndexOf('}')
+        
+        if (startIndex != -1 && endIndex != -1 && startIndex <= endIndex) {
+            return response.substring(startIndex, endIndex + 1)
+        }
+        
+        // Fallback: try finding first/last brackets anyway if strict finding failed
+        return response.trim()
+            .removePrefix("```json")
+            .removePrefix("```")
+            .removeSuffix("```")
+            .trim()
     }
 
     private fun createEmptyInsight(): PerformanceInsight {
@@ -404,5 +447,106 @@ Respond as the UPSC Mentor. Keep your response helpful, encouraging, and actiona
             ),
             motivationalNote = "Every expert was once a beginner. Start your UPSC journey today! 🚀"
         )
+    }
+
+    private fun buildTestGenerationPrompt(
+        topic: String,
+        subject: String,
+        difficulty: TestDifficulty,
+        numberOfQuestions: Int,
+        negativeMarking: Boolean,
+        negativeMarkingValue: Float
+    ): String {
+        return """
+Generate a UPSC-style multiple choice question test on the following topic. Create exactly $numberOfQuestions questions.
+
+Topic: $topic
+Subject: $subject
+Difficulty: ${difficulty.name}
+Negative Marking: ${if (negativeMarking) "Yes (-$negativeMarkingValue per wrong answer)" else "No"}
+
+IMPORTANT: Respond ONLY with valid JSON, no explanations. Each question must have exactly 4 options with one correct answer.
+
+JSON Format:
+{
+    "questions": [
+        {
+            "text": "Question text here?",
+            "options": ["Option A", "Option B", "Option C", "Option D"],
+            "correctOptionIndex": 0,
+            "explanation": "Brief 1-2 sentence explanation",
+            "topic": "$topic"
+        }
+    ]
+}
+
+Requirements:
+- Questions should be factually accurate and exam-relevant
+- Mix conceptual and factual questions
+- Explanations should be clear and under 50 words
+- Difficulty should match: ${difficulty.name}
+- All questions must relate to: $topic under $subject
+""".trimIndent()
+    }
+
+    private fun parseGeneratedTest(
+        response: String,
+        topic: String,
+        subject: String,
+        difficulty: TestDifficulty,
+        timeLimit: Int,
+        negativeMarking: Boolean,
+        negativeMarkingValue: Float
+    ): Result<MockTest> {
+        return try {
+            val jsonStr = extractJson(response)
+            val json = JSONObject(jsonStr)
+            
+            val questionsArray = json.getJSONArray("questions")
+            val questions = mutableListOf<Question>()
+            
+            for (i in 0 until questionsArray.length()) {
+                val q = questionsArray.getJSONObject(i)
+                val options = mutableListOf<String>()
+                val optionsArray = q.getJSONArray("options")
+                for (j in 0 until optionsArray.length()) {
+                    options.add(optionsArray.getString(j))
+                }
+                
+                questions.add(
+                    Question(
+                        text = q.getString("text"),
+                        options = options,
+                        correctOptionIndex = q.getInt("correctOptionIndex"),
+                        explanation = q.optString("explanation", ""),
+                        difficulty = when (difficulty) {
+                            TestDifficulty.EASY -> QuestionDifficulty.EASY
+                            TestDifficulty.MEDIUM -> QuestionDifficulty.MEDIUM
+                            TestDifficulty.HARD -> QuestionDifficulty.HARD
+                        },
+                        subject = subject,
+                        topic = q.optString("topic", topic)
+                    )
+                )
+            }
+            
+            if (questions.isEmpty()) {
+                return Result.failure(Exception("No questions generated"))
+            }
+            
+            val test = MockTest(
+                name = "$topic Test",
+                difficulty = difficulty,
+                questions = questions,
+                timeLimit = timeLimit,
+                negativeMarking = negativeMarking,
+                negativeMarkingValue = negativeMarkingValue
+            )
+            
+            Result.success(test)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error parsing generated test", e)
+            Result.failure(Exception("Failed to parse AI response: ${e.message}"))
+        }
     }
 }

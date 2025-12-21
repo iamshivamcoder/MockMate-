@@ -10,6 +10,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Analytics
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.DataExploration
 import androidx.compose.material.icons.filled.PlayArrow
@@ -48,6 +49,7 @@ fun DashboardScreen(
     onStreakClick: () -> Unit,
     onSavedQuestionsClick: () -> Unit,
     onMentorChatClick: () -> Unit,
+    onAiTestGeneratorClick: () -> Unit,
     repository: TestRepository
 ) {
     val userStats by repository.userStats.collectAsState(initial = UserStats(questionsAnswered = 0, correctAnswers = 0, currentStreak = 0, longestStreak = 0))
@@ -132,6 +134,13 @@ fun DashboardScreen(
                 icon = Icons.Default.School,
                 onClick = onMentorChatClick,
                 primaryColor = MaterialTheme.colorScheme.tertiary
+            )
+
+            ActionButton(
+                text = "Generate AI Test",
+                icon = Icons.Default.AutoAwesome,
+                onClick = onAiTestGeneratorClick,
+                primaryColor = MaterialTheme.colorScheme.primary
             )
             
             Spacer(modifier = Modifier.height(16.dp))
