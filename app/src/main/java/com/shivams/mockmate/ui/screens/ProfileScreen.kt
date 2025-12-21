@@ -58,6 +58,12 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.shivams.mockmate.model.UserProfile
 import com.shivams.mockmate.ui.viewmodels.ProfileViewModel
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import com.shivams.mockmate.R
+import com.shivams.mockmate.ui.util.AvatarUtils
 
 // Define colors used in the screen
 private val LightBlue = Color(0xFFE1F5FE)
@@ -65,12 +71,14 @@ private val DarkTeal = Color(0xFF00695C)
 private val TextBlack = Color(0xFF1F1F1F)
 private val AvatarBg = Color(0xFFB3E5FC)
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
     onNavigateBack: () -> Unit,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     val userProfile by viewModel.userProfile.collectAsState()
 
     var name by remember(userProfile) { mutableStateOf(userProfile?.name ?: "") }
@@ -80,16 +88,8 @@ fun ProfileScreen(
 
     var isEditable by remember { mutableStateOf(false) }
 
-    val avatarList = remember {
-        listOf(
-            "Person",
-            "Person",
-            "Person",
-            "Person",
-            "Person",
-            "Person"
-        )
-    }
+
+    val avatarList = remember { AvatarUtils.AVATAR_MAP.keys.toList() }
 
     Scaffold(
         topBar = {
@@ -119,16 +119,35 @@ fun ProfileScreen(
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Icon(
-                imageVector = Icons.Default.Person,
-                contentDescription = "Profile",
+            Box(
                 modifier = Modifier
                     .size(120.dp)
                     .clip(CircleShape)
                     .background(DarkTeal)
-                    .padding(20.dp),
-                tint = Color.White
-            )
+                    .padding(4.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                if (selectedAvatar.isNotEmpty()) {
+                    val resId = AvatarUtils.getAvatarResId(selectedAvatar)
+                    Image(
+                        painter = painterResource(id = resId),
+                        contentDescription = "Profile",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = "Profile",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(20.dp),
+                        tint = Color.White
+                    )
+                }
+            }
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
@@ -245,11 +264,11 @@ fun AvatarGrid(
         verticalArrangement = Arrangement.spacedBy(16.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .height(200.dp) // Adjusted height for 2 rows
+            .height(200.dp) 
     ) {
         itemsIndexed(avatars) { index, _ ->
             AvatarItem(
-                iconVector = Icons.Default.Person,
+                resId = AvatarUtils.getAvatarResId(avatars[index]),
                 isSelected = index == selectedIndex,
                 onClick = { onAvatarSelected(index) }
             )
@@ -259,7 +278,7 @@ fun AvatarGrid(
 
 @Composable
 fun AvatarItem(
-    iconVector: ImageVector,
+    resId: Int,
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
@@ -277,13 +296,13 @@ fun AvatarItem(
             )
             .clickable(onClick = onClick)
     ) {
-        Icon(
-            imageVector = iconVector,
+        Image(
+            painter = painterResource(id = resId),
             contentDescription = "Avatar",
             modifier = Modifier
                 .fillMaxSize()
-                .padding(12.dp),
-            tint = DarkTeal
+                .clip(RoundedCornerShape(16.dp)),
+            contentScale = ContentScale.Crop
         )
 
         if (isSelected) {

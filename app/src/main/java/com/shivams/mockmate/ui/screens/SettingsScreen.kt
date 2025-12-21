@@ -2,6 +2,9 @@ package com.shivams.mockmate.ui.screens
 
 import android.content.Intent
 import android.provider.Settings
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -45,12 +48,34 @@ fun SettingsScreen(
     onNavigateToSavedQuestions: () -> Unit = {},
     onNavigateToProfile: () -> Unit = {},
     onNavigateToApiKeyConfig: () -> Unit = {},
-    profileViewModel: ProfileViewModel = hiltViewModel()
+    profileViewModel: ProfileViewModel = hiltViewModel(),
+    dataViewModel: com.shivams.mockmate.ui.viewmodels.DataManagementViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
     val settingsRepository = remember { SettingsRepository(context) }
     val appSettings by settingsRepository.settings.collectAsState()
     val userProfile by profileViewModel.userProfile.collectAsState()
+
+    // Data Export/Import Launchers
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        uri?.let {
+            dataViewModel.exportData(context, it) { success, message ->
+                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    val importLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let {
+            dataViewModel.importData(context, it) { success, message ->
+                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+            }
+        }
+    }
 
     var notificationsEnabled by remember {
         mutableStateOf(NotificationPreferences.areNotificationsEnabled(context))
@@ -178,21 +203,6 @@ fun SettingsScreen(
             }
 
             item {
-                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-            }
-
-            // Preferences Section
-            item {
-                Text(
-                    text = "Preferences",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                )
-            }
-
-            item {
                 SettingsItem(
                     icon = Icons.Filled.ToggleOn,
                     title = "Pulsating Badges",
@@ -265,6 +275,39 @@ fun SettingsScreen(
                     title = "Configure AI API Key",
                     subtitle = "Set up Gemini API for AI features",
                     onClick = onNavigateToApiKeyConfig
+                )
+            }
+
+            item {
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            }
+
+            // Data Management Section
+            item {
+                Text(
+                    text = "Data Management",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            }
+
+            item {
+                SettingsItem(
+                    icon = Icons.Filled.FileUpload,
+                    title = "Export Data",
+                    subtitle = "Backup your history to a JSON file",
+                    onClick = { exportLauncher.launch("MockMate_Backup_${System.currentTimeMillis()}.json") }
+                )
+            }
+
+            item {
+                SettingsItem(
+                    icon = Icons.Filled.FileDownload,
+                    title = "Import Data",
+                    subtitle = "Restore history from a JSON file",
+                    onClick = { importLauncher.launch(arrayOf("application/json")) }
                 )
             }
 

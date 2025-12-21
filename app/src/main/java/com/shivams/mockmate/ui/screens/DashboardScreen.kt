@@ -50,9 +50,11 @@ fun DashboardScreen(
     onSavedQuestionsClick: () -> Unit,
     onMentorChatClick: () -> Unit,
     onAiTestGeneratorClick: () -> Unit,
-    repository: TestRepository
+    repository: TestRepository,
+    profileViewModel: com.shivams.mockmate.ui.viewmodels.ProfileViewModel = androidx.hilt.navigation.compose.hiltViewModel()
 ) {
     val userStats by repository.userStats.collectAsState(initial = UserStats(questionsAnswered = 0, correctAnswers = 0, currentStreak = 0, longestStreak = 0))
+    val userProfile by profileViewModel.userProfile.collectAsState()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
 
     Scaffold(
@@ -68,6 +70,7 @@ fun DashboardScreen(
                 onImportClick = onImportClick,
                 onNotificationClick = onNotificationClick,
                 onProfileClick = onProfileClick,
+                userAvatar = userProfile?.avatar,
                 scrollBehavior = scrollBehavior
             )
         }

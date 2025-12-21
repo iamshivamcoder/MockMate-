@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.Psychology
@@ -434,7 +435,9 @@ fun SuggestionItem(
     modifier: Modifier = Modifier
 ) {
     val (priorityColor, priorityIcon) = when (suggestion.priority) {
-        SuggestionPriority.HIGH -> Pair(MaterialTheme.colorScheme.error, Icons.Default.TrendingUp)
+        SuggestionPriority.HIGH -> Pair(MaterialTheme.colorScheme.error,
+            Icons.AutoMirrored.Filled.TrendingUp
+        )
         SuggestionPriority.MEDIUM -> Pair(MaterialTheme.colorScheme.tertiary, Icons.Default.Lightbulb)
         SuggestionPriority.LOW -> Pair(MaterialTheme.colorScheme.secondary, Icons.Default.AutoAwesome)
     }

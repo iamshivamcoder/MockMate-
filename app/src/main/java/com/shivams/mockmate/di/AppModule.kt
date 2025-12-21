@@ -74,4 +74,9 @@ object AppModule {
     fun provideTestAttemptOperationsUseCase(repository: TestRepository): TestAttemptOperationsUseCase {
         return TestAttemptOperationsUseCase(repository)
     }
+    @Provides
+    @Singleton
+    fun provideGson(): com.google.gson.Gson {
+        return com.google.gson.Gson()
+    }
 }

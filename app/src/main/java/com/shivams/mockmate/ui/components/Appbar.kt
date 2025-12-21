@@ -43,6 +43,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
@@ -58,6 +60,7 @@ fun MockMateTopBar(
     showBackButton: Boolean = true,
     showSettings: Boolean = false,
     currentStreak: Int? = null,
+    userAvatar: String? = null,
     onBackClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
     onStreakClick: (() -> Unit)? = null,
@@ -176,10 +179,23 @@ fun MockMateTopBar(
 
             if (onProfileClick != null) {
                 IconButton(onClick = onProfileClick) {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = "Profile"
-                    )
+                    val avatarResId = if (!userAvatar.isNullOrEmpty()) {
+                         com.shivams.mockmate.ui.util.AvatarUtils.getAvatarResId(userAvatar)
+                    } else null
+
+                    if (avatarResId != null) {
+                        androidx.compose.foundation.Image(
+                            painter = androidx.compose.ui.res.painterResource(id = avatarResId),
+                            contentDescription = "Profile",
+                            modifier = Modifier.size(24.dp).clip(CircleShape),
+                            contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = "Profile"
+                        )
+                    }
                 }
             }
         },

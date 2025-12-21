@@ -14,6 +14,7 @@ import java.util.concurrent.TimeUnit
 object ApiModule {
     private const val BASE_URL = "https://generativelanguage.googleapis.com/"
     
+    @Suppress("DEPRECATION")
     private val gson: Gson = GsonBuilder().setLenient().create()
     
     private val loggingInterceptor = HttpLoggingInterceptor().apply {

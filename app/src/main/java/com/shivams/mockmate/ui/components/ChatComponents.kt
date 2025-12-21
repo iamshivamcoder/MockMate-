@@ -47,6 +47,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.runtime.remember
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
@@ -59,10 +60,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.shivams.mockmate.R
 import com.shivams.mockmate.model.ChatMessage
 import com.shivams.mockmate.model.MessageType
 import com.shivams.mockmate.model.QuickAction
+import com.shivams.mockmate.ui.util.AvatarUtils
 
 /**
  * User message bubble (right-aligned, primary color)
@@ -70,6 +74,7 @@ import com.shivams.mockmate.model.QuickAction
 @Composable
 fun UserMessageBubble(
     message: ChatMessage,
+    userAvatar: String? = null,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -100,12 +105,25 @@ fun UserMessageBubble(
                 .background(MaterialTheme.colorScheme.primaryContainer),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = Icons.Default.Person,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                modifier = Modifier.size(18.dp)
-            )
+            val avatarResId = if (!userAvatar.isNullOrEmpty()) {
+                AvatarUtils.getAvatarResId(userAvatar)
+            } else null
+
+            if (avatarResId != null) {
+                Image(
+                    painter = painterResource(id = avatarResId),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
         }
     }
 }
@@ -116,6 +134,7 @@ fun UserMessageBubble(
 @Composable
 fun MentorMessageBubble(
     message: ChatMessage,
+    onSuggestionClick: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -165,23 +184,58 @@ fun MentorMessageBubble(
                     Spacer(modifier = Modifier.height(4.dp))
                 }
                 
+                val (displayText, suggestions) = remember(message.content) {
+                    parseContentAndSuggestions(message.content)
+                }
+
+                val parsedContent = remember(displayText) {
+                    parseMarkdownText(displayText)
+                }
                 
                 Text(
-                    text = parseMarkdownText(message.content),
+                    text = parsedContent,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodyMedium
                 )
+                
+                if (suggestions.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Suggested Questions:",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        suggestions.forEach { suggestion ->
+                            AssistChip(
+                                onClick = { onSuggestionClick?.invoke(suggestion) },
+                                label = { Text(suggestion, fontSize = 11.sp, maxLines = 1) },
+                                colors = AssistChipDefaults.assistChipColors(
+                                    containerColor = MaterialTheme.colorScheme.surface,
+                                    labelColor = MaterialTheme.colorScheme.primary
+                                ),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
+                            )
+                        }
+                    }
+                }
             }
         }
     }
 }
 
+private val BOLD_REGEX = Regex("\\*\\*(.*?)\\*\\*")
+
 private fun parseMarkdownText(text: String): androidx.compose.ui.text.AnnotatedString {
     return buildAnnotatedString {
-        val boldRegex = Regex("\\*\\*(.*?)\\*\\*")
         var lastIndex = 0
         
-        boldRegex.findAll(text).forEach { result ->
+        BOLD_REGEX.findAll(text).forEach { result ->
             // Append text before the match
             append(text.substring(lastIndex, result.range.first))
             
@@ -436,6 +490,8 @@ fun EmptyChatState(
 @Composable
 fun ChatMessageItem(
     message: ChatMessage,
+    userAvatar: String? = null,
+    onSuggestionClick: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     AnimatedVisibility(
@@ -443,9 +499,30 @@ fun ChatMessageItem(
         enter = fadeIn() + slideInVertically { it / 2 }
     ) {
         if (message.isFromUser) {
-            UserMessageBubble(message = message, modifier = modifier)
+            UserMessageBubble(message = message, userAvatar = userAvatar, modifier = modifier)
         } else {
-            MentorMessageBubble(message = message, modifier = modifier)
+            MentorMessageBubble(message = message, onSuggestionClick = onSuggestionClick, modifier = modifier)
         }
     }
+}
+
+private fun parseContentAndSuggestions(content: String): Pair<String, List<String>> {
+    val suggestionMarker = "[SUGGESTION]"
+    val lines = content.lines()
+    val textLines = mutableListOf<String>()
+    val suggestions = mutableListOf<String>()
+    
+    lines.forEach { line ->
+        if (line.trim().startsWith(suggestionMarker)) {
+            val suggestion = line.replace(suggestionMarker, "").trim()
+            if (suggestion.isNotEmpty()) {
+                suggestions.add(suggestion)
+            }
+        } else {
+             textLines.add(line)
+        }
+    }
+    
+    val text = textLines.joinToString("\n").trim()
+    return Pair(text, suggestions)
 }

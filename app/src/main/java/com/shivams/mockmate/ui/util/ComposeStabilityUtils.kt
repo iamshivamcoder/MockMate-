@@ -32,6 +32,7 @@ object ComposeStabilityUtils {
      */
     @Composable
     fun MonitorLifecycle(onError: (String) -> Unit) {
+        @Suppress("DEPRECATION")
         val lifecycleOwner = LocalLifecycleOwner.current
         
         DisposableEffect(lifecycleOwner) {

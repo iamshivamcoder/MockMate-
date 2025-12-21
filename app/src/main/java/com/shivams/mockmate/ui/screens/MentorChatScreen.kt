@@ -48,9 +48,11 @@ import com.shivams.mockmate.ui.viewmodels.MentorChatViewModel
 @Composable
 fun MentorChatScreen(
     viewModel: MentorChatViewModel,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    profileViewModel: com.shivams.mockmate.ui.viewmodels.ProfileViewModel = androidx.hilt.navigation.compose.hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val userProfile by profileViewModel.userProfile.collectAsState()
     val listState = rememberLazyListState()
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -164,7 +166,13 @@ fun MentorChatScreen(
                         items = uiState.messages,
                         key = { it.id }
                     ) { message ->
-                        ChatMessageItem(message = message)
+                        ChatMessageItem(
+                            message = message,
+                            userAvatar = userProfile?.avatar,
+                            onSuggestionClick = { suggestion ->
+                                viewModel.sendMessage(suggestion)
+                            }
+                        )
                     }
                     
                     // Typing indicator

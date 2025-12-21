@@ -117,3 +117,10 @@ data class UserProfile(
     val phoneNumber: String,
     val avatar: String
 )
+
+data class BackupData(
+    val profile: UserProfile?,
+    val attempts: List<TestAttempt>,
+    val mockTests: List<MockTest>,
+    val timestamp: Long = System.currentTimeMillis()
+)

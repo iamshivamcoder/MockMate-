@@ -313,6 +313,10 @@ RESPONSE GUIDELINES:
 - Use bullet points (•) for lists
 - FOCUS on numbers, trends, and facts. Avoid fluff.
 - Be direct, precise, and analytical. No sugarcoating.
+- **At the end of your response, provide exactly 2 short follow-up questions** that the student might want to ask next, labeled exactly as:
+[SUGGESTION] Question 1?
+[SUGGESTION] Question 2?
+These suggestions should be relevant to the context and guide the user deeper into the topic.
 """.trimIndent()
     }
 
