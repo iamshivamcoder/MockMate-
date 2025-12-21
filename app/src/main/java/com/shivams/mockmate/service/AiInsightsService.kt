@@ -134,15 +134,20 @@ class AiInsightsService(
             )
         )
 
+        Log.d(TAG, "Making Gemini API call...")
         val response = apiConfig.geminiApiService.generateContent(apiKey, request)
         
         if (!response.isSuccessful) {
-            throw Exception("API call failed: ${response.code()} - ${response.message()}")
+            val errorBody = response.errorBody()?.string() ?: "No error body"
+            Log.e(TAG, "API call failed: ${response.code()} - ${response.message()}")
+            Log.e(TAG, "Error body: $errorBody")
+            throw Exception("API call failed: ${response.code()} - ${response.message()} - $errorBody")
         }
 
         val body = response.body()
             ?: throw Exception("Empty response body")
 
+        Log.d(TAG, "Gemini API call successful")
         return body.candidates.firstOrNull()?.content?.parts?.firstOrNull()?.text
             ?: throw Exception("No content in response")
     }

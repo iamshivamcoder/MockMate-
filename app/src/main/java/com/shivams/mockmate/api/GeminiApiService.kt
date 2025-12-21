@@ -8,12 +8,13 @@ import retrofit2.http.POST
 import retrofit2.http.Query
 
 interface GeminiApiService {
-@POST("v1/models/gemini-pro:generateUPSCQuestions")
+    @POST("v1beta/models/gemini-2.5-flash:generateContent")
     suspend fun generateUPSCQuestions(
         @Query("key") apiKey: String,
         @Body request: GeminiRequest
     ): Response<GeminiResponse>
-    @POST("v1/models/gemini-pro:generateContent")
+    
+    @POST("v1beta/models/gemini-2.5-flash:generateContent")
     suspend fun generateContent(
         @Query("key") apiKey: String,
         @Body request: GeminiRequest

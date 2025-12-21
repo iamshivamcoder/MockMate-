@@ -27,6 +27,7 @@ import com.shivams.mockmate.data.repositories.SettingsRepository
 import com.shivams.mockmate.data.prefs.NotificationPreferences
 import com.shivams.mockmate.notifications.TestReminderReceiver
 import com.shivams.mockmate.ui.components.MockMateTopBar
+import com.shivams.mockmate.ui.components.AiConfigurationSection
 import com.shivams.mockmate.ui.viewmodels.ProfileViewModel
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 
@@ -238,6 +239,27 @@ fun SettingsScreen(
                     title = "Saved Questions",
                     subtitle = "Review flagged and bookmarked questions",
                     onClick = onNavigateToSavedQuestions
+                )
+            }
+
+            item {
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            }
+
+            // AI Mentor Configuration Section
+            item {
+                Text(
+                    text = "AI Mentor",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            }
+
+            item {
+                AiConfigurationSection(
+                    modifier = Modifier.padding(horizontal = 16.dp)
                 )
             }
 
