@@ -184,7 +184,8 @@ fun MentorMessageBubble(
                     Spacer(modifier = Modifier.height(4.dp))
                 }
                 
-                val (displayText, suggestions) = remember(message.content) {
+                // Parse out suggestions from content (they're now shown above input field)
+                val (displayText, _) = remember(message.content) {
                     parseContentAndSuggestions(message.content)
                 }
 
@@ -197,33 +198,6 @@ fun MentorMessageBubble(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodyMedium
                 )
-                
-                if (suggestions.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Suggested Questions:",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        suggestions.forEach { suggestion ->
-                            AssistChip(
-                                onClick = { onSuggestionClick?.invoke(suggestion) },
-                                label = { Text(suggestion, fontSize = 11.sp, maxLines = 1) },
-                                colors = AssistChipDefaults.assistChipColors(
-                                    containerColor = MaterialTheme.colorScheme.surface,
-                                    labelColor = MaterialTheme.colorScheme.primary
-                                ),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
-                            )
-                        }
-                    }
-                }
             }
         }
     }
@@ -356,6 +330,52 @@ fun QuickActionChips(
                 colors = AssistChipDefaults.assistChipColors(
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
                     labelColor = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+            )
+        }
+    }
+}
+
+/**
+ * Context-aware suggestion chips (Perplexity-style)
+ * Displayed just above the message input field
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun ContextSuggestionChips(
+    suggestions: List<String>,
+    onSuggestionClick: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    if (suggestions.isEmpty()) return
+    
+    FlowRow(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        suggestions.take(2).forEach { suggestion ->
+            AssistChip(
+                onClick = { onSuggestionClick(suggestion) },
+                label = { 
+                    Text(
+                        text = suggestion,
+                        fontSize = 12.sp,
+                        maxLines = 1
+                    )
+                },
+                leadingIcon = {
+                    Text("💡", fontSize = 12.sp)
+                },
+                colors = AssistChipDefaults.assistChipColors(
+                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                    labelColor = MaterialTheme.colorScheme.onTertiaryContainer
+                ),
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp, 
+                    MaterialTheme.colorScheme.tertiary.copy(alpha = 0.5f)
                 )
             )
         }

@@ -37,6 +37,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.shivams.mockmate.ui.components.ChatInputField
 import com.shivams.mockmate.ui.components.ChatMessageItem
+import com.shivams.mockmate.ui.components.ContextSuggestionChips
 import com.shivams.mockmate.ui.components.QuickActionChips
 import com.shivams.mockmate.ui.components.TypingIndicator
 import com.shivams.mockmate.ui.viewmodels.MentorChatViewModel
@@ -111,6 +112,14 @@ fun MentorChatScreen(
         },
         bottomBar = {
             Column {
+                // Context-aware suggestions above input (Perplexity-style)
+                if (uiState.messages.size > 2 && !uiState.isTyping && uiState.contextSuggestions.isNotEmpty()) {
+                    ContextSuggestionChips(
+                        suggestions = uiState.contextSuggestions,
+                        onSuggestionClick = { viewModel.sendMessage(it) }
+                    )
+                }
+                
                 // Quick actions when chat has few messages
                 if (uiState.messages.size <= 2 && !uiState.isTyping) {
                     QuickActionChips(

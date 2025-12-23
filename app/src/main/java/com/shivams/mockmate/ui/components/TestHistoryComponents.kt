@@ -1,5 +1,6 @@
 package com.shivams.mockmate.ui.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -131,12 +133,25 @@ private fun TestHistoryItem(
     onDeleteClick: () -> Unit
 ) {
     var showMenu by remember { mutableStateOf(false) }
+    
+    // Score-based accent color
+    val scorePercentage = if (attempt.totalQuestions > 0) 
+        attempt.score.toFloat() / attempt.totalQuestions * 100 else 0f
+    val accentColor = when {
+        scorePercentage >= 70 -> androidx.compose.ui.graphics.Color(0xFF4CAF50) // Green
+        scorePercentage >= 40 -> androidx.compose.ui.graphics.Color(0xFFFF9800) // Orange
+        else -> androidx.compose.ui.graphics.Color(0xFFF44336) // Red
+    }
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onViewResult() },
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
@@ -146,14 +161,57 @@ private fun TestHistoryItem(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(
-                    text = attempt.testName,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.weight(1f)
-                )
+                ) {
+                    // Score indicator circle
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .background(
+                                color = accentColor.copy(alpha = 0.15f),
+                                shape = androidx.compose.foundation.shape.CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "${scorePercentage.toInt()}%",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = accentColor
+                        )
+                    }
+                    
+                    androidx.compose.foundation.layout.Spacer(modifier = Modifier.width(12.dp))
+                    
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = attempt.testName,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.DateRange,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                                modifier = Modifier.size(14.dp)
+                            )
+                            androidx.compose.foundation.layout.Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = DateFormatUtils.formatTestHistoryDate(attempt.date),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            )
+                        }
+                    }
+                }
 
                 Box {
                     IconButton(onClick = { showMenu = true }) {
@@ -201,53 +259,63 @@ private fun TestHistoryItem(
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            // Score details row
             Row(
                 modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = Icons.Default.DateRange,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                    modifier = Modifier.padding(end = 4.dp)
-                )
-
                 Text(
-                    text = DateFormatUtils.formatTestHistoryDate(attempt.date),
+                    text = "Score: ${attempt.score}/${attempt.totalQuestions}",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
                 )
-
-                Spacer(modifier = Modifier.weight(1f))
-
-                Text(
-                    text = "${attempt.score}/${attempt.totalQuestions}",
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-
-                Spacer(modifier = Modifier.width(4.dp))
-
-                Text(
-                    text = "(${(attempt.score.toFloat() / attempt.totalQuestions * 100).toInt()}%})",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
-                )
+                
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = accentColor.copy(alpha = 0.1f)
+                    ),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        text = when {
+                            scorePercentage >= 70 -> "Excellent"
+                            scorePercentage >= 40 -> "Good"
+                            else -> "Needs Work"
+                        },
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Medium,
+                        color = accentColor
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            // Progress bar with accent color
             val progress = if (attempt.totalQuestions > 0) attempt.score.toFloat() / attempt.totalQuestions else 0f
-            LinearProgressIndicator(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 4.dp)
-                    .height(6.dp),
-                progress = { progress }
-            )
+                    .height(8.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp)
+                    )
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(fraction = progress)
+                        .height(8.dp)
+                        .background(
+                            color = accentColor,
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp)
+                        )
+                )
+            }
         }
     }
 }

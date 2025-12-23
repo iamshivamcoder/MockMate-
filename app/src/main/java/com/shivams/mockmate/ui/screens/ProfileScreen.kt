@@ -28,6 +28,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -95,8 +97,14 @@ fun ProfileScreen(
         topBar = {
             CustomProfileTopAppBar(
                 onBackClick = onNavigateBack,
-                onEditClick = { 
-                    if (isEditable) {
+                onEditClick = { isEditable = !isEditable },
+                isEditing = isEditable
+            )
+        },
+        bottomBar = {
+            if (isEditable) {
+                Button(
+                    onClick = {
                         val updatedProfile = UserProfile(
                             name = name,
                             email = email,
@@ -104,11 +112,30 @@ fun ProfileScreen(
                             avatar = selectedAvatar
                         )
                         viewModel.saveUserProfile(updatedProfile)
-                    }
-                    isEditable = !isEditable
-                },
-                isEditing = isEditable
-            )
+                        isEditable = false
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = DarkTeal,
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Save Profile",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
         },
         containerColor = Color.White
     ) { paddingValues ->

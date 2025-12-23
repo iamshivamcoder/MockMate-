@@ -3,11 +3,16 @@ package com.shivams.mockmate.ui.screens
 import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -117,7 +122,64 @@ fun TestImportScreen(
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            SectionHeader(text = "Import from JSON")
+            // Gradient Header Banner
+            androidx.compose.material3.Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
+                colors = androidx.compose.material3.CardDefaults.cardColors(
+                    containerColor = androidx.compose.ui.graphics.Color.Transparent
+                )
+            ) {
+                androidx.compose.foundation.layout.Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            brush = androidx.compose.ui.graphics.Brush.horizontalGradient(
+                                colors = listOf(
+                                    androidx.compose.ui.graphics.Color(0xFF1E88E5),
+                                    androidx.compose.ui.graphics.Color(0xFF7B1FA2)
+                                )
+                            )
+                        )
+                        .padding(24.dp)
+                ) {
+                    androidx.compose.foundation.layout.Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        androidx.compose.foundation.layout.Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .background(
+                                    color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.2f),
+                                    shape = androidx.compose.foundation.shape.CircleShape
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            androidx.compose.material3.Text(
+                                text = "📥",
+                                style = androidx.compose.material3.MaterialTheme.typography.headlineMedium
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        androidx.compose.foundation.layout.Column {
+                            androidx.compose.material3.Text(
+                                text = "Import JSON Tests",
+                                style = androidx.compose.material3.MaterialTheme.typography.titleLarge,
+                                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                color = androidx.compose.ui.graphics.Color.White
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            androidx.compose.material3.Text(
+                                text = "Add custom mock tests from JSON files",
+                                style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
+                                color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.9f)
+                            )
+                        }
+                    }
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(20.dp))
 
             if (importStatus != ImportStatus.PromptMode) {
                 ImportFromFileCard(
@@ -151,7 +213,7 @@ fun TestImportScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             SectionHeader(text = "JSON Format Example")
 

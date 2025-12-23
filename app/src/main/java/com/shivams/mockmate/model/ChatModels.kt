@@ -97,5 +97,6 @@ data class ChatUiState(
     val isLoading: Boolean = false,
     val isTyping: Boolean = false,
     val error: String? = null,
-    val inputText: String = ""
+    val inputText: String = "",
+    val contextSuggestions: List<String> = emptyList()
 )

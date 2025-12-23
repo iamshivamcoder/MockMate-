@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import com.shivams.mockmate.data.repositories.TestRepository
 import com.shivams.mockmate.model.UserStats
 import com.shivams.mockmate.ui.components.ActionButton
+import com.shivams.mockmate.ui.components.AiMentorBanner
 import com.shivams.mockmate.ui.components.MockMateTopBar
 import com.shivams.mockmate.ui.components.MotivationCard
 import com.shivams.mockmate.ui.components.PrelimsCountdownCard
@@ -89,8 +90,11 @@ fun DashboardScreen(
             // Welcome Card with gradient
             WelcomeCard(userName = "")
             
-            // Motivation Card with regional phrases
-            MotivationCard()
+            // AI Mentor Banner - Perplexity style
+            AiMentorBanner(onClick = onMentorChatClick)
+            
+            // Motivation Card with regional phrases and Pick a Test button
+            MotivationCard(onPracticeClick = onPracticeClick)
             
             // Prelims Countdown Card
             PrelimsCountdownCard()

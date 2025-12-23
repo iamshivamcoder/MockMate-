@@ -44,8 +44,61 @@ class MentorChatViewModel(
     private fun observeMessages() {
         viewModelScope.launch {
             chatRepository.getAllMessages().collect { messages ->
-                _uiState.update { it.copy(messages = messages) }
+                val suggestions = generateContextSuggestions(messages)
+                _uiState.update { it.copy(messages = messages, contextSuggestions = suggestions) }
             }
+        }
+    }
+
+    /**
+     * Generate context-aware suggestions based on recent conversation
+     */
+    private fun generateContextSuggestions(messages: List<ChatMessage>): List<String> {
+        if (messages.isEmpty()) return emptyList()
+        
+        val lastMentorMessage = messages.lastOrNull { !it.isFromUser }?.content ?: return emptyList()
+        val lastUserMessage = messages.lastOrNull { it.isFromUser }?.content ?: ""
+        
+        // Generate relevant follow-up questions based on conversation context
+        return when {
+            lastMentorMessage.contains("performance", ignoreCase = true) ||
+            lastMentorMessage.contains("accuracy", ignoreCase = true) ||
+            lastMentorMessage.contains("score", ignoreCase = true) -> listOf(
+                "How can I improve this?",
+                "What topics should I prioritize?"
+            )
+            lastMentorMessage.contains("study", ignoreCase = true) ||
+            lastMentorMessage.contains("revision", ignoreCase = true) -> listOf(
+                "Create a weekly plan for me",
+                "Suggest effective revision techniques"
+            )
+            lastMentorMessage.contains("topic", ignoreCase = true) ||
+            lastMentorMessage.contains("syllabus", ignoreCase = true) -> listOf(
+                "Which topics are most important for Prelims?",
+                "Give me resources for this topic"
+            )
+            lastMentorMessage.contains("time", ignoreCase = true) ||
+            lastMentorMessage.contains("schedule", ignoreCase = true) -> listOf(
+                "How many hours should I study daily?",
+                "When should I start answer writing practice?"
+            )
+            lastMentorMessage.contains("weak", ignoreCase = true) ||
+            lastMentorMessage.contains("improve", ignoreCase = true) -> listOf(
+                "How do I overcome this weakness?",
+                "Suggest practice resources"
+            )
+            lastUserMessage.contains("prelims", ignoreCase = true) -> listOf(
+                "What is the ideal Prelims strategy?",
+                "How many mock tests should I attempt?"
+            )
+            lastUserMessage.contains("mains", ignoreCase = true) -> listOf(
+                "Tips for answer writing",
+                "How to structure my answers?"
+            )
+            else -> listOf(
+                "Analyze my weak topics",
+                "Give me a quick study tip"
+            )
         }
     }
 
@@ -133,7 +186,7 @@ class MentorChatViewModel(
     fun clearChatHistory() {
         viewModelScope.launch {
             chatRepository.clearHistory()
-            _uiState.update { it.copy(error = null) }
+            _uiState.update { it.copy(error = null, contextSuggestions = emptyList()) }
         }
     }
 
