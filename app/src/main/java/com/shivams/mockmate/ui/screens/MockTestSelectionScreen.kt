@@ -99,7 +99,7 @@ fun MockTestSelectionScreen(
         }
     }
 
-    val tabTitles = listOf("Basic (30 min)", "Standard (60 min)", "Full Length (90 min)")
+    val tabTitles = listOf("Easy", "Medium", "Hard")
     val pagerState = rememberPagerState(pageCount = { tabTitles.size })
     var currentSortCriteria by remember { mutableStateOf(SortCriteria.DATE) } // Default sort criteria
     var sortAscending by remember { mutableStateOf(false) } // Default to descending

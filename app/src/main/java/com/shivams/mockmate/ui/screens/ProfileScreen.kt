@@ -1,5 +1,6 @@
 package com.shivams.mockmate.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -7,7 +8,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,7 +26,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -34,7 +33,6 @@ import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
@@ -50,7 +48,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -59,13 +59,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.shivams.mockmate.model.UserProfile
-import com.shivams.mockmate.ui.viewmodels.ProfileViewModel
-import androidx.compose.foundation.Image
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
-import com.shivams.mockmate.R
 import com.shivams.mockmate.ui.util.AvatarUtils
+import com.shivams.mockmate.ui.viewmodels.ProfileViewModel
 
 // Define colors used in the screen
 private val LightBlue = Color(0xFFE1F5FE)
@@ -87,24 +82,22 @@ fun ProfileScreen(
     var email by remember(userProfile) { mutableStateOf(userProfile?.email ?: "") }
     var phoneNumber by remember(userProfile) { mutableStateOf(userProfile?.phoneNumber ?: "") }
     var selectedAvatar by remember(userProfile) { mutableStateOf(userProfile?.avatar ?: "") }
-
-    var isEditable by remember { mutableStateOf(false) }
-
+    
+    var isEditing by remember { mutableStateOf(false) }
 
     val avatarList = remember { AvatarUtils.AVATAR_MAP.keys.toList() }
 
     Scaffold(
         topBar = {
             CustomProfileTopAppBar(
-                onBackClick = onNavigateBack,
-                onEditClick = { isEditable = !isEditable },
-                isEditing = isEditable
+                onBackClick = onNavigateBack
             )
         },
         bottomBar = {
-            if (isEditable) {
-                Button(
-                    onClick = {
+            Button(
+                onClick = {
+                    if (isEditing) {
+                        // Save mode - save and exit edit
                         val updatedProfile = UserProfile(
                             name = name,
                             email = email,
@@ -112,29 +105,32 @@ fun ProfileScreen(
                             avatar = selectedAvatar
                         )
                         viewModel.saveUserProfile(updatedProfile)
-                        isEditable = false
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 16.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = DarkTeal,
-                        contentColor = Color.White
-                    ),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.CheckCircle,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Save Profile",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
+                        isEditing = false
+                    } else {
+                        // View mode - enter edit mode
+                        isEditing = true
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isEditing) DarkTeal else Color(0xFF1976D2),
+                    contentColor = Color.White
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Icon(
+                    imageVector = if (isEditing) Icons.Default.CheckCircle else Icons.Default.Person,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = if (isEditing) "Save Profile" else "Edit Profile",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium
+                )
             }
         },
         containerColor = Color.White
@@ -221,7 +217,7 @@ fun ProfileScreen(
                 onEmailChange = { email = it },
                 phoneNumber = phoneNumber,
                 onPhoneNumberChange = { phoneNumber = it },
-                isEditable = isEditable
+                isEditable = isEditing
             )
             Spacer(modifier = Modifier.height(24.dp))
         }
@@ -231,9 +227,7 @@ fun ProfileScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CustomProfileTopAppBar(
-    onBackClick: () -> Unit,
-    onEditClick: () -> Unit,
-    isEditing: Boolean
+    onBackClick: () -> Unit
 ) {
     CenterAlignedTopAppBar(
         title = { 
@@ -251,25 +245,6 @@ fun CustomProfileTopAppBar(
                     contentDescription = "Back",
                     tint = TextBlack
                 )
-            }
-        },
-        actions = {
-            IconButton(onClick = onEditClick) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = if (isEditing) Icons.Default.CheckCircle else Icons.Default.Edit,
-                        contentDescription = if (isEditing) "Save" else "Edit",
-                        tint = TextBlack,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = if (isEditing) "Save" else "Edit",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = TextBlack
-                    )
-                }
             }
         },
         colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -408,10 +383,4 @@ fun ProfileTextField(
         singleLine = true,
         readOnly = !isEditable
     )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun ProfileScreenPreview() {
-    ProfileScreen(onNavigateBack = {})
 }

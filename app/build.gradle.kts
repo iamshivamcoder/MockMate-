@@ -81,6 +81,7 @@ configurations.all {
 
 dependencies {
 
+    implementation("androidx.compose.ui:ui-test:1.10.0")
     val composeBom = platform("androidx.compose:compose-bom:2024.02.00")
     implementation(composeBom)
 

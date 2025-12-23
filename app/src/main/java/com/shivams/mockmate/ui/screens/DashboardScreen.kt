@@ -90,14 +90,10 @@ fun DashboardScreen(
             // Welcome Card with gradient
             WelcomeCard(userName = "")
             
-            // AI Mentor Banner - Perplexity style
-            AiMentorBanner(onClick = onMentorChatClick)
-            
-            // Motivation Card with regional phrases and Pick a Test button
-            MotivationCard(onPracticeClick = onPracticeClick)
-            
             // Prelims Countdown Card
             PrelimsCountdownCard()
+            
+
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -137,18 +133,17 @@ fun DashboardScreen(
             )
 
             ActionButton(
-                text = "Ask AI Mentor",
-                icon = Icons.Default.School,
-                onClick = onMentorChatClick,
-                primaryColor = MaterialTheme.colorScheme.tertiary
-            )
-
-            ActionButton(
                 text = "Generate AI Test",
                 icon = Icons.Default.AutoAwesome,
                 onClick = onAiTestGeneratorClick,
                 primaryColor = MaterialTheme.colorScheme.primary
             )
+            
+            // Motivation Card with regional phrases and Pick a Test button
+            MotivationCard(onPracticeClick = onPracticeClick)
+            
+            // AI Mentor Banner - Perplexity style (at bottom)
+            AiMentorBanner(onClick = onMentorChatClick)
             
             Spacer(modifier = Modifier.height(16.dp))
         }
