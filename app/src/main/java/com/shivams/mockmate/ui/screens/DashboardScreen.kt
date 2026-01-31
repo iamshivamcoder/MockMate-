@@ -51,6 +51,7 @@ fun DashboardScreen(
     onSavedQuestionsClick: () -> Unit,
     onMentorChatClick: () -> Unit,
     onAiTestGeneratorClick: () -> Unit,
+    onPdfAnalyzerClick: () -> Unit,
     repository: TestRepository,
     profileViewModel: com.shivams.mockmate.ui.viewmodels.ProfileViewModel = androidx.hilt.navigation.compose.hiltViewModel()
 ) {
@@ -137,6 +138,13 @@ fun DashboardScreen(
                 icon = Icons.Default.AutoAwesome,
                 onClick = onAiTestGeneratorClick,
                 primaryColor = MaterialTheme.colorScheme.primary
+            )
+            
+            ActionButton(
+                text = "PDF Analyzer",
+                icon = Icons.Default.School,
+                onClick = onPdfAnalyzerClick,
+                primaryColor = MaterialTheme.colorScheme.error
             )
             
             // Motivation Card with regional phrases and Pick a Test button

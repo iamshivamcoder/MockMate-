@@ -57,6 +57,7 @@ import com.shivams.mockmate.ui.screens.TrueFalseSessionScreen
 import com.shivams.mockmate.ui.screens.TrueFalseResultScreen
 import com.shivams.mockmate.ui.screens.analysis.PdfImportScreen
 import com.shivams.mockmate.ui.screens.analysis.AnalysisDashboardScreen
+import com.shivams.mockmate.ui.screens.analysis.AnalysisHistoryScreen
 import com.shivams.mockmate.ui.viewmodels.AiTestGeneratorViewModel
 import com.shivams.mockmate.ui.viewmodels.TrueFalseViewModel
 import com.shivams.mockmate.ui.viewmodels.AnalysisViewModel
@@ -102,6 +103,7 @@ object Routes {
     // PDF Analyzer routes
     const val PDF_IMPORT = "pdf_import"
     const val ANALYSIS_DASHBOARD = "analysis_dashboard"
+    const val ANALYSIS_HISTORY = "analysis_history"
 
     fun testTakingRoute(testId: String) = "test_taking/$testId"
     fun testResultRoute(attemptId: String, testId: String) = "test_result/$attemptId/$testId"
@@ -191,6 +193,7 @@ fun AppNavHost(
                     onSavedQuestionsClick = { navController.safeNavigate(Routes.FLAGGED_BOOKMARKED_SCREEN) },
                     onMentorChatClick = { navController.safeNavigate(Routes.MENTOR_CHAT_SCREEN) },
                     onAiTestGeneratorClick = { navController.safeNavigate(Routes.AI_TEST_GENERATOR_SCREEN) },
+                    onPdfAnalyzerClick = { navController.safeNavigate(Routes.PDF_IMPORT) },
                     repository = stableRepository
                 )
             }
@@ -550,7 +553,18 @@ fun AppNavHost(
             composable(Routes.ANALYSIS_DASHBOARD) {
                 AnalysisDashboardScreen(
                     onNavigateBack = { navController.navigateUp() },
-                    onNewAnalysis = { navController.safeNavigate(Routes.PDF_IMPORT) }
+                    onNewAnalysis = { navController.safeNavigate(Routes.PDF_IMPORT) },
+                    onViewHistory = { navController.safeNavigate(Routes.ANALYSIS_HISTORY) }
+                )
+            }
+            
+            composable(Routes.ANALYSIS_HISTORY) {
+                AnalysisHistoryScreen(
+                    onNavigateBack = { navController.navigateUp() },
+                    onAnalysisClick = { analysisId ->
+                        // Navigate to dashboard with the selected analysis
+                        navController.safeNavigate(Routes.ANALYSIS_DASHBOARD)
+                    }
                 )
             }
         }

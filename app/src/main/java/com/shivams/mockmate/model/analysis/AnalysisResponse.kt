@@ -17,7 +17,16 @@ data class AnalysisResponse(
     val analysisTimestamp: Long,
     
     @SerializedName("questions")
-    val questions: List<QuestionResult>
+    val questions: List<QuestionResult>,
+    
+    @SerializedName("mentor_feedback")
+    val mentorFeedback: String = "",
+    
+    @SerializedName("score")
+    val score: Float = 0f,
+    
+    @SerializedName("accuracy")
+    val accuracy: Float = 0f
 )
 
 /**

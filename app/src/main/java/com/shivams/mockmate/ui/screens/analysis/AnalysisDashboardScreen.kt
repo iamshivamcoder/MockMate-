@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
@@ -44,6 +45,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.shivams.mockmate.model.analysis.AnalysisReport
 import com.shivams.mockmate.ui.components.analysis.MentorFeedbackCard
 import com.shivams.mockmate.ui.components.analysis.QuestionInsightItem
+import com.shivams.mockmate.ui.components.analysis.ScoreHeader
 import com.shivams.mockmate.ui.components.analysis.SummaryGrid
 import com.shivams.mockmate.ui.viewmodels.AnalysisViewModel
 import java.text.SimpleDateFormat
@@ -59,6 +61,7 @@ import java.util.Locale
 fun AnalysisDashboardScreen(
     onNavigateBack: () -> Unit,
     onNewAnalysis: () -> Unit,
+    onViewHistory: () -> Unit = {},
     viewModel: AnalysisViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -88,6 +91,12 @@ fun AnalysisDashboardScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = onViewHistory) {
+                        Icon(
+                            imageVector = Icons.Filled.History,
+                            contentDescription = "View History"
+                        )
+                    }
                     IconButton(onClick = {
                         viewModel.clearAnalysis()
                         onNewAnalysis()
@@ -160,7 +169,17 @@ private fun DashboardContent(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Header section
+        // Score Header - Most important at top
+        item {
+            ScoreHeader(
+                score = report.score,
+                accuracy = report.accuracy,
+                totalQuestions = report.totalQuestions,
+                correctCount = report.summary.correctCount
+            )
+        }
+        
+        // Header section with subject and date
         item {
             HeaderSection(report = report)
         }

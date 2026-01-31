@@ -40,6 +40,7 @@
         android:hardwareAccelerated="true"
         android:enableOnBackInvokedCallback="true"
         android:requestLegacyExternalStorage="true"
+        android:usesCleartextTraffic="true"
         tools:targetApi="31">
         <!-- File provider for reading/writing files -->
         <provider

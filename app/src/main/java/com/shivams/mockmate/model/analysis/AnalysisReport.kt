@@ -10,7 +10,9 @@ data class AnalysisReport(
     val analysisTimestamp: Long,
     val questions: List<QuestionAnalysis>,
     val summary: AnalysisSummary,
-    val mentorFeedback: String = ""
+    val mentorFeedback: String = "",
+    val score: Float = 0f,
+    val accuracy: Float = 0f
 ) {
     companion object {
         /**
@@ -18,13 +20,23 @@ data class AnalysisReport(
          */
         fun fromResponse(response: AnalysisResponse, mentorFeedback: String = ""): AnalysisReport {
             val questions = response.questions.map { QuestionAnalysis.fromQuestionResult(it) }
+            val summary = AnalysisSummary.fromQuestions(questions)
+            
+            // Use server score/accuracy if provided, otherwise compute locally
+            val score = if (response.score > 0) response.score else {
+                (summary.correctCount * 2) - (summary.incorrectCount * 0.66f)
+            }
+            val accuracy = if (response.accuracy > 0) response.accuracy else summary.overallAccuracy * 100
+            
             return AnalysisReport(
                 testSubject = response.testSubject,
                 totalQuestions = response.totalQuestions,
                 analysisTimestamp = response.analysisTimestamp,
                 questions = questions,
-                summary = AnalysisSummary.fromQuestions(questions),
-                mentorFeedback = mentorFeedback
+                summary = summary,
+                mentorFeedback = if (response.mentorFeedback.isNotEmpty()) response.mentorFeedback else mentorFeedback,
+                score = score,
+                accuracy = accuracy
             )
         }
     }
