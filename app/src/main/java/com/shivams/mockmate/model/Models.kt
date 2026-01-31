@@ -9,8 +9,36 @@ import java.util.UUID
 enum class QuestionDifficulty { EASY, MEDIUM, HARD }
 enum class QuestionType { MULTIPLE_CHOICE, TRUE_FALSE, FILL_BLANK, MATCH_THE_COLUMN }
 enum class TestDifficulty { EASY, MEDIUM, HARD }
-enum class PracticeMode { DAILY_CHALLENGE, FOCUSED_PRACTICE, CUSTOM_PRACTICE, MOCK_TEST, PARAGRAPH_ANALYSIS }
+enum class PracticeMode { DAILY_CHALLENGE, FOCUSED_PRACTICE, CUSTOM_PRACTICE, MOCK_TEST, PARAGRAPH_ANALYSIS, TRUE_FALSE_APTITUDE }
 enum class QuestionStatus { UNATTEMPTED, ANSWERED, MARKED_FOR_REVIEW, BOOKMARKED }
+
+// True-False Aptitude Module Models
+data class TrueFalseStatement(
+    val id: String = UUID.randomUUID().toString(),
+    val statement: String,
+    val isTrue: Boolean,
+    val explanation: String,
+    val trapWords: List<String> = emptyList(),
+    val upscTip: String,
+    val difficulty: QuestionDifficulty = QuestionDifficulty.MEDIUM,
+    val subject: String,
+    val topic: String
+)
+
+data class TrueFalseSession(
+    val id: String = UUID.randomUUID().toString(),
+    val statements: List<TrueFalseStatement>,
+    val userAnswers: Map<String, Boolean?> = emptyMap(),
+    val timeSpentPerStatement: Map<String, Int> = emptyMap(),
+    val startTime: Date = Date(),
+    val endTime: Date? = null,
+    val isCompleted: Boolean = false,
+    val subject: String,
+    val topic: String,
+    val difficulty: TestDifficulty = TestDifficulty.MEDIUM,
+    val negativeMarking: Boolean = true,
+    val negativeMarkingValue: Float = 0.33f
+)
 
 // Question model
 data class Question(

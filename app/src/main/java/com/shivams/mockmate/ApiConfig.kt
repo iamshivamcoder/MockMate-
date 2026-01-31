@@ -13,11 +13,7 @@ class ApiConfig(context: Context) {
     private val BASE_URL = "https://generativelanguage.googleapis.com/"
 
     val geminiApiService: GeminiApiService by lazy {
-        Retrofit.Builder()
-            .baseUrl(BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(GeminiApiService::class.java)
+        com.shivams.mockmate.api.ApiModule.geminiApiService
     }
     private val sharedPreferences: SharedPreferences =
         context.getSharedPreferences("api_config", Context.MODE_PRIVATE)

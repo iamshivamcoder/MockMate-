@@ -29,7 +29,8 @@ import com.shivams.mockmate.ui.components.PracticeModeCard
 fun PracticeModeSelectionScreen(
     onNavigateBack: () -> Unit,
     onMockTestClick: () -> Unit,
-    onParagraphAnalysisClick: () -> Unit = {}, // This lambda now navigates to Match The Column
+    onParagraphAnalysisClick: () -> Unit = {},
+    onTrueFalseClick: () -> Unit = {},
     onSettingsClick: () -> Unit
 ) {
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
@@ -51,8 +52,8 @@ fun PracticeModeSelectionScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(innerPadding) // Apply innerPadding from Scaffold
-                .padding(horizontal = 16.dp, vertical = 16.dp), // Keep original content padding
+                .padding(innerPadding)
+                .padding(horizontal = 16.dp, vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             MotivationalQuoteCard()
@@ -76,10 +77,17 @@ fun PracticeModeSelectionScreen(
             )
 
             PracticeModeCard(
-                mode = PracticeMode.PARAGRAPH_ANALYSIS, // We can create a new mode if icon is an issue
+                mode = PracticeMode.PARAGRAPH_ANALYSIS,
                 title = "Match the Column",
                 description = "Test your knowledge by matching items from two columns.",
                 onClick = onParagraphAnalysisClick
+            )
+            
+            PracticeModeCard(
+                mode = PracticeMode.TRUE_FALSE_APTITUDE,
+                title = "True or False",
+                description = "Swipe-based training to detect hidden qualifiers and half-truths in UPSC-style statements.",
+                onClick = onTrueFalseClick
             )
         }
     }

@@ -17,9 +17,12 @@ import com.shivams.mockmate.model.UserProfile
         TestQuestionCrossRef::class,
         UserProfile::class,
         ChatMessageEntity::class,
-        ChatSessionEntity::class
+        ChatSessionEntity::class,
+        TrueFalseSessionEntity::class,
+        TrueFalseStatementEntity::class,
+        TrueFalseAnswerEntity::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = true
 )
 @TypeConverters(DateConverter::class)
@@ -31,6 +34,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun userStatsDao(): UserStatsDao
     abstract fun userProfileDao(): UserProfileDao
     abstract fun chatDao(): ChatDao
+    abstract fun trueFalseDao(): TrueFalseDao
     
     companion object {
         @Volatile

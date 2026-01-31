@@ -52,7 +52,11 @@ import com.shivams.mockmate.ui.screens.TestTakingScreen
 import com.shivams.mockmate.ui.screens.MentorChatScreen
 import com.shivams.mockmate.ui.screens.ApiKeyConfigScreen
 import com.shivams.mockmate.ui.screens.AiTestGeneratorScreen
+import com.shivams.mockmate.ui.screens.TrueFalseSelectionScreen
+import com.shivams.mockmate.ui.screens.TrueFalseSessionScreen
+import com.shivams.mockmate.ui.screens.TrueFalseResultScreen
 import com.shivams.mockmate.ui.viewmodels.AiTestGeneratorViewModel
+import com.shivams.mockmate.ui.viewmodels.TrueFalseViewModel
 import com.shivams.mockmate.ui.util.ComposeStabilityUtils
 import com.shivams.mockmate.ui.viewmodels.TestHistoryViewModel
 import com.shivams.mockmate.ui.viewmodels.MentorChatViewModel
@@ -73,11 +77,11 @@ object Routes {
     const val SETTINGS = "settings"
     const val TEST_HISTORY = "test_history"
     const val TEST_IMPORT = "test_import"
-    const val MATCH_THE_COLUMN_OLD = "match_the_column_old" // Renamed old route
+    const val MATCH_THE_COLUMN_OLD = "match_the_column_old"
     const val MATCH_THE_COLUMN_TAKING = "match_the_column_taking/{testId}"
     const val ABOUT_DEVELOPER = "about_developer"
     const val HELP_AND_FAQ = "help_and_faq"
-    const val ANALYTICS_SCREEN = "analytics_screen" // New route
+    const val ANALYTICS_SCREEN = "analytics_screen"
     const val NOTIFICATION_SCREEN = "notification_screen"
     const val PROFILE_SCREEN = "profile_screen"
     const val NOTIFICATION_DETAIL_SCREEN = "notification_detail_screen/{notificationId}"
@@ -86,6 +90,11 @@ object Routes {
     const val MENTOR_CHAT_SCREEN = "mentor_chat_screen"
     const val API_KEY_CONFIG_SCREEN = "api_key_config_screen"
     const val AI_TEST_GENERATOR_SCREEN = "ai_test_generator_screen"
+    
+    // True-False Aptitude Module routes
+    const val TRUE_FALSE_SELECTION = "true_false_selection"
+    const val TRUE_FALSE_SESSION = "true_false_session/{sessionId}"
+    const val TRUE_FALSE_RESULT = "true_false_result"
 
     fun testTakingRoute(testId: String) = "test_taking/$testId"
     fun testResultRoute(attemptId: String, testId: String) = "test_result/$attemptId/$testId"
@@ -208,6 +217,7 @@ fun AppNavHost(
                     onNavigateBack = { navController.navigateUp() },
                     onMockTestClick = { navController.safeNavigate(Routes.MOCK_TEST_SELECTION) },
                     onParagraphAnalysisClick = { navController.safeNavigate(Routes.MATCH_THE_COLUMN_SELECTION) },
+                    onTrueFalseClick = { navController.safeNavigate(Routes.TRUE_FALSE_SELECTION) },
                     onSettingsClick = { navController.safeNavigate(Routes.SETTINGS) }
                 )
             }
@@ -463,6 +473,59 @@ fun AppNavHost(
                 NotificationDetailScreen(
                     notification = notification,
                     onNavigateBack = { navController.navigateUp() })
+            }
+            
+            // True-False Aptitude Module Screens
+            composable(Routes.TRUE_FALSE_SELECTION) {
+                val context = LocalContext.current
+                val database = remember { AppDatabase.getInstance(context) }
+                val apiConfig = remember { ApiConfig(context) }
+                val aiInsightsService = remember { AiInsightsService(apiConfig, stableRepository) }
+                val viewModel = remember {
+                    TrueFalseViewModel(aiInsightsService = aiInsightsService, trueFalseDao = database.trueFalseDao())
+                }
+                TrueFalseSelectionScreen(
+                    viewModel = viewModel,
+                    onNavigateBack = { navController.navigateUp() },
+                    onSessionStarted = { sessionId -> navController.safeNavigate(Routes.TRUE_FALSE_SESSION.replace("{sessionId}", sessionId)) }
+                )
+            }
+            
+            composable(
+                route = Routes.TRUE_FALSE_SESSION,
+                arguments = listOf(navArgument("sessionId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val sessionId = backStackEntry.arguments?.getString("sessionId") ?: return@composable
+                
+                val context = LocalContext.current
+                val database = remember { AppDatabase.getInstance(context) }
+                val apiConfig = remember { ApiConfig(context) }
+                val aiInsightsService = remember { AiInsightsService(apiConfig, stableRepository) }
+                val viewModel = remember {
+                    TrueFalseViewModel(aiInsightsService = aiInsightsService, trueFalseDao = database.trueFalseDao())
+                }
+                
+                TrueFalseSessionScreen(
+                    viewModel = viewModel,
+                    sessionId = sessionId,
+                    onNavigateBack = { navController.navigateUp() },
+                    onSessionComplete = { navController.safeNavigate(Routes.TRUE_FALSE_RESULT) { popUpTo(Routes.TRUE_FALSE_SESSION) { inclusive = true } } }
+                )
+            }
+            
+            composable(Routes.TRUE_FALSE_RESULT) {
+                val context = LocalContext.current
+                val database = remember { AppDatabase.getInstance(context) }
+                val apiConfig = remember { ApiConfig(context) }
+                val aiInsightsService = remember { AiInsightsService(apiConfig, stableRepository) }
+                val viewModel = remember {
+                    TrueFalseViewModel(aiInsightsService = aiInsightsService, trueFalseDao = database.trueFalseDao())
+                }
+                TrueFalseResultScreen(
+                    viewModel = viewModel,
+                    onRetry = { navController.safeNavigate(Routes.TRUE_FALSE_SELECTION) { popUpTo(Routes.TRUE_FALSE_RESULT) { inclusive = true } } },
+                    onDashboard = { navController.safeNavigate(Routes.DASHBOARD) { popUpTo(Routes.DASHBOARD) { inclusive = true } } }
+                )
             }
         }
     }

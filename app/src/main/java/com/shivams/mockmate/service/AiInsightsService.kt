@@ -151,6 +151,29 @@ class AiInsightsService(
         }
     }
 
+    /**
+     * Generate True-False statements for UPSC aptitude training
+     */
+    suspend fun generateTrueFalseStatements(
+        topic: String,
+        subject: String,
+        difficulty: TestDifficulty,
+        numberOfStatements: Int
+    ): Result<List<TrueFalseStatement>> = withContext(Dispatchers.IO) {
+        try {
+            val apiKey = apiConfig.getApiKey(GEMINI_PROVIDER)
+                ?: return@withContext Result.failure(Exception("Gemini API key not configured. Please configure it in Settings."))
+
+            val prompt = buildTrueFalsePrompt(topic, subject, difficulty, numberOfStatements)
+            val response = callGeminiApi(apiKey, prompt)
+            
+            parseTrueFalseStatements(response, topic, subject, difficulty)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error generating True-False statements", e)
+            Result.failure(e)
+        }
+    }
+
     private suspend fun callGeminiApi(apiKey: String, prompt: String): String {
         val request = GeminiRequest(
             contents = listOf(
@@ -552,5 +575,164 @@ Requirements:
             Log.e(TAG, "Error parsing generated test", e)
             Result.failure(Exception("Failed to parse AI response: ${e.message}"))
         }
+    }
+
+    private fun buildTrueFalsePrompt(
+        topic: String,
+        subject: String,
+        difficulty: TestDifficulty,
+        numberOfStatements: Int
+    ): String {
+        val difficultyGuide = when (difficulty) {
+            TestDifficulty.EASY -> "straightforward statements with obvious traps"
+            TestDifficulty.MEDIUM -> "statements with subtle qualifiers and common misconceptions"
+            TestDifficulty.HARD -> "highly deceptive statements with nuanced traps (UPSC Prelims level)"
+        }
+
+        return """
+Generate exactly $numberOfStatements UPSC-style True/False statements about "$topic" in $subject.
+
+CRITICAL REQUIREMENTS:
+1. Each statement must be DEFINITIVELY True or False (no ambiguity)
+2. Include a mix of True (~50%) and False (~50%) statements
+3. False statements should be DECEPTIVELY crafted using these UPSC techniques:
+   - Hidden qualifiers: "only", "always", "never", "exclusively", "entirely", "must"
+   - Scope distortion: stating part as whole, or exception as general rule
+   - Conceptual mismatch: correct concept in wrong context
+   - Half-truths: partially correct statements that fail on specifics
+
+Difficulty Level: ${difficulty.name} ($difficultyGuide)
+
+IMPORTANT: Respond ONLY with valid JSON. No explanations outside JSON.
+
+JSON Format:
+{
+    "statements": [
+        {
+            "statement": "The statement text here",
+            "isTrue": true,
+            "explanation": "Why this is true/false (2-3 sentences, very specific)",
+            "trapWords": ["word1", "word2"],
+            "upscTip": "One-liner rule for similar questions"
+        }
+    ]
+}
+
+Requirements:
+- Statements must be factually accurate (verifiable from NCERT/standard sources)
+- Focus on $subject facts related to $topic
+- Explanations must clearly show WHY the statement is true/false
+- trapWords array should contain the misleading words in false statements (empty for true statements)
+- upscTip should be a memorable one-liner rule
+""".trimIndent()
+    }
+
+    private fun parseTrueFalseStatements(
+        response: String,
+        topic: String,
+        subject: String,
+        difficulty: TestDifficulty
+    ): Result<List<TrueFalseStatement>> {
+        return try {
+            val jsonStr = extractJson(response)
+            val json = JSONObject(jsonStr)
+            
+            val statementsArray = json.getJSONArray("statements")
+            val statements = mutableListOf<TrueFalseStatement>()
+            
+            for (i in 0 until statementsArray.length()) {
+                val s = statementsArray.getJSONObject(i)
+                
+                val trapWords = mutableListOf<String>()
+                val trapWordsArray = s.optJSONArray("trapWords") ?: JSONArray()
+                for (j in 0 until trapWordsArray.length()) {
+                    trapWords.add(trapWordsArray.getString(j))
+                }
+                
+                statements.add(
+                    TrueFalseStatement(
+                        statement = s.getString("statement"),
+                        isTrue = s.getBoolean("isTrue"),
+                        explanation = s.optString("explanation", ""),
+                        trapWords = trapWords,
+                        upscTip = s.optString("upscTip", ""),
+                        difficulty = when (difficulty) {
+                            TestDifficulty.EASY -> QuestionDifficulty.EASY
+                            TestDifficulty.MEDIUM -> QuestionDifficulty.MEDIUM
+                            TestDifficulty.HARD -> QuestionDifficulty.HARD
+                        },
+                        subject = subject,
+                        topic = topic
+                    )
+                )
+            }
+            
+            if (statements.isEmpty()) {
+                return Result.failure(Exception("No statements generated"))
+            }
+            
+            Log.d(TAG, "Parsed ${statements.size} True-False statements")
+            Result.success(statements)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error parsing True-False statements", e)
+            Result.failure(Exception("Failed to parse AI response: ${e.message}"))
+        }
+    }
+    /**
+     * Generate True-False statements from raw text (Prompt Based Import)
+     */
+    suspend fun generateTrueFalseStatementsFromText(
+        text: String,
+        numberOfStatements: Int
+    ): Result<List<TrueFalseStatement>> = withContext(Dispatchers.IO) {
+        try {
+            val apiKey = apiConfig.getApiKey(GEMINI_PROVIDER)
+                ?: return@withContext Result.failure(Exception("Gemini API key not configured. Please configure it in Settings."))
+
+            // Limit text length to avoid token limits (arbitrary safe limit ~3000 words)
+            val truncatedText = if (text.length > 15000) text.take(15000) + "..." else text
+            
+            val prompt = buildTrueFalseFromTextPrompt(truncatedText, numberOfStatements)
+            val response = callGeminiApi(apiKey, prompt)
+            
+            // Re-use existing parser, treating topic as "Custom" and subject as "Text Import"
+            parseTrueFalseStatements(response, topic = "Imported Text", subject = "Custom", difficulty = TestDifficulty.MEDIUM)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error generating True-False statements from text", e)
+            Result.failure(e)
+        }
+    }
+
+    private fun buildTrueFalseFromTextPrompt(
+        text: String,
+        numberOfStatements: Int
+    ): String {
+        return """
+Generate exactly $numberOfStatements UPSC-style True/False statements based ONLY on the provided text below.
+
+CRITICAL REQUIREMENTS:
+1. All statements must be derived directly from the provided text.
+2. Include a mix of True (~50%) and False (~50%) statements.
+3. False statements should optionally use UPSC deceptive techniques (hidden qualifiers, scope distortion) if the text allows.
+4. If the text is short, generate as many high-quality statements as possible up to $numberOfStatements.
+
+SOURCE TEXT:
+$text
+
+IMPORTANT: Respond ONLY with valid JSON. No explanations outside JSON.
+
+JSON Format:
+{
+    "statements": [
+        {
+            "statement": "The statement text here",
+            "isTrue": true,
+            "explanation": "Why this is true/false based on the text (cite specific part)",
+            "trapWords": ["word1"],
+            "upscTip": "General rule derived from this fact"
+        }
+    ]
+}
+""".trimIndent()
     }
 }
