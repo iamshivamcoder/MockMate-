@@ -9,20 +9,22 @@ data class AnalysisReport(
     val totalQuestions: Int,
     val analysisTimestamp: Long,
     val questions: List<QuestionAnalysis>,
-    val summary: AnalysisSummary
+    val summary: AnalysisSummary,
+    val mentorFeedback: String = ""
 ) {
     companion object {
         /**
          * Factory function to create AnalysisReport from API response.
          */
-        fun fromResponse(response: AnalysisResponse): AnalysisReport {
+        fun fromResponse(response: AnalysisResponse, mentorFeedback: String = ""): AnalysisReport {
             val questions = response.questions.map { QuestionAnalysis.fromQuestionResult(it) }
             return AnalysisReport(
                 testSubject = response.testSubject,
                 totalQuestions = response.totalQuestions,
                 analysisTimestamp = response.analysisTimestamp,
                 questions = questions,
-                summary = AnalysisSummary.fromQuestions(questions)
+                summary = AnalysisSummary.fromQuestions(questions),
+                mentorFeedback = mentorFeedback
             )
         }
     }

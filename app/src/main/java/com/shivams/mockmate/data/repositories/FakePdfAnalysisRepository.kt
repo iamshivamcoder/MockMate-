@@ -25,6 +25,19 @@ class FakePdfAnalysisRepository @Inject constructor() : PdfAnalysisRepository {
     
     private var cachedReport: AnalysisReport? = null
     
+    // Sample mentor feedback for mock data
+    private val mockMentorFeedback = """
+        Overall decent attempt! 👍
+        
+        You have strong intuition (100% success on quick answers), but you're losing easy marks in Modern History due to 'Concept Collapse'.
+        
+        📚 **Action Item:** Revise the Timeline of 1940s events before the next mock. Focus especially on:
+        • Rowlatt Act vs Vernacular Press Act
+        • Cabinet Mission Plan provisions
+        
+        💡 Your brown ink usage shows good self-awareness of uncertainty. Keep using it!
+    """.trimIndent()
+    
     @Suppress("UNUSED_PARAMETER")
     override fun uploadAndAnalyze(contentUri: Uri): Flow<Resource<AnalysisReport>> = flow {
         emit(Resource.Loading)
@@ -35,7 +48,7 @@ class FakePdfAnalysisRepository @Inject constructor() : PdfAnalysisRepository {
         try {
             // Generate mock analysis for "Modern History" test
             val mockResponse = generateMockModernHistoryAnalysis()
-            val report = AnalysisReport.fromResponse(mockResponse)
+            val report = AnalysisReport.fromResponse(mockResponse, mockMentorFeedback)
             
             // Cache for potential restoration
             cachedReport = report

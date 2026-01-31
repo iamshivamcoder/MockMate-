@@ -4,8 +4,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -14,13 +16,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.filled.BrokenImage
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -37,7 +39,11 @@ import com.shivams.mockmate.model.analysis.CognitiveTag
 import com.shivams.mockmate.model.analysis.QuestionAnalysis
 
 /**
- * List item for displaying a single question's cognitive analysis.
+ * Redesigned list item for displaying a single question's cognitive analysis.
+ * Features:
+ * - ElevatedCard with shadow (no border)
+ * - Colored vertical strip on left edge
+ * - Properly aligned icons
  */
 @Composable
 fun QuestionInsightItem(
@@ -46,122 +52,163 @@ fun QuestionInsightItem(
 ) {
     val (tagColor, tagIcon, tagLabel) = getTagDetails(questionAnalysis.cognitiveTag)
     
-    Card(
+    ElevatedCard(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.Top
+                .height(IntrinsicSize.Min) // Required for fillMaxHeight on child
         ) {
-            // Question number badge
+            // Colored vertical strip indicator
             Box(
                 modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(tagColor.copy(alpha = 0.15f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "Q${questionAnalysis.questionNumber}",
-                    style = MaterialTheme.typography.labelLarge.copy(
-                        fontWeight = FontWeight.Bold
-                    ),
-                    color = tagColor
-                )
-            }
+                    .width(6.dp)
+                    .fillMaxHeight()
+                    .background(tagColor)
+            )
             
-            Spacer(modifier = Modifier.width(12.dp))
-            
-            Column(
-                modifier = Modifier.weight(1f)
+            // Main content
+            Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(16.dp),
+                verticalAlignment = Alignment.Top
             ) {
-                // Tag label row
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
+                // Question number badge
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(tagColor.copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = tagIcon,
-                        contentDescription = tagLabel,
-                        tint = tagColor,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = tagLabel,
-                        style = MaterialTheme.typography.labelMedium.copy(
-                            fontWeight = FontWeight.SemiBold
+                        text = "Q${questionAnalysis.questionNumber}",
+                        style = MaterialTheme.typography.labelLarge.copy(
+                            fontWeight = FontWeight.Bold
                         ),
                         color = tagColor
                     )
-                    
-                    // Correct/Incorrect indicator
-                    Spacer(modifier = Modifier.weight(1f))
-                    Text(
-                        text = if (questionAnalysis.isCorrect) "✓ Correct" else "✗ Wrong",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = if (questionAnalysis.isCorrect) 
-                            Color(0xFF4CAF50) 
-                        else 
-                            Color(0xFFE53935)
-                    )
                 }
                 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.width(14.dp))
                 
-                // Reasoning
-                Text(
-                    text = questionAnalysis.reasoning,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis
-                )
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                // Ink colors and metadata row
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                Column(
+                    modifier = Modifier.weight(1f)
                 ) {
-                    // Ink colors used
-                    if (questionAnalysis.inkColorUsed.isNotEmpty()) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            questionAnalysis.inkColorUsed.forEach { color ->
-                                InkColorDot(inkColor = color)
-                                Spacer(modifier = Modifier.width(4.dp))
-                            }
+                    // Tag label row with icon
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            imageVector = tagIcon,
+                            contentDescription = tagLabel,
+                            tint = tagColor,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = tagLabel,
+                            style = MaterialTheme.typography.titleSmall.copy(
+                                fontWeight = FontWeight.SemiBold
+                            ),
+                            color = tagColor
+                        )
+                        
+                        Spacer(modifier = Modifier.weight(1f))
+                        
+                        // Correct/Incorrect badge
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(
+                                    if (questionAnalysis.isCorrect)
+                                        Color(0xFF4CAF50).copy(alpha = 0.12f)
+                                    else
+                                        Color(0xFFE53935).copy(alpha = 0.12f)
+                                )
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = if (questionAnalysis.isCorrect) "✓ Correct" else "✗ Wrong",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.Medium
+                                ),
+                                color = if (questionAnalysis.isCorrect)
+                                    Color(0xFF2E7D32)
+                                else
+                                    Color(0xFFC62828)
+                            )
                         }
                     }
                     
-                    // Time spent (if available)
-                    questionAnalysis.timeSpentSeconds?.let { time ->
-                        Text(
-                            text = "${time}s",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                        )
-                    }
+                    Spacer(modifier = Modifier.height(10.dp))
                     
-                    // Elimination attempts
-                    if (questionAnalysis.eliminationAttempts > 0) {
-                        Text(
-                            text = "${questionAnalysis.eliminationAttempts} eliminations",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                        )
+                    // Reasoning text
+                    Text(
+                        text = questionAnalysis.reasoning,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
+                        lineHeight = MaterialTheme.typography.bodyMedium.lineHeight * 1.1f
+                    )
+                    
+                    Spacer(modifier = Modifier.height(12.dp))
+                    
+                    // Metadata row - ink colors and stats
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Ink colors used
+                        if (questionAnalysis.inkColorUsed.isNotEmpty()) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                questionAnalysis.inkColorUsed.forEach { color ->
+                                    InkColorDot(inkColor = color)
+                                }
+                            }
+                        }
+                        
+                        // Time spent
+                        questionAnalysis.timeSpentSeconds?.let { time ->
+                            MetadataChip(text = "${time}s")
+                        }
+                        
+                        // Elimination attempts
+                        if (questionAnalysis.eliminationAttempts > 0) {
+                            MetadataChip(text = "${questionAnalysis.eliminationAttempts} elim.")
+                        }
+                        
+                        // Strikethroughs
+                        if (questionAnalysis.strikethroughCount > 0) {
+                            MetadataChip(text = "${questionAnalysis.strikethroughCount} strikes")
+                        }
                     }
                 }
             }
         }
     }
+}
+
+@Composable
+private fun MetadataChip(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+    )
 }
 
 @Composable
@@ -176,7 +223,7 @@ private fun InkColorDot(inkColor: String) {
     
     Box(
         modifier = Modifier
-            .size(12.dp)
+            .size(14.dp)
             .clip(CircleShape)
             .background(color)
     )
@@ -195,7 +242,7 @@ private fun getTagDetails(tag: CognitiveTag): Triple<Color, ImageVector, String>
             "Silly Mistake"
         )
         CognitiveTag.SOLID -> Triple(
-            Color(0xFF4CAF50),
+            Color(0xFF43A047),
             Icons.Filled.CheckCircle,
             "Solid Knowledge"
         )

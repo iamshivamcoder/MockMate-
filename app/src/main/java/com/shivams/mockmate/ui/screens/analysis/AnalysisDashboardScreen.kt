@@ -42,6 +42,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.shivams.mockmate.model.analysis.AnalysisReport
+import com.shivams.mockmate.ui.components.analysis.MentorFeedbackCard
 import com.shivams.mockmate.ui.components.analysis.QuestionInsightItem
 import com.shivams.mockmate.ui.components.analysis.SummaryGrid
 import com.shivams.mockmate.ui.viewmodels.AnalysisViewModel
@@ -177,6 +178,11 @@ private fun DashboardContent(
         // Accuracy overview
         item {
             AccuracyCard(report = report)
+        }
+        
+        // Mentor Feedback Card (between score and breakdown)
+        item {
+            MentorFeedbackCard(feedback = report.mentorFeedback)
         }
         
         // Detailed breakdown header
