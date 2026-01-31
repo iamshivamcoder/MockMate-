@@ -1,6 +1,7 @@
 package com.shivams.mockmate.ui.components.analysis
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -26,10 +28,11 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.shivams.mockmate.model.analysis.MentorFeedback
 
 /**
- * Mentor Feedback Card - displays AI-generated advice and insights.
- * Features a distinct purple/blue gradient background with a bot icon.
+ * Mentor Feedback Card - displays AI-generated advice with structured sections.
+ * Shows key strength, critical weakness, and actionable next step.
  */
 @Composable
 fun MentorFeedbackCard(
@@ -37,6 +40,9 @@ fun MentorFeedbackCard(
     modifier: Modifier = Modifier
 ) {
     if (feedback.isBlank()) return
+    
+    // Parse structured feedback
+    val mentorFeedback = MentorFeedback.fromRawFeedback(feedback)
     
     ElevatedCard(
         modifier = modifier.fillMaxWidth(),
@@ -64,7 +70,7 @@ fun MentorFeedbackCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Bot icon in circle
-                androidx.compose.foundation.layout.Box(
+                Box(
                     modifier = Modifier
                         .size(44.dp)
                         .clip(CircleShape)
@@ -99,13 +105,93 @@ fun MentorFeedbackCard(
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            // Feedback content
-            Text(
-                text = feedback,
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.White.copy(alpha = 0.95f),
-                lineHeight = MaterialTheme.typography.bodyMedium.lineHeight * 1.3f
+            // Content - Structured or Legacy
+            if (mentorFeedback.isStructured) {
+                StructuredFeedbackContent(mentorFeedback)
+            } else {
+                // Legacy plain text
+                Text(
+                    text = feedback,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White.copy(alpha = 0.95f),
+                    lineHeight = MaterialTheme.typography.bodyMedium.lineHeight * 1.3f
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun StructuredFeedbackContent(feedback: MentorFeedback) {
+    Column {
+        // Key Strength
+        if (feedback.keyStrength.isNotEmpty()) {
+            FeedbackSection(
+                emoji = "✅",
+                title = "Key Strength",
+                content = feedback.keyStrength,
+                contentColor = Color(0xFFB9F6CA)  // Light green
+            )
+            Spacer(modifier = Modifier.height(14.dp))
+        }
+        
+        // Critical Weakness
+        if (feedback.criticalWeakness.isNotEmpty()) {
+            FeedbackSection(
+                emoji = "⚠️",
+                title = "Critical Weakness",
+                content = feedback.criticalWeakness,
+                contentColor = Color(0xFFFFE0B2)  // Light orange
+            )
+            Spacer(modifier = Modifier.height(14.dp))
+        }
+        
+        // Actionable Step
+        if (feedback.actionableStep.isNotEmpty()) {
+            FeedbackSection(
+                emoji = "🚀",
+                title = "Next Step",
+                content = feedback.actionableStep,
+                contentColor = Color.White.copy(alpha = 0.95f)
             )
         }
+    }
+}
+
+@Composable
+private fun FeedbackSection(
+    emoji: String,
+    title: String,
+    content: String,
+    contentColor: Color
+) {
+    Column {
+        // Section header
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = emoji,
+                style = MaterialTheme.typography.titleMedium
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall.copy(
+                    fontWeight = FontWeight.Bold
+                ),
+                color = Color.White
+            )
+        }
+        
+        Spacer(modifier = Modifier.height(6.dp))
+        
+        // Section content
+        Text(
+            text = content,
+            style = MaterialTheme.typography.bodyMedium,
+            color = contentColor,
+            lineHeight = MaterialTheme.typography.bodyMedium.lineHeight * 1.2f
+        )
     }
 }
