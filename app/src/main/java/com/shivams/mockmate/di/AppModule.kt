@@ -4,6 +4,8 @@ import android.content.Context
 import com.shivams.mockmate.ApiConfig
 import com.shivams.mockmate.api.GeminiApiService
 import com.shivams.mockmate.data.database.UserProfileDao
+import com.shivams.mockmate.data.repositories.FakePdfAnalysisRepository
+import com.shivams.mockmate.data.repositories.PdfAnalysisRepository
 import com.shivams.mockmate.data.repositories.SettingsRepository
 import com.shivams.mockmate.data.repositories.TestRepository
 import com.shivams.mockmate.data.repositories.TestRepositoryImpl
@@ -78,5 +80,13 @@ object AppModule {
     @Singleton
     fun provideGson(): com.google.gson.Gson {
         return com.google.gson.Gson()
+    }
+
+    @Provides
+    @Singleton
+    fun providePdfAnalysisRepository(): PdfAnalysisRepository {
+        // Using FakePdfAnalysisRepository for development
+        // TODO: Replace with real implementation when backend is ready
+        return FakePdfAnalysisRepository()
     }
 }

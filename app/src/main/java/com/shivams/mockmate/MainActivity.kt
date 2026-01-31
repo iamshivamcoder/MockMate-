@@ -1,7 +1,9 @@
 package com.shivams.mockmate
 
+import android.content.Intent
 import android.Manifest
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
@@ -17,7 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf // Added import
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -29,6 +31,7 @@ import com.shivams.mockmate.data.repositories.SettingsRepository
 import com.shivams.mockmate.data.repositories.TestRepository
 import com.shivams.mockmate.notifications.TestReminderReceiver
 import com.shivams.mockmate.ui.navigation.AppNavHost
+import com.shivams.mockmate.ui.navigation.Routes
 import com.shivams.mockmate.ui.theme.MockMateTheme
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -132,6 +135,25 @@ class MainActivity : ComponentActivity() {
                 
                 // Create stable navigation controller
                 val navController = rememberNavController()
+                
+                // Check if launched via PDF share intent
+                val sharedPdfUri = remember {
+                    if (intent?.action == Intent.ACTION_SEND && intent.type == "application/pdf") {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
+                        } else {
+                            @Suppress("DEPRECATION")
+                            intent.getParcelableExtra(Intent.EXTRA_STREAM)
+                        }
+                    } else null
+                }
+                
+                // Navigate to PDF analyzer if shared PDF is present
+                LaunchedEffect(sharedPdfUri) {
+                    if (sharedPdfUri != null) {
+                        navController.navigate(Routes.PDF_IMPORT)
+                    }
+                }
                 
                 val settings by settingsRepository.settings.collectAsState(initial = com.shivams.mockmate.model.AppSettings())
 

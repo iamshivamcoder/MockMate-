@@ -55,8 +55,11 @@ import com.shivams.mockmate.ui.screens.AiTestGeneratorScreen
 import com.shivams.mockmate.ui.screens.TrueFalseSelectionScreen
 import com.shivams.mockmate.ui.screens.TrueFalseSessionScreen
 import com.shivams.mockmate.ui.screens.TrueFalseResultScreen
+import com.shivams.mockmate.ui.screens.analysis.PdfImportScreen
+import com.shivams.mockmate.ui.screens.analysis.AnalysisDashboardScreen
 import com.shivams.mockmate.ui.viewmodels.AiTestGeneratorViewModel
 import com.shivams.mockmate.ui.viewmodels.TrueFalseViewModel
+import com.shivams.mockmate.ui.viewmodels.AnalysisViewModel
 import com.shivams.mockmate.ui.util.ComposeStabilityUtils
 import com.shivams.mockmate.ui.viewmodels.TestHistoryViewModel
 import com.shivams.mockmate.ui.viewmodels.MentorChatViewModel
@@ -95,6 +98,10 @@ object Routes {
     const val TRUE_FALSE_SELECTION = "true_false_selection"
     const val TRUE_FALSE_SESSION = "true_false_session/{sessionId}"
     const val TRUE_FALSE_RESULT = "true_false_result"
+    
+    // PDF Analyzer routes
+    const val PDF_IMPORT = "pdf_import"
+    const val ANALYSIS_DASHBOARD = "analysis_dashboard"
 
     fun testTakingRoute(testId: String) = "test_taking/$testId"
     fun testResultRoute(attemptId: String, testId: String) = "test_result/$attemptId/$testId"
@@ -525,6 +532,25 @@ fun AppNavHost(
                     viewModel = viewModel,
                     onRetry = { navController.safeNavigate(Routes.TRUE_FALSE_SELECTION) { popUpTo(Routes.TRUE_FALSE_RESULT) { inclusive = true } } },
                     onDashboard = { navController.safeNavigate(Routes.DASHBOARD) { popUpTo(Routes.DASHBOARD) { inclusive = true } } }
+                )
+            }
+            
+            // PDF Analyzer Screens
+            composable(Routes.PDF_IMPORT) {
+                PdfImportScreen(
+                    onNavigateBack = { navController.navigateUp() },
+                    onAnalysisReady = {
+                        navController.safeNavigate(Routes.ANALYSIS_DASHBOARD) {
+                            popUpTo(Routes.PDF_IMPORT) { inclusive = true }
+                        }
+                    }
+                )
+            }
+            
+            composable(Routes.ANALYSIS_DASHBOARD) {
+                AnalysisDashboardScreen(
+                    onNavigateBack = { navController.navigateUp() },
+                    onNewAnalysis = { navController.safeNavigate(Routes.PDF_IMPORT) }
                 )
             }
         }
