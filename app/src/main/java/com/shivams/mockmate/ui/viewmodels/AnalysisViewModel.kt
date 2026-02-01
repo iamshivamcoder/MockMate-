@@ -9,11 +9,15 @@ import com.shivams.mockmate.model.analysis.CognitiveTag
 import com.shivams.mockmate.model.analysis.QuestionAnalysis
 import com.shivams.mockmate.util.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import javax.inject.Inject
 
 /**
@@ -30,6 +34,14 @@ data class AnalysisUiState(
 }
 
 /**
+ * One-time UI events for snackbars, navigation, etc.
+ */
+sealed class AnalysisUiEvent {
+    data class ShowSnackbar(val message: String, val isError: Boolean = true) : AnalysisUiEvent()
+    data object AnalysisComplete : AnalysisUiEvent()
+}
+
+/**
  * ViewModel for the Metacognitive PDF Analyzer feature.
  * Bridges the Repository to the UI and provides cognitive filtering functions.
  */
@@ -40,6 +52,10 @@ class AnalysisViewModel @Inject constructor(
     
     private val _uiState = MutableStateFlow(AnalysisUiState())
     val uiState: StateFlow<AnalysisUiState> = _uiState.asStateFlow()
+    
+    // Channel for one-time UI events (snackbars, etc.)
+    private val _uiEvent = Channel<AnalysisUiEvent>()
+    val uiEvent = _uiEvent.receiveAsFlow()
     
     /**
      * Analyze a PDF from the given content URI.
@@ -62,17 +78,60 @@ class AnalysisViewModel @Inject constructor(
                                 error = null
                             ) 
                         }
+                        _uiEvent.send(AnalysisUiEvent.AnalysisComplete)
+                        _uiEvent.send(AnalysisUiEvent.ShowSnackbar(
+                            message = "✅ Analysis complete!",
+                            isError = false
+                        ))
                     }
                     is Resource.Error -> {
+                        val userFriendlyMessage = mapErrorToUserMessage(resource.message, resource.exception)
                         _uiState.update { 
                             it.copy(
                                 isLoading = false, 
-                                error = resource.message
+                                error = userFriendlyMessage
                             ) 
                         }
+                        _uiEvent.send(AnalysisUiEvent.ShowSnackbar(
+                            message = userFriendlyMessage,
+                            isError = true
+                        ))
                     }
                 }
             }
+        }
+    }
+    
+    /**
+     * Map technical errors to user-friendly messages.
+     */
+    private fun mapErrorToUserMessage(message: String?, exception: Throwable?): String {
+        return when {
+            // Timeout errors (common with Render cold starts)
+            exception is SocketTimeoutException || 
+            message?.contains("timeout", ignoreCase = true) == true -> 
+                "⏳ Server is waking up. Please try again in 1 minute."
+            
+            // Network connectivity issues
+            exception is UnknownHostException ||
+            message?.contains("Unable to resolve host", ignoreCase = true) == true ->
+                "📶 No internet connection. Please check your network."
+            
+            // Payload too large
+            message?.contains("413", ignoreCase = true) == true ||
+            message?.contains("too large", ignoreCase = true) == true ->
+                "📄 PDF is too large. Please upload fewer pages (max ~20 pages)."
+            
+            // Server errors
+            message?.contains("500", ignoreCase = true) == true ->
+                "🔧 Server error. Our team is on it. Try again later."
+            
+            // Rate limiting
+            message?.contains("429", ignoreCase = true) == true ->
+                "🚦 Too many requests. Please wait a moment."
+            
+            // Generic fallback
+            else -> "❌ Analysis failed. Please check your connection and try again."
         }
     }
     

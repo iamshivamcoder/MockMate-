@@ -6,12 +6,10 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.gson.Gson
+import com.shivams.mockmate.data.database.AnalysisDao
 import com.shivams.mockmate.data.repositories.TestRepository
 import com.shivams.mockmate.data.repositories.UserProfileRepository
 import com.shivams.mockmate.model.BackupData
-import com.shivams.mockmate.model.MockTest
-import com.shivams.mockmate.model.TestAttempt
-import com.shivams.mockmate.model.UserProfile
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -26,6 +24,7 @@ import javax.inject.Inject
 class DataManagementViewModel @Inject constructor(
     private val testRepository: TestRepository,
     private val userProfileRepository: UserProfileRepository,
+    private val analysisDao: AnalysisDao,
     private val gson: Gson
 ) : ViewModel() {
 
@@ -36,11 +35,13 @@ class DataManagementViewModel @Inject constructor(
                 val profile = userProfileRepository.getUserProfile().firstOrNull()
                 val attempts = testRepository.getAllTestAttempts().first()
                 val mockTests = testRepository.mockTests.first()
+                val analysisReports = analysisDao.getAllAnalyses().first()
 
                 val backupData = BackupData(
                     profile = profile,
                     attempts = attempts,
-                    mockTests = mockTests
+                    mockTests = mockTests,
+                    analysisReports = analysisReports
                 )
 
                 val json = gson.toJson(backupData)
@@ -53,7 +54,7 @@ class DataManagementViewModel @Inject constructor(
                 }
                 
                 withContext(Dispatchers.Main) {
-                    onResult(true, "Data exported successfully")
+                    onResult(true, "Data exported successfully (${analysisReports.size} analysis reports)")
                 }
             } catch (e: Exception) {
                 Log.e("DataExport", "Error exporting data", e)
@@ -82,12 +83,8 @@ class DataManagementViewModel @Inject constructor(
                     userProfileRepository.saveUserProfile(it)
                 }
 
-                // 2. Mock Tests (Avoid duplicates?)
-                // Strategy: Insert all. If ID exists, Room behavior? 
-                // Repository 'saveTest' likely uses Insert(onConflict=REPLACE) or custom logic.
-                // We'll rely on Repository.
+                // 2. Mock Tests
                 backupData.mockTests.forEach { test ->
-                    // Check if exists? Or just save.
                     testRepository.saveTest(test)
                 }
 
@@ -95,9 +92,14 @@ class DataManagementViewModel @Inject constructor(
                 backupData.attempts.forEach { attempt ->
                     testRepository.saveTestAttempt(attempt)
                 }
+                
+                // 4. Analysis Reports (NEW)
+                backupData.analysisReports.forEach { analysis ->
+                    analysisDao.insertAnalysis(analysis)
+                }
 
                 withContext(Dispatchers.Main) {
-                    onResult(true, "Data imported successfully")
+                    onResult(true, "Data imported successfully (${backupData.analysisReports.size} analysis reports)")
                 }
             } catch (e: Exception) {
                 Log.e("DataImport", "Error importing data", e)

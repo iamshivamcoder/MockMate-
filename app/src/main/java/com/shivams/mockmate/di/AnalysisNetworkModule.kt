@@ -1,6 +1,5 @@
 package com.shivams.mockmate.di
 
-import android.content.Context
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.shivams.mockmate.data.remote.AnalysisApi
@@ -11,7 +10,6 @@ import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
-import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -48,9 +46,11 @@ object AnalysisNetworkModule {
     fun provideOkHttpClient(loggingInterceptor: HttpLoggingInterceptor): OkHttpClient {
         return OkHttpClient.Builder()
             .addInterceptor(loggingInterceptor)
+            // Critical for Render Cold Starts: Connect timeout set to 60s
             .connectTimeout(ApiConstants.CONNECT_TIMEOUT, TimeUnit.SECONDS)
             .readTimeout(ApiConstants.READ_TIMEOUT, TimeUnit.SECONDS)
             .writeTimeout(ApiConstants.WRITE_TIMEOUT, TimeUnit.SECONDS)
+            .retryOnConnectionFailure(true) // Added reliability for cloud
             .build()
     }
     

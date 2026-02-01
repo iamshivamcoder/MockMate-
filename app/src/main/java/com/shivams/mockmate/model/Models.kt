@@ -2,6 +2,7 @@ package com.shivams.mockmate.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.shivams.mockmate.data.database.AnalysisEntity
 import java.util.Date
 import java.util.UUID
 
@@ -146,9 +147,15 @@ data class UserProfile(
     val avatar: String
 )
 
+/**
+ * Backup data model for export/import.
+ * Includes all user data: profile, test attempts, mock tests, and PDF analysis reports.
+ */
 data class BackupData(
     val profile: UserProfile?,
     val attempts: List<TestAttempt>,
     val mockTests: List<MockTest>,
+    val analysisReports: List<AnalysisEntity> = emptyList(), // PDF Analysis History
     val timestamp: Long = System.currentTimeMillis()
 )
+

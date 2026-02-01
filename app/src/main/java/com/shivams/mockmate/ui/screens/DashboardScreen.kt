@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.DataExploration
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Upload
@@ -52,6 +53,7 @@ fun DashboardScreen(
     onMentorChatClick: () -> Unit,
     onAiTestGeneratorClick: () -> Unit,
     onPdfAnalyzerClick: () -> Unit,
+    onAnalysisHistoryClick: () -> Unit = {},  // NEW: Analysis History callback
     repository: TestRepository,
     profileViewModel: com.shivams.mockmate.ui.viewmodels.ProfileViewModel = androidx.hilt.navigation.compose.hiltViewModel()
 ) {
@@ -145,6 +147,13 @@ fun DashboardScreen(
                 icon = Icons.Default.School,
                 onClick = onPdfAnalyzerClick,
                 primaryColor = MaterialTheme.colorScheme.error
+            )
+            
+            ActionButton(
+                text = "Analysis History",
+                icon = Icons.Default.History,
+                onClick = onAnalysisHistoryClick,
+                primaryColor = MaterialTheme.colorScheme.tertiary
             )
             
             // Motivation Card with regional phrases and Pick a Test button

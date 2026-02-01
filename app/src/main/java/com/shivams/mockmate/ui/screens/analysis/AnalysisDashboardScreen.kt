@@ -22,18 +22,21 @@ import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -46,7 +49,9 @@ import com.shivams.mockmate.model.analysis.AnalysisReport
 import com.shivams.mockmate.ui.components.analysis.MentorFeedbackCard
 import com.shivams.mockmate.ui.components.analysis.QuestionInsightItem
 import com.shivams.mockmate.ui.components.analysis.ScoreHeader
+import com.shivams.mockmate.ui.components.analysis.SmartLoadingScreen
 import com.shivams.mockmate.ui.components.analysis.SummaryGrid
+import com.shivams.mockmate.ui.viewmodels.AnalysisUiEvent
 import com.shivams.mockmate.ui.viewmodels.AnalysisViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -65,6 +70,21 @@ fun AnalysisDashboardScreen(
     viewModel: AnalysisViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    
+    // Collect UI events for snackbars
+    LaunchedEffect(Unit) {
+        viewModel.uiEvent.collect { event ->
+            when (event) {
+                is AnalysisUiEvent.ShowSnackbar -> {
+                    snackbarHostState.showSnackbar(event.message)
+                }
+                is AnalysisUiEvent.AnalysisComplete -> {
+                    // Analytics or logging can go here
+                }
+            }
+        }
+    }
     
     // Try to restore cached report if we don't have one
     LaunchedEffect(Unit) {
@@ -111,18 +131,22 @@ fun AnalysisDashboardScreen(
                     containerColor = MaterialTheme.colorScheme.surface
                 )
             )
+        },
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState) { data ->
+                Snackbar(
+                    snackbarData = data,
+                    containerColor = MaterialTheme.colorScheme.inverseSurface,
+                    contentColor = MaterialTheme.colorScheme.inverseOnSurface
+                )
+            }
         }
     ) { paddingValues ->
         when {
             uiState.isLoading -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
+                SmartLoadingScreen(
+                    modifier = Modifier.padding(paddingValues)
+                )
             }
             uiState.report != null -> {
                 DashboardContent(
@@ -192,11 +216,6 @@ private fun DashboardContent(
                 solidCount = report.summary.solidCount,
                 doubtCount = report.summary.doubtCount
             )
-        }
-        
-        // Accuracy overview
-        item {
-            AccuracyCard(report = report)
         }
         
         // Mentor Feedback Card (between score and breakdown)
@@ -282,62 +301,6 @@ private fun HeaderSection(report: AnalysisReport) {
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-        }
-    }
-}
-
-@Composable
-private fun AccuracyCard(report: AnalysisReport) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(
-                Brush.linearGradient(
-                    listOf(
-                        Color(0xFF667EEA),
-                        Color(0xFF764BA2)
-                    )
-                )
-            )
-            .padding(20.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Text(
-                    text = "Overall Accuracy",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White.copy(alpha = 0.8f)
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "${(report.summary.overallAccuracy * 100).toInt()}%",
-                    style = MaterialTheme.typography.headlineLarge.copy(
-                        fontWeight = FontWeight.Bold
-                    ),
-                    color = Color.White
-                )
-            }
-            
-            Column(horizontalAlignment = Alignment.End) {
-                Text(
-                    text = "Intuition Success",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White.copy(alpha = 0.8f)
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "${(report.summary.intuitionAccuracy * 100).toInt()}%",
-                    style = MaterialTheme.typography.headlineLarge.copy(
-                        fontWeight = FontWeight.Bold
-                    ),
-                    color = Color.White
-                )
-            }
         }
     }
 }

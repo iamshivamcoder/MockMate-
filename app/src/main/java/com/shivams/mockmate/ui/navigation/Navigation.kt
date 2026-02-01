@@ -194,6 +194,7 @@ fun AppNavHost(
                     onMentorChatClick = { navController.safeNavigate(Routes.MENTOR_CHAT_SCREEN) },
                     onAiTestGeneratorClick = { navController.safeNavigate(Routes.AI_TEST_GENERATOR_SCREEN) },
                     onPdfAnalyzerClick = { navController.safeNavigate(Routes.PDF_IMPORT) },
+                    onAnalysisHistoryClick = { navController.safeNavigate(Routes.ANALYSIS_HISTORY) },
                     repository = stableRepository
                 )
             }
@@ -564,6 +565,9 @@ fun AppNavHost(
                     onAnalysisClick = { analysisId ->
                         // Navigate to dashboard with the selected analysis
                         navController.safeNavigate(Routes.ANALYSIS_DASHBOARD)
+                    },
+                    onGoToUpload = {
+                        navController.safeNavigate(Routes.PDF_IMPORT)
                     }
                 )
             }

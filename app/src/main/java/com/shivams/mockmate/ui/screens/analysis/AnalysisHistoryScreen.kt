@@ -19,9 +19,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.History
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -46,6 +44,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.shivams.mockmate.data.database.AnalysisEntity
+import com.shivams.mockmate.ui.components.analysis.EmptyHistoryView
 import com.shivams.mockmate.ui.viewmodels.AnalysisHistoryViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -56,6 +55,7 @@ import java.util.Locale
 fun AnalysisHistoryScreen(
     onNavigateBack: () -> Unit,
     onAnalysisClick: (Long) -> Unit,
+    onGoToUpload: () -> Unit = {},
     viewModel: AnalysisHistoryViewModel = hiltViewModel()
 ) {
     val analyses by viewModel.allAnalyses.collectAsState(initial = emptyList())
@@ -88,8 +88,8 @@ fun AnalysisHistoryScreen(
                     )
                 }
                 analyses.isEmpty() -> {
-                    EmptyHistoryState(
-                        modifier = Modifier.align(Alignment.Center)
+                    EmptyHistoryView(
+                        onGoToUpload = onGoToUpload
                     )
                 }
                 else -> {
@@ -110,34 +110,6 @@ fun AnalysisHistoryScreen(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun EmptyHistoryState(modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier.padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Icon(
-            imageVector = Icons.Default.History,
-            contentDescription = null,
-            modifier = Modifier.size(72.dp),
-            tint = MaterialTheme.colorScheme.outline
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = "No analyses yet",
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "Upload a PDF to start analyzing",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.outline
-        )
     }
 }
 
