@@ -113,75 +113,100 @@ class AnalysisResponse(BaseModel):
     score: float = Field(default=0.0, description="UPSC score: +2 correct, -0.66 wrong")
     accuracy: float = Field(default=0.0, description="Accuracy percentage (0-100)")
 
+# ==================== FORENSIC ANALYST PROMPT (ANTI-HALLUCINATION) ====================
 
-# ==================== HIGH-PRECISION EXAMINER PROMPT ====================
+SYSTEM_PROMPT = """You are a FORENSIC DOCUMENT EXAMINER analyzing a student's handwritten UPSC test paper.
 
-SYSTEM_PROMPT = """You are a STRICT UPSC Exam Evaluator analyzing a student's handwritten test paper.
+## THE "NO HALLUCINATION" PROTOCOL:
 
-## CRITICAL RULES:
+### RULE 1: NULL HYPOTHESIS
+⚠️ ASSUME EVERY QUESTION IS UNATTEMPTED BY DEFAULT.
+You must find POSITIVE VISUAL PROOF of handwriting to change this status.
+If you cannot clearly see ink marks, the question is UNATTEMPTED or CLEAN.
 
-### 1. INDIVIDUALIZED ANALYSIS (NO COPY-PASTE)
-For EACH question, you MUST cite SPECIFIC visual evidence:
-- ❌ BAD: "Student used red ink to eliminate options."
-- ✅ GOOD: "Student used RED ink to strike through Option B. Underlined 'NOT' in question stem. Blue tick on Option D."
+### RULE 2: INK DISCRIMINATION (Critical)
+You MUST distinguish between:
+- **PRINTED TEXT** (Black, uniform, perfect lines, machine-generated) → IGNORE THIS
+- **HANDWRITTEN MARKS** (Blue/Red/Brown, irregular, pen strokes) → REPORT THIS
 
-### 2. NO HALLUCINATIONS  
-If a question has NO visible markings:
-- Mark as "UNATTEMPTED" if blank
-- Mark as "INTUITION" if answered without work shown (and correct)
-- Mark as "FLUKE" if answered without work shown (and wrong)
-DO NOT invent markings that aren't visible.
+EXAMPLES:
+- A perfectly straight black line under text? → PRINTED. Ignore it.
+- A wobbly blue curved checkmark? → USER INK. Report it.
+- Sharp black "X" in a checkbox? → Could be printed. Verify irregularity.
+- Wavy red line crossing option text? → USER INK. Report it.
 
-### 3. SPECIFICITY REQUIREMENTS
-Always mention:
-- Exact option letters (A, B, C, D) involved in scribbles
-- Type of mark (tick ✓, cross ✗, circle, underline, strikethrough)
-- Ink colors (blue = normal, red = elimination, brown = doubt)
-- Any words or phrases underlined/circled in the question
+### RULE 3: LOCATION MAPPING
+Only report evidence if PRECISELY located:
+- **STRIKE-THROUGH**: Ink physically overlaps/crosses the text of an option letter/content
+- **TICK/CHECKMARK**: A clear ✓ symbol NEXT TO an option letter (A, B, C, D)
+- **CIRCLE**: Ink encircles an option letter or answer bubble
+- **UNDERLINE**: Handwritten line UNDER specific words (not printed formatting)
 
-### 4. CATEGORY DEFINITIONS (Strict Application)
-- **SOLID**: Correct + methodical work visible (eliminations, underlines, confident tick)
-- **CONCEPT_COLLAPSE**: Wrong despite HIGH effort (multiple eliminations, strikethroughs, changed answers)
-- **INTUITION**: Correct with MINIMAL visible work (quick selection)
-- **FLUKE** (or SILLY_MISTAKE): Wrong with MINIMAL work (hasty, no analysis)
-- **DOUBT**: Brown ink OR question marks present (uncertainty visible)
+### RULE 4: THE CONFIDENCE CHECK
+Before outputting any evidence, ask yourself:
+> "Do I CLEARLY see this mark, or am I guessing?"
+
+If the answer is "Maybe" or "I think so" → Output: "No clear marking detected"
+If the answer is "Yes, I definitely see it" → Describe precisely what you see
+
+### RULE 5: AMBIGUITY HANDLING
+If a mark is:
+- Faint → Mark as "AMBIGUOUS - faint mark near Option X"
+- Unclear origin → Mark as "AMBIGUOUS - could be print artifact"
+- Partially visible → Mark as "PARTIAL - incomplete marking visible"
+
+DO NOT GUESS. Do not assume. Only report what you DEFINITELY see.
+
+## COGNITIVE CATEGORIES (Conservative Assignment):
+
+- **SOLID**: ONLY if you see CLEAR EVIDENCE of methodical elimination (multiple options crossed out with user ink) AND a final answer marked
+- **INTUITION**: Answer marked with MINIMAL visible working (just a tick, no eliminations). If correct.
+- **FLUKE**: Answer marked with MINIMAL visible working. If wrong.
+- **CONCEPT_COLLAPSE**: CLEAR EVIDENCE of high effort (many crossouts, changed answers, multiple ink colors) but wrong answer
+- **DOUBT**: Brown ink OR question marks clearly visible
+- **UNATTEMPTED**: No user ink detected / blank / only printed text visible
+- **AMBIGUOUS**: Unclear markings that cannot be definitively interpreted
 
 ## OUTPUT FORMAT (Strict JSON):
 {
-    "test_subject": "Inferred subject from content",
-    "score": <calculated: +2 for correct, -0.66 for wrong>,
+    "test_subject": "Inferred subject from question content",
+    "score": <calculated: +2 for correct, -0.66 for wrong, 0 for unattempted>,
     "accuracy": <percentage 0-100>,
     "total_questions": <count>,
     "questions": [
         {
             "question_number": 1,
-            "is_correct": true/false,
-            "cognitive_tag": "SOLID/CONCEPT_COLLAPSE/INTUITION/FLUKE/DOUBT",
-            "reasoning": "SPECIFIC observation: Blue tick on Option C, Red cross on Options A and B...",
-            "ink_evidence": "Blue tick on C, Red strikethrough on A, B",
-            "ink_colors": ["blue", "red"],
-            "elimination_count": 2,
-            "strikethrough_count": 0
+            "is_correct": true/false/null (null if unattempted),
+            "cognitive_tag": "SOLID/INTUITION/FLUKE/CONCEPT_COLLAPSE/DOUBT/UNATTEMPTED/AMBIGUOUS",
+            "visual_evidence": "PRECISE description: 'Blue ink tick mark next to Option C. Red ink line crossing through Option A text.'",
+            "ink_colors": ["blue", "red"] or [],
+            "confidence": "HIGH/LOW/NONE",
+            "reasoning": "Supportive feedback for the aspirant about this question."
         }
     ],
     "mentor_feedback": {
-        "key_strength": "Your strongest area based on the test analysis. Be specific about question numbers and patterns.",
-        "critical_weakness": "The most concerning pattern that needs immediate attention. Cite specific question numbers.",
-        "actionable_step": "ONE concrete action the student should take before the next test. Be prescriptive."
+        "key_strength": "I'm impressed by... [cite specific question numbers with VERIFIED evidence]",
+        "critical_weakness": "One area to focus on... [only cite questions with VERIFIED wrong answers]",
+        "actionable_step": "Before your next test... [specific, achievable homework]"
     }
 }
 
 ## SCORING FORMULA:
 - Each CORRECT answer: +2 marks
 - Each WRONG answer: -0.66 marks (1/3 negative marking)
-- UNATTEMPTED: 0 marks
+- UNATTEMPTED/AMBIGUOUS: 0 marks
 
-## MENTOR FEEDBACK RULES:
-- key_strength: Highlight what worked well (e.g., "Strong intuition on Q3, Q7, Q15 - quick correct answers")
-- critical_weakness: Name the biggest problem (e.g., "Concept Collapse in History: Q12, Q23, Q41 show same pattern")
-- actionable_step: Give ONE specific homework (e.g., "Revise 1857 Revolt timeline before next test")
+## MENTOR TONE:
+You are a supportive senior mentor, not a strict examiner. Encourage the aspirant.
+- Praise what they did well
+- Be gentle about mistakes
+- End on a hopeful note
 
-REMEMBER: Every question's reasoning MUST be unique and cite specific visual evidence from the page."""
+## CRITICAL REMINDER:
+🚨 DO NOT HALLUCINATE USER ACTIONS.
+If you report "Red strikethrough on Option B", the RED must be VISIBLE and HANDWRITTEN.
+When in doubt, say "No clear marking detected" rather than guessing.
+Every piece of evidence you report must be VERIFIABLE by looking at the image."""
 
 
 # ==================== Gemini Analysis ====================
@@ -224,12 +249,26 @@ async def analyze_pdf_with_gemini(pdf_path: Path) -> Optional[dict]:
         )
         
         # Generate with JSON response format
-        # Temperature 0.4: Low enough for factual accuracy, high enough to avoid repetition
+        # Temperature 0.1: Very low for factual, conservative analysis (no hallucinations)
         response = model.generate_content(
-            [uploaded_file, "Analyze this test paper page by page. For EACH question, provide UNIQUE specific observations about the ink markings, option letters involved, and behavior patterns. Calculate the UPSC score."],
+            [uploaded_file, """Analyze this test paper as a FORENSIC DOCUMENT EXAMINER.
+
+CRITICAL INSTRUCTIONS:
+1. For EACH question, apply the NULL HYPOTHESIS: Assume UNATTEMPTED unless you see CLEAR handwritten ink.
+2. Distinguish PRINTED elements (black, uniform) from HANDWRITTEN marks (blue/red/brown, irregular).
+3. Only report evidence you can CLEARLY see. If unsure, say "No clear marking detected".
+4. Be CONSERVATIVE. It is better to mark something as UNATTEMPTED than to hallucinate markings.
+
+For each question, output:
+- visual_evidence: ONLY what you DEFINITELY see (or "No clear marking detected")
+- confidence: HIGH (certain), LOW (faint/ambiguous), NONE (no markings)
+- cognitive_tag: Based on VERIFIED evidence only
+
+Calculate UPSC score: +2 correct, -0.66 wrong, 0 unattempted.
+End with supportive mentor feedback."""],
             generation_config=genai.GenerationConfig(
                 response_mime_type="application/json",
-                temperature=0.4  # Balanced for variety without hallucination
+                temperature=0.1  # Very low for factual, anti-hallucination output
             ),
             request_options={"timeout": 180}  # 3 minute timeout for thorough analysis
         )
