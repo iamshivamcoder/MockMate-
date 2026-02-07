@@ -11,6 +11,7 @@ import com.shivams.mockmate.model.TestDifficulty
 import com.shivams.mockmate.model.TrueFalseSession
 import com.shivams.mockmate.model.TrueFalseStatement
 import com.shivams.mockmate.service.AiInsightsService
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,6 +22,7 @@ import kotlinx.coroutines.launch
 import org.json.JSONArray
 import java.util.Date
 import java.util.UUID
+import javax.inject.Inject
 
 /**
  * UI State for True-False Aptitude Module
@@ -93,7 +95,8 @@ data class AnswerResult(
     val upscTip: String
 )
 
-class TrueFalseViewModel(
+@HiltViewModel
+class TrueFalseViewModel @Inject constructor(
     private val aiInsightsService: AiInsightsService,
     private val trueFalseDao: TrueFalseDao
 ) : ViewModel() {

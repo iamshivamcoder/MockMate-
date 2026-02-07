@@ -9,17 +9,20 @@ import com.shivams.mockmate.model.ChatUiState
 import com.shivams.mockmate.model.MessageType
 import com.shivams.mockmate.model.QuickAction
 import com.shivams.mockmate.service.AiInsightsService
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 /**
  * ViewModel for the Mentor Chat screen
  */
-class MentorChatViewModel(
+@HiltViewModel
+class MentorChatViewModel @Inject constructor(
     private val chatRepository: MentorChatRepository,
     private val aiInsightsService: AiInsightsService,
     private val testRepository: TestRepository

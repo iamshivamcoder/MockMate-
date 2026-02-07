@@ -5,6 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import com.shivams.mockmate.BuildConfig
 import com.shivams.mockmate.model.UserProfile
 
 @Database(
@@ -44,13 +45,21 @@ abstract class AppDatabase : RoomDatabase() {
         
         fun getInstance(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
-                val instance = Room.databaseBuilder(
+                val builder = Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
                     "mockmate_database"
                 )
-                .fallbackToDestructiveMigration(true)
-                .build()
+                
+                // Only use destructive migration in debug builds
+                // In production, proper migrations should be added
+                if (BuildConfig.DEBUG) {
+                    builder.fallbackToDestructiveMigration(true)
+                }
+                // TODO: Add proper migrations for production releases
+                // .addMigrations(MIGRATION_7_8, MIGRATION_8_9, ...)
+                
+                val instance = builder.build()
                 INSTANCE = instance
                 instance
             }

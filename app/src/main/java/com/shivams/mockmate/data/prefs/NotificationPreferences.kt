@@ -8,6 +8,7 @@ object NotificationPreferences {
     private const val PREFS_NAME = "notification_prefs"
     private const val KEY_NOTIFICATIONS_ENABLED = "notifications_enabled"
     private const val KEY_PULSATING_BADGES_ENABLED = "pulsating_badges_enabled" // Added this line
+    private const val KEY_IMMEDIATE_FEEDBACK_ENABLED = "immediate_feedback_enabled"
 
     private fun getPreferences(context: Context): SharedPreferences {
         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -28,5 +29,14 @@ object NotificationPreferences {
 
     fun setPulsatingBadgesEnabled(context: Context, enabled: Boolean) {
         getPreferences(context).edit().putBoolean(KEY_PULSATING_BADGES_ENABLED, enabled).apply()
+    }
+    
+    // Immediate feedback setting
+    fun isImmediateFeedbackEnabled(context: Context): Boolean {
+        return getPreferences(context).getBoolean(KEY_IMMEDIATE_FEEDBACK_ENABLED, false)
+    }
+
+    fun setImmediateFeedbackEnabled(context: Context, enabled: Boolean) {
+        getPreferences(context).edit().putBoolean(KEY_IMMEDIATE_FEEDBACK_ENABLED, enabled).apply()
     }
 }

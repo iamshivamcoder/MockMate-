@@ -38,6 +38,7 @@ class SettingsRepository(private val context: Context) { // Made context a prope
         val currentAffairsUpdates = sharedPreferences.getBoolean(KEY_CURRENT_AFFAIRS_UPDATES, false)
         val optionalSubject = sharedPreferences.getString(KEY_OPTIONAL_SUBJECT, "Not Selected") ?: "Not Selected"
         val pulsatingBadgesEnabled = NotificationPreferences.arePulsatingBadgesEnabled(context) // Added this line
+        val immediateFeedbackEnabled = NotificationPreferences.isImmediateFeedbackEnabled(context)
 
         return AppSettings(
             darkMode = darkMode,
@@ -47,7 +48,8 @@ class SettingsRepository(private val context: Context) { // Made context a prope
             showExplanations = showExplanations,
             currentAffairsUpdates = currentAffairsUpdates,
             optionalSubject = optionalSubject,
-            pulsatingBadgesEnabled = pulsatingBadgesEnabled // Added this line
+            pulsatingBadgesEnabled = pulsatingBadgesEnabled,
+            immediateFeedbackEnabled = immediateFeedbackEnabled
         )
     }
 
@@ -55,6 +57,12 @@ class SettingsRepository(private val context: Context) { // Made context a prope
     fun setPulsatingBadgesEnabled(enabled: Boolean) {
         NotificationPreferences.setPulsatingBadgesEnabled(context, enabled)
         _settings.value = loadSettings() // Reload settings to reflect changes
+    }
+
+    // Function to toggle immediate color-coded feedback
+    fun setImmediateFeedbackEnabled(enabled: Boolean) {
+        NotificationPreferences.setImmediateFeedbackEnabled(context, enabled)
+        _settings.value = loadSettings()
     }
 
     companion object {

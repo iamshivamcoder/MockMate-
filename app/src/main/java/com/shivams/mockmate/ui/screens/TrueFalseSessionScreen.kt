@@ -37,6 +37,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.animation.animateContentSize
 import com.shivams.mockmate.ui.components.AnswerFeedbackCard
 import com.shivams.mockmate.ui.components.SwipeableStatementCard
 import com.shivams.mockmate.ui.components.TrueFalseActionButtons
@@ -111,53 +112,63 @@ fun TrueFalseSessionScreen(
                 
                 Spacer(modifier = Modifier.height(8.dp))
                 
-                // Main content area
+                // Main content area - using key to force recomposition on answer state change
                 Box(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth()
+                        .animateContentSize()
                 ) {
                     if (currentStatement != null) {
                         val isAnswered = uiState.userAnswers.containsKey(currentStatement.id)
                         
-                        if (!isAnswered && !uiState.showExplanation) {
-                            SwipeableStatementCard(
-                                statement = currentStatement.statement,
-                                onSwipeRight = { viewModel.answerTrue() },
-                                onSwipeLeft = { viewModel.answerFalse() },
-                                onSwipeUp = { viewModel.skipStatement() }
-                            )
-                        } else {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(16.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
-                            ) {
-                                Text(
-                                    text = currentStatement.statement,
-                                    style = MaterialTheme.typography.headlineSmall,
-                                    fontWeight = FontWeight.Medium,
-                                    textAlign = TextAlign.Center,
-                                    modifier = Modifier.padding(horizontal = 16.dp)
+                        when {
+                            // Show swipeable card only if not answered and not showing explanation
+                            !isAnswered && !uiState.showExplanation -> {
+                                SwipeableStatementCard(
+                                    statement = currentStatement.statement,
+                                    onSwipeRight = { viewModel.answerTrue() },
+                                    onSwipeLeft = { viewModel.answerFalse() },
+                                    onSwipeUp = { viewModel.skipStatement() }
                                 )
-                                Spacer(modifier = Modifier.height(16.dp))
-                                val userAnswer = uiState.userAnswers[currentStatement.id]
-                                val isCorrect = userAnswer == currentStatement.isTrue
-                                Text(
-                                    text = when {
-                                        userAnswer == null -> "Skipped"
-                                        userAnswer -> "You answered: TRUE"
-                                        else -> "You answered: FALSE"
-                                    },
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = when {
-                                        userAnswer == null -> Color(0xFFFF9800)
-                                        isCorrect -> Color(0xFF4CAF50)
-                                        else -> Color(0xFFF44336)
-                                    }
-                                )
+                            }
+                            // When showing explanation, don't show anything here - the overlay handles it
+                            uiState.showExplanation -> {
+                                // Empty - AnswerFeedbackCard overlay will show at bottom
+                            }
+                            // Show answered state only when answered AND not showing explanation
+                            isAnswered && !uiState.showExplanation -> {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(16.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center
+                                ) {
+                                    Text(
+                                        text = currentStatement.statement,
+                                        style = MaterialTheme.typography.headlineSmall,
+                                        fontWeight = FontWeight.Medium,
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier.padding(horizontal = 16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    val userAnswer = uiState.userAnswers[currentStatement.id]
+                                    val isCorrect = userAnswer == currentStatement.isTrue
+                                    Text(
+                                        text = when {
+                                            userAnswer == null -> "Skipped"
+                                            userAnswer -> "You answered: TRUE"
+                                            else -> "You answered: FALSE"
+                                        },
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = when {
+                                            userAnswer == null -> Color(0xFFFF9800)
+                                            isCorrect -> Color(0xFF4CAF50)
+                                            else -> Color(0xFFF44336)
+                                        }
+                                    )
+                                }
                             }
                         }
                     }
@@ -176,10 +187,12 @@ fun TrueFalseSessionScreen(
                             onSkip = { viewModel.skipStatement() }
                         )
                     } else {
+                        // Navigation buttons after answer - with key for proper recomposition
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp),
+                                .padding(horizontal = 16.dp)
+                                .animateContentSize(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             TextButton(

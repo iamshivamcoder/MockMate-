@@ -28,38 +28,61 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 /**
+ * Enum to represent answer feedback states
+ */
+enum class OptionFeedbackState {
+    NONE,
+    CORRECT,
+    INCORRECT
+}
+
+/**
  * A component representing a selectable option item, typically used for multiple-choice questions.
  *
  * @param optionText The text of the option.
  * @param selected Whether this option is currently selected.
  * @param onOptionClick Lambda to be invoked when this option is clicked.
+ * @param feedbackState The feedback state for this option (NONE, CORRECT, INCORRECT).
+ * @param enabled Whether clicking is enabled (disabled during feedback).
  */
 @Composable
 fun OptionItem(
     optionText: String,
     selected: Boolean,
-    onOptionClick: () -> Unit
+    onOptionClick: () -> Unit,
+    feedbackState: OptionFeedbackState = OptionFeedbackState.NONE,
+    enabled: Boolean = true
 ) {
+    val backgroundColor = when (feedbackState) {
+        OptionFeedbackState.CORRECT -> Color(0xFF4CAF50).copy(alpha = 0.3f) // Green
+        OptionFeedbackState.INCORRECT -> Color(0xFFF44336).copy(alpha = 0.3f) // Red
+        OptionFeedbackState.NONE -> if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else Color.Transparent
+    }
+    
+    val borderColor = when (feedbackState) {
+        OptionFeedbackState.CORRECT -> Color(0xFF4CAF50) // Green
+        OptionFeedbackState.INCORRECT -> Color(0xFFF44336) // Red
+        OptionFeedbackState.NONE -> if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+    }
+    
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
             .clip(RoundedCornerShape(8.dp))
             .border(
-                width = 1.dp,
-                color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                width = if (feedbackState != OptionFeedbackState.NONE) 2.dp else 1.dp,
+                color = borderColor,
                 shape = RoundedCornerShape(8.dp)
             )
-            .background(
-                if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else Color.Transparent
-            )
-            .clickable { onOptionClick() }
+            .background(backgroundColor)
+            .clickable(enabled = enabled) { onOptionClick() }
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         RadioButton(
             selected = selected,
-            onClick = onOptionClick
+            onClick = if (enabled) onOptionClick else null
         )
         Spacer(modifier = Modifier.width(16.dp))
         Text(

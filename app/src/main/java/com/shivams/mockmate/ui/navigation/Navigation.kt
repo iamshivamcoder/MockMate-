@@ -372,15 +372,7 @@ fun AppNavHost(
             }
 
             composable(Routes.AI_TEST_GENERATOR_SCREEN) {
-                val currentContext = LocalContext.current
-                val apiConfig = remember { ApiConfig(currentContext) }
-                val aiInsightsService = remember { AiInsightsService(apiConfig, stableRepository) }
-                val viewModel = remember { 
-                    AiTestGeneratorViewModel(
-                        aiInsightsService = aiInsightsService,
-                        testRepository = stableRepository
-                    )
-                }
+                val viewModel: AiTestGeneratorViewModel = hiltViewModel()
                 AiTestGeneratorScreen(
                     viewModel = viewModel,
                     onNavigateBack = { navController.navigateUp() },
@@ -457,18 +449,7 @@ fun AppNavHost(
             }
 
             composable(Routes.MENTOR_CHAT_SCREEN) {
-                val context = LocalContext.current
-                val database = remember { AppDatabase.getInstance(context) }
-                val chatRepository = remember { MentorChatRepository(database.chatDao()) }
-                val apiConfig = remember { ApiConfig(context) }
-                val aiInsightsService = remember { AiInsightsService(apiConfig, stableRepository) }
-                val viewModel = remember {
-                    MentorChatViewModel(
-                        chatRepository = chatRepository,
-                        aiInsightsService = aiInsightsService,
-                        testRepository = stableRepository
-                    )
-                }
+                val viewModel: MentorChatViewModel = hiltViewModel()
                 MentorChatScreen(
                     viewModel = viewModel,
                     onNavigateBack = { navController.navigateUp() }
@@ -488,13 +469,7 @@ fun AppNavHost(
             
             // True-False Aptitude Module Screens
             composable(Routes.TRUE_FALSE_SELECTION) {
-                val context = LocalContext.current
-                val database = remember { AppDatabase.getInstance(context) }
-                val apiConfig = remember { ApiConfig(context) }
-                val aiInsightsService = remember { AiInsightsService(apiConfig, stableRepository) }
-                val viewModel = remember {
-                    TrueFalseViewModel(aiInsightsService = aiInsightsService, trueFalseDao = database.trueFalseDao())
-                }
+                val viewModel: TrueFalseViewModel = hiltViewModel()
                 TrueFalseSelectionScreen(
                     viewModel = viewModel,
                     onNavigateBack = { navController.navigateUp() },
@@ -507,14 +482,7 @@ fun AppNavHost(
                 arguments = listOf(navArgument("sessionId") { type = NavType.StringType })
             ) { backStackEntry ->
                 val sessionId = backStackEntry.arguments?.getString("sessionId") ?: return@composable
-                
-                val context = LocalContext.current
-                val database = remember { AppDatabase.getInstance(context) }
-                val apiConfig = remember { ApiConfig(context) }
-                val aiInsightsService = remember { AiInsightsService(apiConfig, stableRepository) }
-                val viewModel = remember {
-                    TrueFalseViewModel(aiInsightsService = aiInsightsService, trueFalseDao = database.trueFalseDao())
-                }
+                val viewModel: TrueFalseViewModel = hiltViewModel()
                 
                 TrueFalseSessionScreen(
                     viewModel = viewModel,
@@ -525,13 +493,7 @@ fun AppNavHost(
             }
             
             composable(Routes.TRUE_FALSE_RESULT) {
-                val context = LocalContext.current
-                val database = remember { AppDatabase.getInstance(context) }
-                val apiConfig = remember { ApiConfig(context) }
-                val aiInsightsService = remember { AiInsightsService(apiConfig, stableRepository) }
-                val viewModel = remember {
-                    TrueFalseViewModel(aiInsightsService = aiInsightsService, trueFalseDao = database.trueFalseDao())
-                }
+                val viewModel: TrueFalseViewModel = hiltViewModel()
                 TrueFalseResultScreen(
                     viewModel = viewModel,
                     onRetry = { navController.safeNavigate(Routes.TRUE_FALSE_SELECTION) { popUpTo(Routes.TRUE_FALSE_RESULT) { inclusive = true } } },

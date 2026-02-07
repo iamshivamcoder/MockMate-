@@ -85,6 +85,9 @@ class AnalysisViewModel @Inject constructor(
                         ))
                     }
                     is Resource.Error -> {
+                        // Log the error for debugging
+                        android.util.Log.e("AnalysisError", "Analysis failed - Reason: ${resource.message}", resource.exception)
+                        
                         val userFriendlyMessage = mapErrorToUserMessage(resource.message, resource.exception)
                         _uiState.update { 
                             it.copy(

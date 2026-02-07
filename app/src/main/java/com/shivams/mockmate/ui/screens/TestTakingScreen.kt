@@ -54,6 +54,9 @@ import com.shivams.mockmate.ui.viewmodels.TestTakingScreenViewModel
 import com.shivams.mockmate.ui.components.FinishTestDialog
 import com.shivams.mockmate.ui.components.ErrorAlertDialog
 import com.shivams.mockmate.data.repositories.InMemoryTestRepository
+import com.shivams.mockmate.ui.components.OptionFeedbackState
+import androidx.compose.material3.Switch
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -74,7 +77,27 @@ fun TestTakingScreen(
     var showFinishDialog by remember { mutableStateOf(false) }
     val questionStartTime = remember { mutableStateOf(System.currentTimeMillis()) }
     var lastTrackedQuestionIndex by remember { mutableIntStateOf(-1) }
+    
+    // Feedback state for color-coded answers
+    var showFeedback by remember { mutableStateOf(false) }
+    var feedbackIsCorrect by remember { mutableStateOf(false) }
+    var feedbackOptionIndex by remember { mutableIntStateOf(-1) }
+    var feedbackEnabled by remember { mutableStateOf(appSettings.immediateFeedbackEnabled) }
 
+    // Auto-dismiss feedback after duration
+    LaunchedEffect(showFeedback) {
+        if (showFeedback) {
+            delay(appSettings.feedbackDurationMs.toLong())
+            showFeedback = false
+            feedbackOptionIndex = -1
+        }
+    }
+    
+    // Reset feedback when question changes
+    LaunchedEffect(uiState.currentQuestionIndex) {
+        showFeedback = false
+        feedbackOptionIndex = -1
+    }
 
     LaunchedEffect(uiState.timeRemaining, uiState.mockTest) {
         if (uiState.timeRemaining <= 0 && uiState.mockTest != null) {
@@ -165,17 +188,51 @@ fun TestTakingScreen(
             timeRemaining = uiState.timeRemaining
         )
 
+        // Feedback toggle row
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "Instant Feedback",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+            )
+            Switch(
+                checked = feedbackEnabled,
+                onCheckedChange = { 
+                    feedbackEnabled = it
+                    settingsRepository.setImmediateFeedbackEnabled(it)
+                }
+            )
+        }
+
         QuestionContent(
             modifier = Modifier.weight(1f),
             question = currentQuestion,
             selectedOptionIndex = uiState.selectedOptions.getOrElse(currentQuestionIndex) { -1 },
             onOptionSelected = { optionIndex ->
-                viewModel.updateSelectedOption(currentQuestionIndex, optionIndex)
-                if (optionIndex != -1) {
-                    viewModel.updateQuestionStatus(currentQuestionIndex, QuestionStatus.ANSWERED)
+                if (!showFeedback) {
+                    viewModel.updateSelectedOption(currentQuestionIndex, optionIndex)
+                    if (optionIndex != -1) {
+                        viewModel.updateQuestionStatus(currentQuestionIndex, QuestionStatus.ANSWERED)
+                    }
+                    // Show feedback if enabled
+                    if (feedbackEnabled && optionIndex != -1) {
+                        feedbackOptionIndex = optionIndex
+                        feedbackIsCorrect = currentQuestion.correctOptionIndex == optionIndex
+                        showFeedback = true
+                    }
                 }
             },
-            pulsateBadges = appSettings.pulsatingBadgesEnabled
+            pulsateBadges = appSettings.pulsatingBadgesEnabled,
+            showFeedback = showFeedback,
+            feedbackIsCorrect = feedbackIsCorrect,
+            feedbackOptionIndex = feedbackOptionIndex,
+            correctOptionIndex = currentQuestion.correctOptionIndex ?: -1
         )
 
         TestNavigationFooter(
@@ -254,7 +311,11 @@ fun QuestionContent(
     question: Question,
     selectedOptionIndex: Int,
     onOptionSelected: (Int) -> Unit,
-    pulsateBadges: Boolean
+    pulsateBadges: Boolean,
+    showFeedback: Boolean = false,
+    feedbackIsCorrect: Boolean = false,
+    feedbackOptionIndex: Int = -1,
+    correctOptionIndex: Int = -1
 ) {
     Column(
         modifier = modifier
@@ -302,10 +363,21 @@ fun QuestionContent(
         )
 
         question.options?.forEachIndexed { index, option ->
+            // Determine feedback state for this option
+            val feedbackState = when {
+                !showFeedback -> OptionFeedbackState.NONE
+                index == feedbackOptionIndex && feedbackIsCorrect -> OptionFeedbackState.CORRECT
+                index == feedbackOptionIndex && !feedbackIsCorrect -> OptionFeedbackState.INCORRECT
+                index == correctOptionIndex && !feedbackIsCorrect -> OptionFeedbackState.CORRECT // Show correct answer
+                else -> OptionFeedbackState.NONE
+            }
+            
             OptionItem(
                 optionText = option,
                 selected = selectedOptionIndex == index,
-                onOptionClick = { onOptionSelected(index) }
+                onOptionClick = { onOptionSelected(index) },
+                feedbackState = feedbackState,
+                enabled = !showFeedback
             )
         }
     }

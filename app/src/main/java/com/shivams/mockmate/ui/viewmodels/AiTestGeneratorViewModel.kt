@@ -7,11 +7,13 @@ import com.shivams.mockmate.data.repositories.TestRepository
 import com.shivams.mockmate.model.MockTest
 import com.shivams.mockmate.model.TestDifficulty
 import com.shivams.mockmate.service.AiInsightsService
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 /**
  * UI State for AI Test Generator
@@ -32,7 +34,8 @@ data class AiTestGeneratorUiState(
 /**
  * ViewModel for AI Test Generation
  */
-class AiTestGeneratorViewModel(
+@HiltViewModel
+class AiTestGeneratorViewModel @Inject constructor(
     private val aiInsightsService: AiInsightsService,
     private val testRepository: TestRepository
 ) : ViewModel() {

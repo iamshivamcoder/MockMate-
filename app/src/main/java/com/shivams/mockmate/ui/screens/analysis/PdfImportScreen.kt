@@ -50,6 +50,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.shivams.mockmate.ui.components.analysis.SmartLoadingScreen
 import com.shivams.mockmate.ui.viewmodels.AnalysisViewModel
 
 /**
@@ -130,29 +131,8 @@ fun PdfImportScreen(
             contentAlignment = Alignment.Center
         ) {
             if (uiState.isLoading) {
-                // Loading state
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(64.dp),
-                        strokeWidth = 6.dp,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.height(24.dp))
-                    Text(
-                        text = "Analyzing your answers...",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Our AI is reading your ink patterns",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                // Use SmartLoadingScreen for engaging loading experience
+                SmartLoadingScreen()
             } else {
                 // Default state - show upload prompt
                 Column(

@@ -1,5 +1,6 @@
 package com.shivams.mockmate.model
 
+import androidx.compose.runtime.Immutable
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.shivams.mockmate.data.database.AnalysisEntity
@@ -14,6 +15,7 @@ enum class PracticeMode { DAILY_CHALLENGE, FOCUSED_PRACTICE, CUSTOM_PRACTICE, MO
 enum class QuestionStatus { UNATTEMPTED, ANSWERED, MARKED_FOR_REVIEW, BOOKMARKED }
 
 // True-False Aptitude Module Models
+@Immutable
 data class TrueFalseStatement(
     val id: String = UUID.randomUUID().toString(),
     val statement: String,
@@ -42,6 +44,7 @@ data class TrueFalseSession(
 )
 
 // Question model
+@Immutable
 data class Question(
     val id: String = UUID.randomUUID().toString(),
     val text: String,
@@ -59,6 +62,7 @@ data class Question(
 )
 
 // Test models
+@Immutable
 data class MockTest(
     val id: String = UUID.randomUUID().toString(),
     val name: String,
@@ -71,6 +75,7 @@ data class MockTest(
 )
 
 // User attempt data
+@Immutable
 data class UserAnswer(
     val questionId: String,
     val selectedOptionIndex: Int?,
@@ -90,6 +95,7 @@ data class TestAttempt(
 )
 
 // User stats
+@Immutable
 data class UserStats(
     val questionsAnswered: Int = 0,
     val correctAnswers: Int = 0,
@@ -123,7 +129,9 @@ data class AppSettings(
     val showExplanations: Boolean = true,
     val currentAffairsUpdates: Boolean = false,
     val optionalSubject: String = "Not Selected",
-    val pulsatingBadgesEnabled: Boolean = true // Added this line
+    val pulsatingBadgesEnabled: Boolean = true,
+    val immediateFeedbackEnabled: Boolean = false, // Color-coded answer feedback
+    val feedbackDurationMs: Int = 2000 // 2 seconds feedback duration
 )
 
 data class AttemptWithTest(

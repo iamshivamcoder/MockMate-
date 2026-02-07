@@ -1,15 +1,22 @@
 package com.shivams.mockmate.di
 
 import android.content.Context
+import com.google.gson.Gson
+import com.google.gson.GsonBuilder
 import com.shivams.mockmate.ApiConfig
 import com.shivams.mockmate.api.GeminiApiService
+import com.shivams.mockmate.data.database.AppDatabase
+import com.shivams.mockmate.data.database.ChatDao
+import com.shivams.mockmate.data.database.TrueFalseDao
 import com.shivams.mockmate.data.database.UserProfileDao
+import com.shivams.mockmate.data.repositories.MentorChatRepository
 import com.shivams.mockmate.data.repositories.SettingsRepository
 import com.shivams.mockmate.data.repositories.TestRepository
 import com.shivams.mockmate.data.repositories.TestRepositoryImpl
 import com.shivams.mockmate.data.repositories.UserProfileRepository
 import com.shivams.mockmate.domain.usecases.TestAttemptOperationsUseCase
 import com.shivams.mockmate.service.AIQuestionGenerator
+import com.shivams.mockmate.service.AiInsightsService
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -20,6 +27,8 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
+
+    // Note: Gson is provided by AnalysisNetworkModule
 
     @Provides
     @Singleton
@@ -59,14 +68,14 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideUserProfileDao(appDatabase: com.shivams.mockmate.data.database.AppDatabase): UserProfileDao {
+    fun provideUserProfileDao(appDatabase: AppDatabase): UserProfileDao {
         return appDatabase.userProfileDao()
     }
 
     @Provides
     @Singleton
-    fun provideAppDatabase(@ApplicationContext context: Context): com.shivams.mockmate.data.database.AppDatabase {
-        return com.shivams.mockmate.data.database.AppDatabase.getInstance(context)
+    fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
+        return AppDatabase.getInstance(context)
     }
 
     @Provides
@@ -74,7 +83,36 @@ object AppModule {
     fun provideTestAttemptOperationsUseCase(repository: TestRepository): TestAttemptOperationsUseCase {
         return TestAttemptOperationsUseCase(repository)
     }
+
+    // New providers for ViewModels
+    
+    @Provides
+    @Singleton
+    fun provideAiInsightsService(
+        apiConfig: ApiConfig,
+        testRepository: TestRepository
+    ): AiInsightsService {
+        return AiInsightsService(apiConfig, testRepository)
+    }
+
+    @Provides
+    @Singleton
+    fun provideChatDao(appDatabase: AppDatabase): ChatDao {
+        return appDatabase.chatDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideTrueFalseDao(appDatabase: AppDatabase): TrueFalseDao {
+        return appDatabase.trueFalseDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideMentorChatRepository(chatDao: ChatDao): MentorChatRepository {
+        return MentorChatRepository(chatDao)
+    }
     
     // Note: PdfAnalysisRepository is now provided by AnalysisNetworkModule
-    // Note: Gson is now provided by AnalysisNetworkModule
 }
+
