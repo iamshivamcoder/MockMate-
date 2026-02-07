@@ -36,6 +36,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
@@ -46,10 +47,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.shivams.mockmate.ui.util.HapticFeedbackManager
 import kotlin.math.roundToInt
 
 @Composable
@@ -217,6 +220,17 @@ fun AnswerFeedbackCard(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val view = LocalView.current
+    
+    // Trigger haptic feedback when card appears
+    LaunchedEffect(Unit) {
+        if (isCorrect) {
+            HapticFeedbackManager.success(view)
+        } else {
+            HapticFeedbackManager.failure(view)
+        }
+    }
+    
     val backgroundColor = if (isCorrect) Color(0xFF4CAF50).copy(alpha = 0.1f) else Color(0xFFF44336).copy(alpha = 0.1f)
     val borderColor = if (isCorrect) Color(0xFF4CAF50) else Color(0xFFF44336)
     

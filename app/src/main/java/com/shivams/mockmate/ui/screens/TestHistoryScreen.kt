@@ -7,6 +7,8 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -14,6 +16,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,10 +26,13 @@ import com.shivams.mockmate.data.repositories.TestRepository
 import com.shivams.mockmate.model.AttemptWithTest
 import com.shivams.mockmate.model.UserStats
 import com.shivams.mockmate.ui.components.DeleteConfirmationDialog
+import com.shivams.mockmate.ui.components.HistoryEmptyState
 import com.shivams.mockmate.ui.components.MockMateTopBar
 import com.shivams.mockmate.ui.components.RenameDialog
 import com.shivams.mockmate.ui.components.TestHistoryContent
 import com.shivams.mockmate.ui.viewmodels.TestHistoryViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 enum class TestHistorySortCriteria {
     DATE,
@@ -40,22 +46,25 @@ fun TestHistoryScreen(
     onNavigateBack: () -> Unit,
     onViewTestResult: (String, String) -> Unit,
     repository: TestRepository,
-    viewModel: TestHistoryViewModel = hiltViewModel()
+    viewModel: TestHistoryViewModel = hiltViewModel(),
+    onStartMock: (() -> Unit)? = null
 ) {
     val testAttemptsFlow = repository.getAllTestAttempts()
     val testAttemptsList by testAttemptsFlow.collectAsState(initial = emptyList())
     val userStats by repository.userStats.collectAsState(initial = UserStats())
 
     var isLoading by remember { mutableStateOf(true) }
+    var isRefreshing by remember { mutableStateOf(false) }
     var attemptsWithTest by remember { mutableStateOf<List<AttemptWithTest>>(emptyList()) }
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
+    val pullToRefreshState = rememberPullToRefreshState()
+    val scope = rememberCoroutineScope()
 
     var showRenameDialog by remember { mutableStateOf<AttemptWithTest?>(null) }
     var showDeleteDialog by remember { mutableStateOf<AttemptWithTest?>(null) }
     var newName by remember { mutableStateOf("") }
 
-    LaunchedEffect(testAttemptsList) {
-        isLoading = true
+    suspend fun processAttempts() {
         val processedAttempts = testAttemptsList.mapNotNull { attempt ->
             val test = repository.getTestById(attempt.testId)
             if (test != null) {
@@ -79,6 +88,11 @@ fun TestHistoryScreen(
             }
         }
         attemptsWithTest = processedAttempts
+    }
+
+    LaunchedEffect(testAttemptsList) {
+        isLoading = true
+        processAttempts()
         isLoading = false
     }
 
@@ -92,29 +106,51 @@ fun TestHistoryScreen(
             )
         }
     ) { innerPadding ->
-        if (isLoading) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = {
+                scope.launch {
+                    isRefreshing = true
+                    delay(500) // Brief delay for visual feedback
+                    processAttempts()
+                    isRefreshing = false
+                }
+            },
+            state = pullToRefreshState,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            when {
+                isLoading -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+                attemptsWithTest.isEmpty() -> {
+                    HistoryEmptyState(
+                        onStartMock = onStartMock ?: {}
+                    )
+                }
+                else -> {
+                    TestHistoryContent(
+                        modifier = Modifier,
+                        userStats = userStats,
+                        testAttempts = attemptsWithTest,
+                        onViewResult = { attemptId, testId ->
+                            onViewTestResult(attemptId, testId)
+                        },
+                        onRenameClick = { 
+                            newName = it.testName
+                            showRenameDialog = it
+                        },
+                        onDeleteClick = { showDeleteDialog = it }
+                    )
+                }
             }
-        } else {
-            TestHistoryContent(
-                modifier = Modifier.padding(innerPadding),
-                userStats = userStats,
-                testAttempts = attemptsWithTest,
-                onViewResult = { attemptId, testId ->
-                    onViewTestResult(attemptId, testId)
-                },
-                onRenameClick = { 
-                    newName = it.testName
-                    showRenameDialog = it
-                },
-                onDeleteClick = { showDeleteDialog = it }
-            )
         }
     }
 
@@ -143,3 +179,4 @@ fun TestHistoryScreen(
         )
     }
 }
+
